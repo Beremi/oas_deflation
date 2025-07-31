@@ -11,8 +11,13 @@
 #include "material_coulomb_friction.h"
 #include "material_fiber.h"
 #include "material_thermomechanical.h"
+#include "material_plasticity.h"
+#include "material_beam.h"
 
-#include "element_container.h"
+#ifdef ML_TORCH_FOUND
+ #include "material_neuralnetwork.h"
+#endif // TORCH_FOUND
+
 
 using namespace std;
 
@@ -43,10 +48,12 @@ Material *MaterialContainer :: giveMaterial(unsigned const mat) {
 
 //////////////////////////////////////////////////////////
 void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
+    cout << "Input file '" <<  filename;
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     unsigned id = 0;
+    CSLMaterialWithTensorialStressUpdate *CSLMaterialWithTensorialStressUpdateMaster = nullptr;
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -91,6 +98,15 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     DiscreteMechanicalRVEMaterial *newmat = new DiscreteMechanicalRVEMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("NeuralNetworkMaterial") == 0 ) {
+#ifdef ML_TORCH_FOUND
+                    NeuralNetworkMaterial *newmat = new NeuralNetworkMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+#else
+                    cerr << "Error: This OAS executable compiled without NeuralNetworkMaterial (LibTorch) support." << endl;
+                    exit(EXIT_FAILURE);
+#endif                 // TORCH_FOUND
                 } else if ( matType.compare("HTCMaterial") == 0 ) {
                     HTCMaterial *newmat = new HTCMaterial(dim);
                     newmat->readFromLine(iss);
@@ -108,11 +124,18 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CSLMaterialWithTensorialStressUpdate") == 0 ) {
-                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim);
+                    CSLMaterialWithTensorialStressUpdate *newmat = new CSLMaterialWithTensorialStressUpdate(dim, CSLMaterialWithTensorialStressUpdateMaster);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                    if ( CSLMaterialWithTensorialStressUpdateMaster == nullptr ) {
+                        CSLMaterialWithTensorialStressUpdateMaster = newmat;
+                    }
                 } else if ( matType.compare("LDPMMaterial") == 0 ) {
                     LDPMMaterial *newmat = new LDPMMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("LDPMCoupledMaterial") == 0 ) {
+                    LDPMCoupledMaterial *newmat = new LDPMCoupledMaterial(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else if ( matType.compare("CoupledCSLMaterial") == 0 ) {
@@ -134,7 +157,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial(dim);
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material(dim);
                     newmat->readFromLine(iss);
@@ -167,6 +190,18 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     VectMechMaterialWithRotationalStiffness *newmat = new VectMechMaterialWithRotationalStiffness(dim);
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
+                } else if ( matType.compare("VonMisesPlasticMaterial") == 0 ) {
+                    VonMisesPlasticMaterial *newmat = new VonMisesPlasticMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("VectMechVolDevSplitMaterial") == 0 ) {
+                    VectMechVolDevSplitMaterial *newmat = new VectMechVolDevSplitMaterial(dim);
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("BeamMaterial") == 0 ) {
+                    BeamMaterial *newmat = new BeamMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
                 } else {
                     cerr << "Error: material '" <<  matType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -176,7 +211,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
             id++;
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
+        cout << "' succesfully loaded; " << matrs.size() - origsize << " materials found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
@@ -185,7 +220,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
 
 //////////////////////////////////////////////////////////
 void MaterialContainer :: runPreparationForStressEvaluation(ElementContainer *elems) {
-    for ( auto &m : matrs) {
+    for ( auto &m : matrs ) {
         m->prepareForStressEvaluation(elems);
     }
 }

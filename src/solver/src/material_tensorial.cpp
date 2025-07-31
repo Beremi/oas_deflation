@@ -46,7 +46,7 @@ Matrix TensTrsprtMaterialStatus :: giveStiffnessTensor(string type) const {
 Matrix TensTrsprtMaterialStatus :: giveDampingTensor() const {
     TensTrsprtMaterial *m = static_cast< TensTrsprtMaterial * >( mat );
     Matrix M = Matrix :: Zero(1, 1);
-    M(0, 0) = -m->giveCapacity() * m->giveDensity();
+    M(0, 0) = -m->giveCapacity(); //density is deleted, the capacity is in s^2/m^2
     return M;
 }
 
@@ -67,7 +67,7 @@ double TensTrsprtMaterialStatus :: calculatePressureDependentPermeability(double
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -276,6 +276,14 @@ Vector TensMechMaterialStatus :: giveStress(const Vector &strain, double timeSte
     return TensMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
 };
 
+//////////////////////////////////////////////////////////
+Matrix TensMechMaterialStatus :: giveDampingTensor() const {
+    //TensMechMaterial *m = static_cast< TensMechMaterial * >( mat );
+    Matrix M = Matrix :: Zero(1, 1);
+    //M(0, 0) = m->giveDampingConstant();
+    M(0, 0) = 0;
+    return M;
+}
 
 //////////////////////////////////////////////////////////
 double TensMechMaterialStatus :: giveMassConstant() const {
@@ -301,7 +309,7 @@ Matrix TensMechMaterialStatus :: giveStiffnessTensor(string type) const {
     } else if ( dimension == 2 ) {
         size = 3;
     } else if ( dimension == 3 ) {
-        size = 6;
+        return giveElasticStiffnessTensor3D();
     } else {
         cerr << name << ": unsupported dimension " << dimension << endl;
         exit(1);
@@ -317,22 +325,29 @@ Matrix TensMechMaterialStatus :: giveStiffnessTensor(string type) const {
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - m->givePoissonsRatio() ) / 2. * factor;
         } else {  //plane strain
-            double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
+            double factor = m->giveElasticModulus() / ( ( 1. - 2. * m->givePoissonsRatio() ) * ( 1. + m->givePoissonsRatio() ) );
             D(0, 0) = D(1, 1) = factor * ( 1. - m->givePoissonsRatio() );
             D(0, 1) = D(1, 0) = m->givePoissonsRatio() * factor;
             D(2, 2) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
         }
-    } else if ( dimension == 3 ) {
-        double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
-        D(0, 0) = D(1, 1) = D(2, 2) = factor * ( 1. - m->givePoissonsRatio() );
-        D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = m->givePoissonsRatio() * factor;
-        D(3, 3) = D(4, 4) = D(5, 5) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
     } else {
         cerr << name << " error: dimension " << dimension << " not implemented" << endl;
         exit(1);
     }
     return D;
 };
+
+//////////////////////////////////////////////////////////
+
+Matrix TensMechMaterialStatus :: giveElasticStiffnessTensor3D() const {
+    Matrix D = Matrix :: Zero(6, 6);
+    TensMechMaterial *m = static_cast< TensMechMaterial * >( mat );
+    double factor = m->giveElasticModulus() / ( 1. - 2. * m->givePoissonsRatio() ) / ( 1. + m->givePoissonsRatio() );
+    D(0, 0) = D(1, 1) = D(2, 2) = factor * ( 1. - m->givePoissonsRatio() );
+    D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = m->givePoissonsRatio() * factor;
+    D(3, 3) = D(4, 4) = D(5, 5) = ( 1. - 2. * m->givePoissonsRatio() ) / 2. * factor;
+    return D;
+}
 
 //////////////////////////////////////////////////////////
 void TensMechMaterialStatus :: update() {
@@ -416,6 +431,17 @@ MaterialStatus *TensMechMaterial :: giveNewMaterialStatus(Element *e, unsigned i
 //////////////////////////////////////////////////////////
 // ELASTIC COSSERAT MECHANICAL MATERIAL
 
+TensCosseratMechMaterial :: TensCosseratMechMaterial(unsigned dimension) : TensMechMaterial(dimension) {
+    name = "elastic Cosserat mechanical material";
+    if ( dim == 2 ) {
+        planeStress = true;
+        strainsize = 6;
+    } else if ( dim == 3 ) {
+        strainsize = 18;
+    }
+}
+
+//////////////////////////////////////////////////////////
 Vector TensCosseratMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
     return TensCosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain, timeStep);
 };
@@ -462,8 +488,11 @@ Matrix TensCosseratMechMaterialStatus :: giveStiffnessTensor(string type) const 
             D(4, 4) = D(5, 5) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
         }
     } else {
-        cerr << name << " error: dimension " << dimension << " not implemented" << endl;
-        exit(1);
+        D(0, 0) = D(1, 1)  = D(2, 2) = lammeL + 2. * lammeM;
+        D(0, 1) = D(1, 0) = D(0, 2) = D(2, 0) = D(2, 1) = D(1, 2) = lammeL;
+        D(3, 3) = D(4, 4) = D(5, 5) = D(6, 6) = D(7, 7) = D(8, 8) = lammeM + m->giveCosseratShearParam();
+        D(4, 3) = D(3, 4) = D(6, 5) = D(5, 6) = D(8, 7) = D(7, 8) = lammeM - m->giveCosseratShearParam();
+        D(9, 9) = D(10, 10) = D(11, 11) = D(12, 12) = D(13, 13) = D(14, 14) = D(15, 15) = D(16, 16) = D(17, 17) = lammeM * 4. * pow(m->giveCharacteristicLength(), 2);
     }
     return D;
 };
@@ -481,8 +510,8 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
     iss.seekg(0, iss.beg); //reset position in string stream
 
     string param;
-    bool blc, bmuc;
-    blc = bmuc = false;
+    bool blc, bmuc, bpsize;
+    blc = bmuc = bpsize = false;
 
     while (  iss >> param ) {
         if ( param.compare("lc") == 0 ) {
@@ -491,6 +520,9 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("muc") == 0 ) {
             bmuc = true;
             iss >> muc;
+        } else if ( param.compare("particle_radius") == 0 ) {
+            bpsize = true;
+            iss >> psize;
         }
     }
     if ( !blc ) {
@@ -499,6 +531,10 @@ void TensCosseratMechMaterial :: readFromLine(istringstream &iss) {
     }
     if ( !bmuc ) {
         cerr << name << ": material parameter 'muc' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if ( !bpsize ) {
+        cerr << name << ": material parameter 'particle_radius' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
 };

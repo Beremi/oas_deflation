@@ -39,7 +39,7 @@ private:
     double init_alphac, init_alphas;
 
 public:
-    HTCMaterial(unsigned dimension) : TensTrsprtMaterial(dimension) { name = "HTC material"; produceInternalSources = true; };
+    HTCMaterial(unsigned dimension) : TensTrsprtMaterial(dimension) { name = "HTC material"; produceInternalSources = true; dampMatUpdate = true; };
     virtual ~HTCMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

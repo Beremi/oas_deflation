@@ -31,11 +31,16 @@ protected:
     Material *mat;
     std :: vector< Matrix >Bs;     //stored B matrices
     std :: vector< Matrix >Hs;     //stored H matrices
+    Matrix massM;           //stored mass matrix
+    Matrix dampC;           //stored damping matrix
     std :: vector< MaterialStatus * >stats;
     std :: vector< unsigned >DoFids;
     unsigned outDoFs; // for coupled elements, number of input DoFs might be different from number of output DoFs.
     virtual void setIntegrationPointsAndWeights();
     virtual void initIntegration();
+    virtual void computeMassMatrix();
+    virtual void computeDampingMatrix();
+
 
     ShapeFunc *shafunc;
     IntegrationType *inttype;
@@ -58,17 +63,18 @@ public:
     void updateMaterialStatuses();
     void resetMaterialStatuses();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Matrix giveDampingMatrix() const;
-    virtual Matrix giveMassMatrix() const;
-    virtual Vector giveLumpedMassMatrix() const;
+    virtual Matrix giveMassMatrix();
+    virtual Matrix giveDampingMatrix();
+    virtual Matrix giveLumpedMassMatrix();
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    double giveKineticEnergy(const Vector &velocity) const;
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual void giveValues(std :: string code, Vector &result) const;
     std :: string giveName() const { return name; }
     size_t giveNumIP() const { return inttype->giveNumIP(); };
-    Point giveIPLoc(unsigned k) const { return inttype->giveIPLocation(k); };
+    virtual Point giveIPLoc(unsigned k) const;
     double giveIPWeight(unsigned k) const { return inttype->giveIPWeight(k); };
     virtual void giveIPValues(std :: string code, unsigned ipnum, Vector &result) const;
     std :: vector< Node * >giveNodes() const { return nodes; }
@@ -80,10 +86,10 @@ public:
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
-    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };     //at integration point i
+    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix( inttype->giveIPLocationPointer(i) ); };       //at integration point i
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
-    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };     //at integration point i
+    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix( inttype->giveIPLocationPointer(i) ); };       //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
@@ -98,14 +104,21 @@ public:
     virtual Vector giveMasterVariables(const Point *x, const Vector &DoFs) const { return giveHMatrix(x) * DoFs; };
     Vector giveElemDoFsFromFullDoFs(const Vector &FullDoFs) const;
     double giveVolume() const { return volume; };
+    virtual double giveIPVolume(unsigned i) const { return inttype->giveIPWeight(i); };
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
-
+    void setMassMatrix(Matrix Q) { massM = Q; };
     virtual void collectInformationsFromNeigborhood() {};
     virtual bool isPointInside(Point *xn, const Point *x) const;
     virtual Point giveApproxCenter() const;
     Vector giveShapeFunctions(const Point *x) const;
+    Matrix giveShapeFunctionsGrad(const Point *x) const;
     Point findNaturalCoords(const Point *x) const;
+    virtual double giveVolumeAssociatedWithNode(unsigned nodenum)const { ( void ) nodenum; return volume / nodes.size(); }
+    virtual Vector giveBoundingBox()const;
+    virtual Vector findIntersectionsWithLine(Point *A, Point *B)const;
+    bool doesMechanics()const{return (physicalFields[0]>0);};
+    std::vector< std::vector<unsigned> > giveTraingulatedFaces()const;
 };
 
 

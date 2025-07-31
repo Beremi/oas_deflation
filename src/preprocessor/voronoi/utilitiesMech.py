@@ -238,6 +238,16 @@ class linearElasticMaterial:
         line = 'DisMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)
         return line
 
+class linearElasticMaterial_old:
+    def __init__ (self, youngModulus, poisson,  density):
+        self.youngModulus = youngModulus
+        self.poisson = poisson
+        self.density = density
+
+    def getString(self):
+        line = 'VectMechMaterial'       + '\t' + 'E0\t%e'%(self.youngModulus)          + '\t' + 'alpha\t%f'%(self.poisson)      + '\t' + 'density\t%f'%(self.density)
+        return line
+
 ##################################################
 
 

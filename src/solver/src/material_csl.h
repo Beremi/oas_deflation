@@ -70,6 +70,7 @@ public:
     double giveLam0() { return lam0; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
+    virtual double giveAlphaForDamage() const { return VectMechMaterial :: giveAlpha(); }
 
     virtual void init(MaterialContainer *matcont);
 };
@@ -87,7 +88,7 @@ public:
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
 private:
-    Vector giveEigenStrainFromTensorialStress();
+    Vector giveEigenStrainFromTensorialStress() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -95,16 +96,19 @@ class CSLMaterialWithTensorialStressUpdate : public CSLMaterial
 {
 private:
     double poisson;
-    std::vector<Vector> tensstress;
+    double alphaForDamage;
+    std :: vector< Vector >tensstress;
+    CSLMaterialWithTensorialStressUpdate *master_material = nullptr;
 public:
-    CSLMaterialWithTensorialStressUpdate(unsigned dimension);
+    CSLMaterialWithTensorialStressUpdate(unsigned dimension, CSLMaterialWithTensorialStressUpdate *mm);
     virtual ~CSLMaterialWithTensorialStressUpdate() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    double givePoissonNumber() { return poisson; }
+    double givePoissonNumber() const { return poisson; }
     virtual void init(MaterialContainer *matcont);
-    virtual void prepareForStressEvaluation(ElementContainer* elems);
-    Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode);
+    virtual void prepareForStressEvaluation(ElementContainer *elems);
+    Vector giveAveragePrincipalStress(unsigned Anode, unsigned Bnode) const;
+    virtual double giveAlphaForDamage() const { return alphaForDamage; }
 };
 
 

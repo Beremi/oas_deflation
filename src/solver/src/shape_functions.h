@@ -35,6 +35,20 @@ public:
     void giveJacobiMInverse(const Point *x, Matrix &JacobiMInverse) const;
     double giveJacobian(const Point *x) const;
     bool isInNaturalCoords()const { return is_natural; };
+    std::string giveName()const{return name;};
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// NULL SHAPE FUNCTIONS
+class NullShapeF : public ShapeFunc
+{
+protected:
+public:
+    NullShapeF(unsigned dim) { name = "NullShapeF"; ndim = dim;  is_natural = false; };
+    virtual ~NullShapeF() {};
+    virtual void giveShapeF(const Point *x, Vector &phi) const;
+    virtual void giveShapeFGrad(const Point *x, Matrix &phiGrad) const;
 };
 
 //////////////////////////////////////////////////////////

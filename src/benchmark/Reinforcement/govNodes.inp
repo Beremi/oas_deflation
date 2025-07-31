@@ -1,0 +1,14 @@
+# Type	nodeCrdX	nodeCrdY	nodeCrdZ
+MechDoF	0 0.05 0   6
+MechDoF	0.5 0.05 0   6
+MechDoF	0.25	0.05	0.1   6
+
+AuxNode 0.01 0.02 0.08
+AuxNode 0.01 0.02 0.01
+AuxNode 0.49 0.02 0.01
+AuxNode 0.49 0.02 0.08
+
+AuxNode 0.01 0.08 0.08
+AuxNode 0.01 0.08 0.01
+AuxNode 0.49 0.08 0.01
+AuxNode 0.49 0.08 0.08

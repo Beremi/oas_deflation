@@ -29,11 +29,11 @@ protected:
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
 
-
     bool is_precomputed;
 
     virtual void generateRandomFixedBC() {};
     virtual void generateVolumetricAverageBC() {};
+    std :: vector< bool >calculateElemDiscreteness() const;
 public:
     RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~RVEMaterialStatus();
@@ -55,6 +55,8 @@ protected:
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
     bool start_from_precomputed;
 
+    std :: vector< bool >is_elem_discrete;
+
 public:
     RVEMaterial(unsigned dimension) : Material(dimension)  { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true; };
     virtual ~RVEMaterial() {};
@@ -68,6 +70,8 @@ public:
     bool isElasticSolutionVoigt() const { return elastic_sol_is_Voigt; };
     bool shouldStartFromPrecomputed() const { return start_from_precomputed; };
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
+    void setElemDiscreteness(std :: vector< bool >is_discrete) { is_elem_discrete = is_discrete; };
+    std :: vector< bool > *giveElemDiscreteness() { return & is_elem_discrete; };
 };
 
 
@@ -141,7 +145,7 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// DISCRETE MECHANICAL COSSERAT RVE
+// DISCRETE MECHANICAL RVE
 
 class DiscreteMechanicalRVEMaterial;
 class DiscreteMechanicalRVEMaterialStatus : public DiscreteTransportRVEMaterialStatus
@@ -153,13 +157,17 @@ protected:
     bool checkOttosenCriterion();
 
     Point calculateCentroid();
-    std :: vector< std :: vector< Vector > >calculateProjectors(const Point centroid);
+    std :: vector< std :: vector< Matrix > >calculateProjectors(const Point centroid);
+    std :: vector< Matrix >calculateVectProjector(const Element *e, const Point centroid);
+    std :: vector< Matrix >calculateTensProjector(const Element *e, const Point centroid);
     virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
 
     virtual void transformStrain();
     virtual void transformStress();
     virtual void calculateTransformationMatrix();
+
+    double macro_volumetricStrain;
 
 public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
@@ -177,6 +185,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Matrix giveMassTensor() const;
     double computeAverageDensity() const;
+    virtual void setParameterValue(std :: string code, double value);
 };
 
 //////////////////////////////////////////////////////////
@@ -185,28 +194,38 @@ class DiscreteMechanicalRVEMaterial : public DiscreteTransportRVEMaterial
 protected:
     Matrix precompElastic, precompDamping, precompInertia;
     Point centroid;
-    std :: vector< std :: vector< Vector > >projectors;
+    std :: vector< std :: vector< Matrix > >projectors;
+    Matrix cauchyToCosserat;
     bool project_curvature;
     double average_density;
+    bool convert_from_cauchy;
+    Matrix CauchyToCosseratMatrix;
+    bool storedPrecomputeTensors;
 
 public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
     virtual ~DiscreteMechanicalRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; };
+    void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; storedPrecomputeTensors = true;};
     void setPrecomputedDampingTensor(Matrix dam) { precompDamping = dam; };
     void setPrecomputedInertiaTensor(Matrix ine) { precompInertia = ine; };
-    void setCentroidAndProjectors(Point c, std :: vector< std :: vector< Vector > >p);
+    void setCentroidAndProjectors(Point c, std :: vector< std :: vector< Matrix > >p);
     Matrix givePrecomputedElasticTensor() const { return precompElastic; };
     Matrix givePrecomputedDampingTensor() const { return precompDamping; };
     Matrix givePrecomputedInertiaTensor() const { return precompInertia; };
     Point giveCentroid() { return centroid; };
-    std :: vector< std :: vector< Vector > > *giveProjectors() { return & projectors; };
+    std :: vector< std :: vector< Matrix > > *giveProjectors() { return & projectors; };
     bool isNonlinear() const { return nonlinear; };
     bool projectCurvature() const { return project_curvature; };
     virtual void readFromLine(std :: istringstream &iss);
     void setAverageDensity(double ad) { average_density = ad; };
     double giveAverageDensity() const { return average_density; };
+    Vector strainToCosserat(Vector strain);
+    Vector stressToCauchy(Vector stress);
+    Matrix matrixToCauchy(Matrix matrix);
+    bool isConvertingFromCauchy() const { return convert_from_cauchy; };
+    void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
+    bool hasPrecomputedTensorsStored() const {return storedPrecomputeTensors;};
 };
 
 //////////////////////////////////////////////////////////

@@ -5,8 +5,10 @@
 
 using namespace std;
 
-void ElementStatsExporter :: giveFileName(unsigned step, char *buffer) const {
-    sprintf(buffer, "%s_%05d.dat", filename.c_str(), step);
+//////////////////////////////////////////////////////////
+void ElementStatsExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
+    if (iteration<0) sprintf(buffer, "%s_%05d.dat", filename.c_str(), step);
+    else  sprintf(buffer, "%s_%05d_iter_%05d.dat", filename.c_str(), step, iteration);
 }
 
 //////////////////////////////////////////////////////////
@@ -30,12 +32,11 @@ void ElementStatsExporter :: readFromLine(istringstream &iss) {
 }
 
 
-void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) DoFs;
-    ( void ) reactions;
+//////////////////////////////////////////////////////////
+void ElementStatsExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     char buffer[ 100 ];
 
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
 
     std :: string this_file_path = ( resultDir / buffer ).string();
     double idc_time_converged = 0;
@@ -44,12 +45,12 @@ void ElementStatsExporter :: exportData(unsigned step, const Vector &DoFs, const
     if ( masterModel->giveSolver()->giveName().compare("SteadyStateNonLinearSolver") == 0 ) {
         idc_time_converged = static_cast< SteadyStateNonLinearSolver * >( masterModel->giveSolver() )->giveIDCtime();
     }
-    elems->saveElemStatsToFile(this_file_path, elems_to_save, this->time_last, step, false, idc_time_converged, time_step);
+    elems->saveElemStatsToFile(this_file_path, elems_to_save, 0, step, false, idc_time_converged, time_step);
 
     if ( remove_previous ) {
         if ( !masterModel->giveSolver()->isTerminated() && masterModel->giveSolver()->convergedToTolerance() ) {  // remove previous only if not terminated and reached tolerance in this step
             if ( this->last_saved_file.compare("none") != 0 ) {
-                if ( std :: remove(last_saved_file.c_str() ) == 0 ) {
+                if ( std :: remove( last_saved_file.c_str() ) == 0 ) {
                     std :: cout << "element statuses saved to file " << this_file_path << '\n';
                 } else {
                     std :: cerr << "previous file with elem statuses not removed" << '\n';

@@ -4,8 +4,15 @@
 #include "element_fiber.h"
 #include "element_polyhedral.h"
 #include "element_ldpm.h"
+#ifdef ML_TORCH_FOUND
+ #include "element_superelem.h"
+#endif // TORCH_FOUND
 #include <algorithm>
 #include "model.h"
+#include "pblock_periodic_bc.h"
+#include "constraint.h"
+#include "cross_section.h"
+#include "element_beam.h"
 
 using namespace std;
 
@@ -31,18 +38,20 @@ void ElementContainer :: clear() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: setModel(Model *mod) { 
+void ElementContainer :: setModel(Model *mod) {
     model = mod;
     nodes = model->giveNodes();
-    bconds = model->giveBC(); 
+    bconds = model->giveBoundaryConditions();
+    crosssects = model->giveCrossSections();
 };
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readFromFile(const string filename, const unsigned ndim, MaterialContainer *matrs) {
+    cout << "Input file '" <<  filename;
     this->materials = matrs;
     size_t origsize = elems.size();
     string line, elemType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -51,16 +60,28 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             istringstream iss(line);
             iss >> elemType;
             if ( !( elemType.rfind("#", 0) == 0 ) ) {
-                if ( elemType.compare("CLSElem") == 0 || elemType.compare("LTCBEAM") == 0 ) {
+                if ( elemType.compare("CSLElem") == 0 || elemType.compare("LTCBEAM") == 0 ) {
                     RigidBodyContact *newelem = new RigidBodyContact(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("CLSCoupledElem") == 0 || elemType.compare("LTCBEAMCoupled") == 0 ) {
+                } else if ( elemType.compare("CSLCoupledElem") == 0 || elemType.compare("LTCBEAMCoupled") == 0 ) {
                     RigidBodyContactCoupled *newelem = new RigidBodyContactCoupled(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("LDPMTetra") == 0 ) {
                     LDPMTetra *newelem = new LDPMTetra(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTetra") == 0 ) {
+                    LDPMCoupledTetra *newelem = new LDPMCoupledTetra();
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTransport") == 0 ) {
+                    LDPMCoupledTransport *newelem = new LDPMCoupledTransport(this);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTransportBoundary") == 0 ) {
+                    LDPMCoupledTransportBoundary *newelem = new LDPMCoupledTransportBoundary(this);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("CLSBoundaryElem") == 0 || elemType.compare("LTCBoundary") == 0 ) {
@@ -163,6 +184,23 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContactWithHeatConduction *newelem = new RigidBodyContactWithHeatConduction(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                //} else if ( elemType.compare("EulerBernoulliBeam3D") == 0 ) {
+                //    TimoshenkoBeam3D *newelem = new TimoshenkoBeam3D(ndim);
+                //    newelem->readFromLine(iss, nodes, matrs, crosssects);
+                //    elems.push_back(newelem);
+                } else if ( elemType.compare("TimoshenkoBeam3D") == 0 ) {
+                    TimoshenkoBeam3D *newelem = new TimoshenkoBeam3D(ndim);
+                    newelem->readFromLine(iss, nodes, matrs, crosssects);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("MLMechElement") == 0 ) {
+#ifdef ML_TORCH_FOUND
+                    MLMechElement *newelem = new MLMechElement(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+#else
+                    cerr << "Error: This OAS executable compiled without MLMechElement support." << endl;
+                    exit(EXIT_FAILURE);
+#endif                 // TORCH_FOUND
                 } else if ( elemType.compare("MaterialTestElement") == 0 ) {
                     MaterialTestElement *newelem = new MaterialTestElement(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
@@ -188,6 +226,10 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     RigidBodyContactWithRotationalStiffness *newelem = new RigidBodyContactWithRotationalStiffness(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
+                } else if ( elemType.compare("RigidBodyContactWithDecoupledRotationsAndTranslations") == 0 ) {
+                    RigidBodyContactWithDecoupledRotationsAndTranslations *newelem = new RigidBodyContactWithDecoupledRotationsAndTranslations(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
                 } else {
                     cerr << "Error: element '" <<  elemType <<  "' does not exists" << endl;
                     exit(EXIT_FAILURE);
@@ -195,7 +237,7 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
+        cout << "' succesfully loaded; " << elems.size() - origsize << " elements found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
@@ -209,6 +251,14 @@ Element *ElementContainer :: giveElement(unsigned const num) const {
     }
     cerr << "ElementContainer Error: requested element no. " << num << " but only " << elems.size() << " exist" << endl;
     exit(1);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: addElement(Element *newelem){
+    newelem->init();
+    newelem->setID(elems.size() );
+    newelem->initMaterialStatuses();
+    elems.push_back(newelem);
 }
 
 
@@ -308,12 +358,16 @@ void ElementContainer :: setFileToLoadStatsFrom(const std :: string &str) {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: readMatStatsFromFile(double &ini_time, unsigned &ini_step, double &ini_time_step, double &ini_idc_time, const bool get_time_from_file) {
-    (void) ini_time;    (void) ini_step;    (void) ini_time_step;    (void) ini_idc_time;    (void) get_time_from_file;
+    ( void ) ini_time;
+    ( void ) ini_step;
+    ( void ) ini_time_step;
+    ( void ) ini_idc_time;
+    ( void ) get_time_from_file;
     if ( this->file_to_load_from.size() != 0 ) {
         string line, param;
         unsigned elem_id, stat_id;
         for ( auto const &file_with_stats : this->file_to_load_from ) {
-            ifstream inputfile(file_with_stats.c_str() );
+            ifstream inputfile( file_with_stats.c_str() );
             if ( inputfile.is_open() ) {
                 while ( getline(inputfile >> std :: ws, line) ) {
                     if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -344,7 +398,7 @@ void ElementContainer :: init() {
         ( * e )->setID(num);
         ( * e )->init();
         ( * e )->initMaterialStatuses();
-        max_sol_order = max(max_sol_order, ( * e )->giveSolutionOrder() );
+        max_sol_order = max( max_sol_order, ( * e )->giveSolutionOrder() );
     }
 
     //update neighborhood information
@@ -369,13 +423,35 @@ void ElementContainer :: resetMaterialStatuses() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType) const {
+void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied) const {
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if ( BC_applied ) {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
     unsigned DoFi, DoFj;
+    if ( diffType == 0 ) {
+        for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
+            LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);
+            DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
+            for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
+                DoFj = nodes->giveDoFid( lm->giveMasterDoF(j) );
+                if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                    tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
+                    tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
+                }
+            }
+        }
+    }
+    
     vector< unsigned >elDoFs;
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
@@ -386,13 +462,13 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
-                        tripletList.push_back(Ttripletd(DoFi, DoFi, 0.0) );
+                        tripletList.push_back( Ttripletd(DoFi, DoFi, 0.0) );
                     }
-                } else {
+                } else if ( !lumped ) {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
-                        tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
-                        tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
+                        tripletList.push_back( Ttripletd(DoFi, DoFj, 0.0) );
+                        tripletList.push_back( Ttripletd(DoFj, DoFi, 0.0) );
                     }
                 }
             }
@@ -401,62 +477,103 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
 
     if ( nfreeDoFs > 0 ) {
         K.resize(nfreeDoFs, nfreeDoFs);
-        K.setFromTriplets(tripletList.begin(), tripletList.end() );
+        K.setFromTriplets( tripletList.begin(), tripletList.end() );
         K.makeCompressed();
     }
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStiffnessMatrix(CoordinateIndexedSparseMatrix &K) const {
-    prepareStructuralMatrix(K, 0);
+    prepareStructuralMatrix(K, 0, false);
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
-    prepareStructuralMatrix(C, 1);
+    prepareStructuralMatrix(C, 1, false);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    prepareStructuralMatrix(M, 2);
+void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
+    prepareStructuralMatrix(M, 2, lumped);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType) const {
+void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool BC_applied, bool solver_numbering) const { // last two parameters only for export
     if ( K.rows() == 0 ) {
         return;
     }
     K = K * 0; //set everything to zero
 
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    unsigned nfreeDoFs;
+    if ( BC_applied ) {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    }
+    // unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    // cout << "nfreeDoFs " <<  nfreeDoFs << endl;
+
+
     unsigned DoFi, DoFj;
     vector< unsigned >elDoFs;
     Vector elDoFValues;
     Matrix k;
 
+
+    if ( diffType == 0 ) {
+        for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
+            LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);
+            DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
+            for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
+                DoFj = nodes->giveDoFid( lm->giveMasterDoF(j) );
+                if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                    K.coeffRef(DoFi, DoFj) += lm->giveMasterMultiplier(j);
+                    K.coeffRef(DoFj, DoFi) += lm->giveMasterMultiplier(j);
+                }
+            }
+        }
+    }
+
+
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
+            // cout << k;                //stiffness or conductivity
         } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
+        } else if ( diffType == 2 && lumped ) {
+            k = ( * e )->giveLumpedMassMatrix();                    //mass
         } else if ( diffType == 2 ) {
-            k = ( * e )->giveMassMatrix();                    //mass
+            k = ( * e )->giveMassMatrix();
         } else {
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
         elDoFs = ( * e )->giveDoFs();
+        // cout << "\n  elDoFs: " ;
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            if ( solver_numbering ) {
+                DoFi = nodes->giveDoFid(elDoFs [ i ]);
+            } else {
+                DoFi = elDoFs [ i ];
+            }
+            // cout << DoFi << " ";
+            // DoFi = nodes->giveDoFid(elDoFs [ i ]);
+
             for ( unsigned j = i; j < elDoFs.size(); j++ ) {
-                DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                if ( solver_numbering ) {
+                    DoFj = nodes->giveDoFid(elDoFs [ j ]);
+                } else {
+                    DoFj = elDoFs [ j ];
+                }
+                // DoFj = nodes->giveDoFid(elDoFs [ j ]);
 
                 //diagonal
                 if ( DoFi == DoFj ) {
                     if ( DoFi < nfreeDoFs ) {
                         K.coeffRef(DoFi, DoFi) += k(i, j);
                     }
-                } else {
+                } else if ( !lumped ) {
                     //remaining items
                     if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
                         K.coeffRef(DoFi, DoFj) += k(i, j);
@@ -465,8 +582,8 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                 }
             }
         }
+        // cout << "\n ";
     }
-
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -477,39 +594,53 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
      */
 }
 
-
-//////////////////////////////////////////////////////////
-void ElementContainer :: updateLumpedMassMatrix(Vector &M) const {
-    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
-    M = Vector :: Zero(nfreeDoFs);
-    vector< unsigned >elDoFs;
-    Vector m;
-    unsigned DoFi;
-    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
-        m = ( * e )->giveLumpedMassMatrix();
-        elDoFs = ( * e )->giveDoFs();
-        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            DoFi = nodes->giveDoFid(elDoFs [ i ]);
-            if ( DoFi < nfreeDoFs ) {
-                M [ DoFi ] += m [ i ];
-            }
-        }
-    }
-}
+/*
+ * //////////////////////////////////////////////////////////
+ * void ElementContainer :: updateLumpedMassMatrix(Vector &M) const {
+ *  unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+ *  M = Vector :: Zero(nfreeDoFs);
+ *  vector< unsigned >elDoFs;
+ *  Vector m;
+ *  unsigned DoFi;
+ *  for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+ *      m = ( * e )->giveLumpedMassMatrix();
+ *      elDoFs = ( * e )->giveDoFs();
+ *      for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+ *          DoFi = nodes->giveDoFid(elDoFs [ i ]);
+ *          if ( DoFi < nfreeDoFs ) {
+ *              M [ DoFi ] += m [ i ];
+ *          }
+ *      }
+ *  }
+ * }
+ */
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStiffnessMatrix(CoordinateIndexedSparseMatrix &K, string param) const {
-    updateStructuralMatrix(K, 0, param);
+    updateStructuralMatrix(K, 0, param, 0);
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateDampingMatrix(CoordinateIndexedSparseMatrix &C) const {
-    updateStructuralMatrix(C, 1, "");
+    updateStructuralMatrix(C, 1, "", 0);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M) const {
-    updateStructuralMatrix(M, 2, "");
+void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const {
+    updateStructuralMatrix(M, 2, "", lumped);
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: prepareOutputStiffnessMatrix(bool BC_applied) const {
+    CoordinateIndexedSparseMatrix K_out;
+    prepareStructuralMatrix(K_out, 0, 0, BC_applied);
+    return K_out;
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, string param, bool BC_applied, bool solver_numbering) const {
+    updateStructuralMatrix(K_out, 0, param, 0, BC_applied, solver_numbering);
+    return K_out;
 }
 
 //////////////////////////////////////////////////////////
@@ -526,7 +657,7 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
                 continue;                                  //correct order must be used;
             }
             elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             elDoFvalues.setZero();
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
@@ -540,6 +671,23 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
 }
 
 //////////////////////////////////////////////////////////
+double ElementContainer :: integrateKineticEnergy(const Vector &velocity) const {
+    Vector elVelocities;
+    vector< unsigned >elDoFs;
+    double W_kin = 0;
+
+    for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elDoFs = ( * e )->giveDoFs();
+        elVelocities.resize( elDoFs.size() );
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            elVelocities [ i ] = velocity [ elDoFs [ i ] ];
+        }
+        W_kin += ( * e )->giveKineticEnergy(elVelocities);
+    }
+    return W_kin;
+}
+
+//////////////////////////////////////////////////////////
 void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
@@ -547,7 +695,7 @@ void ElementContainer :: integrateDampingOrInertiaForces(const Vector &full_v, V
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
-        elDoFvalues.resize(elDoFs.size() );
+        elDoFvalues.resize( elDoFs.size() );
         elDoFvalues.setZero();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
             elDoFvalues [ i ] = full_v [ elDoFs [ i ] ];
@@ -595,7 +743,7 @@ void ElementContainer :: findElementFriends() {
 
 //////////////////////////////////////////////////////////
 Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned > &node_ids) const {
-    std :: sort(node_ids.begin(), node_ids.end() );
+    std :: sort( node_ids.begin(), node_ids.end() );
     // std::cout << "this elem should connect nodes";
     // for ( auto const &nid : node_ids ) {
     //   std::cout << " " << nid;
@@ -610,12 +758,12 @@ Element *ElementContainer :: giveElementConnectingNodes(std :: vector< unsigned 
                     // std::cout << "this elem connects nodes";
                     for ( auto const &n : el->giveNodes() ) {
                         // std::cout << " " << this->nodes->giveNodeId(n);
-                        elem_node_ids.push_back(this->nodes->giveNodeId(n) );
+                        elem_node_ids.push_back( this->nodes->giveNodeId(n) );
                     }
                     // std::cout << '\n';
                     if ( elem_node_ids.size() == node_ids.size() ) { ///< for other than rbc elems
                         // std::cout << "and what about here?" << '\n';
-                        std :: sort(elem_node_ids.begin(), elem_node_ids.end() );
+                        std :: sort( elem_node_ids.begin(), elem_node_ids.end() );
                         for ( unsigned i = 0; i < node_ids.size(); i++ ) {
                             if ( elem_node_ids [ i ] != node_ids [ i ] ) {
                                 break;
@@ -675,8 +823,8 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
     //delete everythink inside
     size_t p;
     result.clear(); // result.resize(0);
-    result.resize(nodes->giveSize() );
-    Vector weights = Vector :: Zero(nodes->giveSize() );
+    result.resize( nodes->giveSize() );
+    Vector weights = Vector :: Zero( nodes->giveSize() );
 
     //fill with data
     vector< Vector >res;
@@ -692,33 +840,33 @@ void ElementContainer :: extrapolateValuesFromIntegrationPointsToNodes(string co
                 result [ nodeid ].resize(reslen);
                 result [ nodeid ].setZero();
             }
-            for ( size_t m = 0; m < min< size_t >(reslen, result [ nodeid ].size() ); m++ ) {
+            for ( size_t m = 0; m < min< size_t >( reslen, result [ nodeid ].size() ); m++ ) {
                 result [ nodeid ] [ m ] += res [ m ] [ p ];
             }
         }
     }
 
     //extract pairs
-    set<pair<unsigned, unsigned>> periodicPairs;
-    for (unsigned i = 0; i<model->givePBlockContainer()->giveSize(); i++){
-        MechanicalPeriodicBC * pb = dynamic_cast<MechanicalPeriodicBC *>(model->givePBlockContainer()->givePBlock(i));
-        if (pb){
-            vector<unsigned> masters = pb->giveMasters();
-            vector<unsigned> slaves = pb->giveSlaves();
-            for (unsigned k=0; k<masters.size(); k++){
-                periodicPairs.insert(make_pair(masters[k],slaves[k]));
+    set< pair< unsigned, unsigned > >periodicPairs;
+    for ( unsigned i = 0; i < model->givePreprocessingBlocks()->giveSize(); i++ ) {
+        MechanicalPeriodicBC *pb = dynamic_cast< MechanicalPeriodicBC * >( model->givePreprocessingBlocks()->givePBlock(i) );
+        if ( pb ) {
+            vector< unsigned >masters = pb->giveMasters();
+            vector< unsigned >slaves = pb->giveSlaves();
+            for ( unsigned k = 0; k < masters.size(); k++ ) {
+                periodicPairs.insert( make_pair(masters [ k ], slaves [ k ]) );
             }
         }
-    }    
+    }
     //add slaves to masters
-    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
-        weights[q->first] += weights[q->second];
-        result[q->first] += result[q->second];
+    for ( auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q ) {
+        weights [ q->first ] += weights [ q->second ];
+        result [ q->first ] += result [ q->second ];
     }
     //copy masters to slaves
-    for (auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q) {  
-        weights[q->second] = weights[q->first];
-        result[q->second] = result[q->first];
+    for ( auto q = periodicPairs.begin(); q != periodicPairs.end(); ++q ) {
+        weights [ q->second ] = weights [ q->first ];
+        result [ q->second ] = result [ q->first ];
     }
 
 
@@ -736,7 +884,7 @@ void ElementContainer :: sumFromElements(std :: string code, Vector &result) con
         e->giveValues(code, help);
         if ( help.size() > result.size() ) {
             size_t oldsize = result.size();
-            result.resize( help.size() );
+            result.resize(help.size() );
             for ( size_t i = oldsize; i < ( size_t ) result.size(); i++ ) {
                 result [ i ] = 0.;
             }
@@ -744,6 +892,13 @@ void ElementContainer :: sumFromElements(std :: string code, Vector &result) con
         for ( unsigned i = 0; i < help.size(); i++ ) {
             result [ i ] += help [ i ];
         }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: replaceTrueMassMatricesByLumpedOnes() {
+    for ( auto &e: elems ) {
+        e->setMassMatrix(e->giveLumpedMassMatrix() );
     }
 }
 
@@ -765,10 +920,10 @@ void ElementContainer :: giveValues(std :: string code, Vector &result) const {
 
 
 //////////////////////////////////////////////////////////
-vector<Vector> ElementContainer :: computePrincipalStresses() const {
-    vector<Vector> tensstress;
+vector< Vector >ElementContainer :: computePrincipalStresses() const {
+    vector< Vector >tensstress;
     string code = "stress";
-    extrapolateValuesFromIntegrationPointsToNodes( code, tensstress);
+    extrapolateValuesFromIntegrationPointsToNodes(code, tensstress);
     return tensstress;
 }
 
@@ -814,7 +969,7 @@ void ElementContainer :: assignFibersToElems() {
                 //detect bbox intersection
                 bintersect = true;
                 for ( unsigned i = 0; i < ndim; i++ ) {
-                    if ( min( ( * a ) [ i ], ( * b ) [ i ] ) > bbox [ 2 * i + 1 ] || max( ( * a ) [ i ], ( * b ) [ i ] ) < bbox [ 2 * i ] ) {
+                    if ( min( ( * a ) [ i ], ( * b ) [ i ]) > bbox [ 2 * i + 1 ] || max( ( * a ) [ i ], ( * b ) [ i ]) < bbox [ 2 * i ] ) {
                         bintersect = false;
                         break;
                     }
@@ -835,8 +990,8 @@ void ElementContainer :: assignFibersToElems() {
                 //check that it is inside the facet
                 //according to https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
                 bintersect = false;
-                auxA = intersec + dirvec * ( 5 * sqrt( rbc->giveArea() ) );
-                auxB = intersec - dirvec * ( 5 * sqrt( rbc->giveArea() ) );
+                auxA = intersec + dirvec * ( 5 * sqrt(rbc->giveArea() ) );
+                auxB = intersec - dirvec * ( 5 * sqrt(rbc->giveArea() ) );
                 for ( unsigned i = 0; i < verts.size() && !bintersect; i++ ) {
                     s = verts [ i ]->givePointPointer();
                     if ( i == 0 ) {
@@ -863,3 +1018,4 @@ void ElementContainer :: assignFibersToElems() {
         f->setUpCrossings();
     }
 }
+

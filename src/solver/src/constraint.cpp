@@ -7,6 +7,8 @@
 #include "solver_implicit.h"
 #include <fstream>
 
+using namespace std;
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Joint Degree of Freedom
@@ -35,7 +37,7 @@ void JointDoF :: readFromLine(std :: istringstream &iss, NodeContainer *nodes) {
     iss >> intn;
     for ( unsigned i = 0; i < intn; i++ ) {
         iss >> intmas >> dir >> mult;
-        masters.push_back(nodes->giveNode(intmas) );
+        masters.push_back( nodes->giveNode(intmas) );
         directions.push_back(dir);
         time_fns.push_back(nullptr);
         multipliers.push_back(mult);
@@ -81,6 +83,64 @@ void JointDoF :: init(Solver *solver) {
 }
 
 //////////////////////////////////////////////////////////
+bool JointDoF :: replaceDependentMasters(vector<unsigned> &depms, vector<JointDoF*> &depmsJDs){
+
+    bool replaced = false;
+    //todo: might also involve dependency on some function ...    
+    
+    //collect masters
+    unsigned masterID;
+    unsigned pos;
+    for ( unsigned k = masters.size(); k>0; k-- ) {
+        masterID = giveMasterDoF(k-1);
+        auto posx = find(depms.begin(), depms.end(), masterID);
+        if(posx != depms.end()){
+            pos = posx - depms.begin();
+
+            vector<Node*> mas = depmsJDs[pos]->giveMasterNodes();
+            masters.erase(masters.begin() + k-1);
+            masters.insert(masters.end(), mas.begin(), mas.end());
+
+            vector<unsigned> dir = depmsJDs[pos]->giveMasterDirs();
+            directions.erase(directions.begin() + k-1);
+            directions.insert(directions.end(), dir.begin(), dir.end());
+        
+            vector<double> mul = depmsJDs[pos]->giveMasterMultipliers();
+            for(vector<double>::const_iterator m=mul.begin(); m!=mul.end(); ++m){
+                multipliers.push_back( (*m) * multipliers[k-1]);
+            }
+            multipliers.erase(multipliers.begin() + k-1);
+
+            replaced = true;
+        }
+    }
+    
+    return replaced;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Lagrange multiplier
+LagrangeMultiplier :: LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) {
+    slaveNode = nullptr;
+    direction = -1;
+    masters = m;
+    directions = dirs;
+    multipliers = mult;
+    if ( fns.empty() ) {
+        this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+    } else {
+        this->time_fns = fns;
+        this->additional_term = time_mult;
+    }
+}
+
+//////////////////////////////////////////////////////////
+void LagrangeMultiplier :: init(Solver *solver) {
+    JointDoF :: init(solver);
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Volumetric Average
 VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector< unsigned > &d, Node *mn, unsigned md, ElementContainer *ec, ConstraintContainer *cc) {
@@ -91,7 +151,6 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
     elems = ec;
     constraints = cc;
 
-
     //collect all slaves from other joint DoFs and also all involved DOFs
     std :: vector< Node * >excludedNodes;
     std :: vector< unsigned >excudedDirs;
@@ -99,16 +158,16 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
     std :: vector< unsigned >jdd;
     JointDoF *jd;
     VolumetricAverage *va;
-    for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
+    for ( unsigned j = 0; j < constraints->giveConstraintsSize(); j++ ) {
         jd = constraints->giveConstraint(j);
         va = dynamic_cast< VolumetricAverage * >( jd );
         if ( !va ) {
-            excludedNodes.push_back(jd->giveSlaveNode() );
+            excludedNodes.push_back( jd->giveSlaveNode() );
             jdm = jd->giveMasterNodes();
-            excludedNodes.insert(excludedNodes.end(), jdm.begin(), jdm.end() );
-            excudedDirs.push_back(jd->giveSlaveDir() );
+            excludedNodes.insert( excludedNodes.end(), jdm.begin(), jdm.end() );
+            excudedDirs.push_back( jd->giveSlaveDir() );
             jdd = jd->giveMasterDirs();
-            excudedDirs.insert(excudedDirs.end(), jdd.begin(), jdd.end() );
+            excudedDirs.insert( excudedDirs.end(), jdd.begin(), jdd.end() );
         }
     }
 
@@ -140,9 +199,9 @@ VolumetricAverage :: VolumetricAverage(std :: vector< Node * > &n, std :: vector
 void VolumetricAverage :: init(Solver *solver) {
     //collect all slaves from other joint DoFs
     std :: vector< unsigned >otherslaves;
-    otherslaves.resize(constraints->giveSize() );
+    otherslaves.resize( constraints->giveConstraintsSize() );
     JointDoF *jd;
-    for ( unsigned j = 0; j < constraints->giveSize(); j++ ) {
+    for ( unsigned j = 0; j < constraints->giveConstraintsSize(); j++ ) {
         jd = constraints->giveConstraint(j);
         otherslaves [ j ] = jd->giveSlaveDoF();
     }
@@ -158,32 +217,18 @@ void VolumetricAverage :: init(Solver *solver) {
     unsigned r;
     unsigned s = nodes.size();
     std :: vector< double >m;
-    m.resize(nodes.size() );
-    DiscreteTrsprtElem *et;
-    RigidBodyContact *em;
-    for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
-        et = dynamic_cast< DiscreteTrsprtElem * >( elems->giveElement(e) );
-        em = dynamic_cast< RigidBodyContact * >( elems->giveElement(e) );
-        if ( et ) {
-            for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), et->giveNode(p) ) - nodes.begin() );
-                if ( r < s ) {
-                    m [ r ] += et->giveVolumeAssociatedWithNode(p);
-                }
-            }
-        } else if ( em ) {
-            for ( unsigned p = 0; p < 2; p++ ) {
-                r = ( std :: find(nodes.begin(), nodes.end(), em->giveNode(p) ) - nodes.begin() );
-                if ( r < s ) {
-                    m [ r ] += em->giveVolumeAssociatedWithNode(p);
-                }
+    m.resize( nodes.size() );
+    for ( auto e = elems->begin(); e != elems->end(); ++e ) {
+        for ( unsigned p = 0; p < ( * e )->giveNumOfNodes(); p++ ) {
+            r = ( std :: find( nodes.begin(), nodes.end(), ( * e )->giveNode(p) ) - nodes.begin() );
+            if ( r < s ) {
+                m [ r ] += ( * e )->giveVolumeAssociatedWithNode(p);
             }
         }
     }
 
-    //rearange everything and update weights
+    //rearrange everything and update weights
     double factor = m [ slaveid ];
-    std :: cout << slaveid << " " << factor << m.size() << std :: endl;
     double fullVolume = 0;
     for ( auto &ss: m ) {
         fullVolume += ss;
@@ -211,11 +256,13 @@ void VolumetricAverage :: init(Solver *solver) {
             for ( auto &k:jdmults ) {
                 k *= m [ i ];
             }
-            masters.insert(masters.end(), jdmasters.begin(), jdmasters.end() );
-            directions.insert(directions.end(), jddirs.begin(), jddirs.end() );
-            multipliers.insert(multipliers.end(), jdmults.begin(), jdmults.end() );
+            masters.insert( masters.end(), jdmasters.begin(), jdmasters.end() );
+            directions.insert( directions.end(), jddirs.begin(), jddirs.end() );
+            multipliers.insert( multipliers.end(), jdmults.begin(), jdmults.end() );
         }
     }
+    time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
+
     JointDoF :: init(solver);
 }
 
@@ -243,9 +290,11 @@ void DoFDependentOnConjugates :: init(Solver *solver) {
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: readFromFile(const std :: string filename, const unsigned ndim, NodeContainer *nodecont) {
     ( void ) ndim;
+    std :: cout << "Input file '" <<  filename;
     unsigned origsize = constraints.size();
+    unsigned lagorigsize = lagmults.size();
     std :: string line, ConstrType;
-    std :: ifstream inputfile(filename.c_str() );
+    std :: ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -254,17 +303,21 @@ void ConstraintContainer :: readFromFile(const std :: string filename, const uns
             std :: istringstream iss(line);
             iss >> std :: ws >> ConstrType;
             if ( !( ConstrType.rfind("#", 0) == 0 ) ) {
-                if ( ConstrType.compare("jointDoF") == 0 ) {
+                if ( ConstrType.compare("jointDoF") == 0 || ConstrType.compare("JointDoF") == 0 ) {
                     JointDoF *newJD = new JointDoF();
                     newJD->readFromLine(iss, nodecont);
                     constraints.push_back(newJD);
+                } else if ( ConstrType.compare("LagrangeMultiplier") == 0 || ConstrType.compare("lagrangemultiplier") == 0 ) {
+                    LagrangeMultiplier *newLM = new LagrangeMultiplier();
+                    newLM->readFromLine(iss, nodecont);
+                    lagmults.push_back(newLM);
                 } else {
                     std :: cerr << "Error: constraint '" <<  ConstrType <<  "' is not implemented yet." << std :: endl;
                     exit(EXIT_FAILURE);
                 }
             }
         }
-        std :: cout << "Input file '" <<  filename << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs found" << std :: endl;
+        std :: cout << "' succesfully loaded; " << constraints.size() - origsize << " dependent DoFs and " << lagmults.size() - lagorigsize << " Lagrangian multipliers found" << std :: endl;
         inputfile.close();
     } else {
         std :: cerr << "Error: unable to open input file '" <<  filename <<  "'" << std :: endl;
@@ -285,6 +338,11 @@ ConstraintContainer :: ~ConstraintContainer() {
             delete c;
         }
     }
+    for ( auto &c: lagmults ) {
+        if ( c != nullptr ) {
+            delete c;
+        }
+    }
 }
 
 
@@ -294,7 +352,62 @@ void ConstraintContainer :: clear() {
             delete c;
         }
     }
+    for ( auto &c: lagmults ) {
+        if ( c != nullptr ) {
+            delete c;
+        }
+    }
 }
+
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: checkInternalDependencies() {
+
+    unsigned numM;
+    vector<unsigned> allDependents(constraints.size());
+    set<unsigned> allMasters;
+    vector<unsigned>::const_iterator prev;
+    unsigned i =0;
+    vector<unsigned> depms;
+    vector<JointDoF*> depmsJD;
+    JointDoF *repJD;
+    unsigned repJDnum;
+    for ( auto const &jD : constraints ) {
+        prev = find(allDependents.begin(), allDependents.begin()+i+1, jD->giveSlaveDoF());
+        if (prev-allDependents.begin()<i){
+            cerr << "Error in constraints, DoF " << jD->giveSlaveDoF() << " (node "<< jD->giveSlaveNode()->giveID() << " direction " << jD->giveSlaveDir() << " ) is contrained twice" << endl;
+            exit(1);
+        }
+        allDependents[i] = jD->giveSlaveDoF();
+        
+        numM = jD->giveNumOfDoFMasters();
+        for ( unsigned ind = 0; ind < numM; ind++ ) {
+            allMasters.insert(jD->giveMasterDoF(ind));
+        }
+        i++;
+    }
+    for (set<unsigned>::iterator depm = allMasters.begin(); depm != allMasters.end(); depm++){
+        prev = find(allDependents.begin(), allDependents.end(), *depm);
+        if (prev!=allDependents.end()){
+            repJDnum = prev  - allDependents.begin();
+            repJD = constraints[repJDnum];
+            depms.push_back(*depm);
+            depmsJD.push_back(repJD);
+        }
+    }
+
+    if (depms.size()>0){
+        //first replace those that provides the dependencies, do it repetitively until no dependencies are inside hidden
+        for ( auto &jD : depmsJD ) {
+            while (jD->replaceDependentMasters(depms, depmsJD)) {};        
+        }
+        //apply replacement to all joint dofs
+        for ( auto &jD : constraints ) {
+            jD->replaceDependentMasters(depms, depmsJD);        
+        }
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
@@ -316,6 +429,9 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             constraints.erase(constraints.begin() + k);
         }
     }
+    for ( auto const &LM : lagmults ) {
+        LM->init(solver);
+    }
 
     std :: vector< Ttripletd >tripletList;
     // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
@@ -329,9 +445,11 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     // fill the matrix with corresponding multipliers for slaveDoFs
     unsigned i; // row index =  slave DoF
     unsigned j, numM; // column index = master DoF
+    bool update;
     for ( auto const &jD : constraints ) {
         // jD->print();
-        i = nodes->giveDoFid(jD->giveSlaveDoF() );
+        i = nodes->giveDoFid( jD->giveSlaveDoF() );
+
         //std::cout << jD->giveSlaveDoF() << " " << nodes->giveTotalNumDoFs() << " i = " << i << ", numFreeDoFs = " << numFreeDoFs << '\n';
         // auto res = std::find(nodes->begin(), nodes->end(), jD->giveSlaveNode());
         // std::cout << "node ID = " << std::distance(nodes->begin(), res) << '\n';
@@ -348,12 +466,13 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
             std :: cerr << "constraint applied simultaneously with boundary conditions" << '\n';
             exit(1);
         }
-        numM = jD->giveNumOfDoFMasters();
+
+        numM = jD->giveNumOfDoFMasters();            
         for ( unsigned ind = 0; ind < numM; ind++ ) {
-            j = nodes->giveDoFid(jD->giveMasterDoF(ind) );
+            j = nodes->giveDoFid( jD->giveMasterDoF(ind) );            
             if ( j < numFreeDoFs - constraints.size() ) {
                 // master DoF is free
-                tripletList.push_back(Ttripletd(i, j, jD->giveMasterMultiplier(ind) ) );
+                tripletList.push_back( Ttripletd( i, j, jD->giveMasterMultiplier(ind) ) );
             }
         }
     }
@@ -362,11 +481,11 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     ///////////////////////////////////////////////////
     for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
         // fill the matrix with 1 for each unrestrained DoF (diagonal)
-        tripletList.push_back(Ttripletd(i, i, 1) );
+        tripletList.push_back( Ttripletd(i, i, 1) );
     }
 
-    X.resize(numFreeDoFs, numFreeDoFs - constraints.size() );
-    X.setFromTriplets(tripletList.begin(), tripletList.end() );
+    X.resize( numFreeDoFs, numFreeDoFs - constraints.size() );
+    X.setFromTriplets( tripletList.begin(), tripletList.end() );
     X.makeCompressed();
     // // JK - left for testing:
     // for ( auto const &cn : this->constraints ){
@@ -374,6 +493,97 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     // }
 }
 
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: initFull(NodeContainer *nodecont, BCContainer *bccont, Solver *solver) {
+    //initiate volumetric averages
+    unsigned numFreeDoFs = nodecont->giveTotalNumDoFs();
+
+    nodes = nodecont;
+    bconds = bccont;
+
+    for ( auto const &jD : constraints ) {
+        jD->init(solver);
+    }
+    VolumetricAverage *va;
+    for ( int k = constraints.size() - 1; k >= 0; k-- ) {
+        va = dynamic_cast< VolumetricAverage * >( constraints [ k ] );
+        if ( va ) {
+            constraints.push_back(va);
+            constraints.erase(constraints.begin() + k);
+        }
+    }
+
+    for ( auto const &LM : lagmults ) {
+        LM->init(solver);
+    }
+
+    std :: vector< Ttripletd >tripletList;
+    // // this should remain empty, unless you apply BC on Constrained DoF (Do not do it!)
+    // // map<pair<size_t, size_t>, double> indeces21;
+    // map<pair<size_t, size_t>, double> indeces22;
+    if ( !this->isActive() ) {
+        return;
+    }
+
+    ///////////////////////////////////////////////////
+    // fill the matrix with corresponding multipliers for slaveDoFs
+    unsigned i; // row index =  slave DoF
+    unsigned j, numM; // column index = master DoF
+
+    std :: vector< unsigned >NonSlaveIDs;
+    for (i = 0; i < numFreeDoFs; ++i) {
+        NonSlaveIDs.push_back(i);
+    }
+    std :: vector< unsigned >masterIDs;
+
+    for ( auto const &jD : constraints ) {
+        // jD->print();
+        i = jD->giveSlaveDoF();
+        NonSlaveIDs.erase( std :: remove(NonSlaveIDs.begin(), NonSlaveIDs.end(), i), NonSlaveIDs.end() );
+    }
+
+    for ( auto const &jD : constraints ) {
+        i = jD->giveSlaveDoF();
+
+        numM = jD->giveNumOfDoFMasters();
+        for ( unsigned ind = 0; ind < numM; ind++ ) {
+            j = jD->giveMasterDoF(ind);
+            masterIDs.push_back(j);
+
+            int n = std :: distance( NonSlaveIDs.begin(), std :: find(NonSlaveIDs.begin(), NonSlaveIDs.end(), j) ); //fins index of value "j"
+            tripletList.push_back( Ttripletd( i, n, jD->giveMasterMultiplier(ind) ) );
+            // }
+        }
+    }
+
+    // here fill in value 1 for all other DoFs
+    ///////////////////////////////////////////////////
+    for ( i = 0; i < numFreeDoFs - constraints.size(); i++ ) {
+        // fill the matrix with 1 for each unrestrained DoF (diagonal)
+        tripletList.push_back( Ttripletd(NonSlaveIDs [ i ], i, 1) );
+    }
+
+    X_full.resize( numFreeDoFs, numFreeDoFs - constraints.size() );
+    X_full.setFromTriplets( tripletList.begin(), tripletList.end() );
+    X_full.makeCompressed();
+
+    fullMasterIDs = NonSlaveIDs;
+}
+
+//////////////////////////////////////////////////////////
+CoordinateIndexedSparseMatrix ConstraintContainer :: giveMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver, bool BC_applied) {
+    if ( BC_applied == true ) { // X matrix with BC applied, solver numbering
+        return X;
+    } else {
+        initFull(nodecont, bccont, solver);  // X matrix without BC applied, DoFs numbering
+        return X_full;
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: vector< unsigned int >ConstraintContainer :: giveFullMasterIDs() {
+    return fullMasterIDs;
+}
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now) {
@@ -438,10 +648,8 @@ void ConstraintContainer :: calculateMasterForces(Vector &fullForces) {
         for ( auto const &jD : constraints ) {
             for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
                 fullForces [ jD->giveMasterDoF(i) ] += fullForces [ jD->giveSlaveDoF() ] * ( jD->giveMasterMultiplier(i) );
-                // JK TODO clear fullForces[ jD->giveSlaveDoF() ] * jD->giveMultipliers()[ i ];
-                // JK do not!! because they are needed for export, the same values are added to external forces, so the equilibrium is kept
-                // fullForces [ jD->giveSlaveDoF() ] = 0.0;
             }
+            fullForces [ jD->giveSlaveDoF() ] = 0;
         }
     }
 }
@@ -456,4 +664,123 @@ void ConstraintContainer :: removeConstraint(unsigned i) {
     delete constraints [ i ];
     constraints [ i ] = nullptr;
     constraints.erase(constraints.begin() + i);
+}
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: addHangingNodeConstraint(Node* dependent, Element* primary){
+    unsigned ndim = primary->giveDimension();
+    Point natcoords = primary->findNaturalCoords(dependent->givePointPointer() );
+    Vector weights = primary->giveShapeFunctions(& natcoords);
+    vector< Node * >masters = primary->giveNodes();
+    vector< unsigned >dirs(masters.size() );
+    vector< double >mults(masters.size() );
+
+    //displacements
+    for ( unsigned k = 0; k < masters.size(); k++ ) {
+        mults [ k ] = weights [ k ];
+    }
+    unsigned i = 0;
+    for ( ; i < ndim; i++ ) {
+        for ( unsigned k = 0; k < masters.size(); k++ ) {
+            dirs [ k ] = i;
+        }
+        JointDoF *newJD = new JointDoF(dependent, i, masters, dirs, mults);
+        addConstraint(newJD);
+    }
+    /*
+     * //rotations
+     * Matrix weightsm = ee->giveShapeFunctionsGrad(& natcoords);
+     * for ( ; i < n->giveNode(nodeid)->givePhysicalFieldsDoFNum()[0]; i++ ) {
+     *  for ( unsigned k = 0; k < masters.size(); k++ ) {
+     *    mults [ k ] = weightsm ( i , k );
+     *    dirs [ k ] = i;
+     *  }
+     *  cout << "rotation X " << i << endl;
+     *  JointDoF *newJD = new JointDoF(n->giveNode(nodeid), i, masters, dirs, mults);
+     *  c->addConstraint(newJD);
+     * }
+     */
+}
+
+//////////////////////////////////////////////////////////
+void ConstraintContainer :: addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations){
+    Point diff = dependent->givePoint() - primary->givePoint();
+    vector< Node * >vm;
+    vector< unsigned >dirs;
+    vector< double >mults;    
+    JointDoF* jd;
+
+    if ( dim == 3 ) {
+        vm.resize(3,primary);
+        mults.resize(3);
+        dirs.resize(3);
+        //direction X
+        mults[0] = 1.;
+        mults[1] = diff[2];
+        mults[2] = -diff[1];
+        dirs[0] = 0;
+        dirs[1] = 4;
+        dirs[2] = 5;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Y
+        mults[1] = -diff[2];
+        mults[2] = diff[0];
+        dirs[0] = 1;
+        dirs[1] = 3;
+        dirs[2] = 5;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Z
+        mults[1] = diff[1];
+        mults[2] = -diff[0];
+        dirs[0] = 2;
+        dirs[1] = 3;
+        dirs[2] = 4;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        if (includeRotations){
+            vm.resize(1,primary);
+            mults.resize(1,1);
+            dirs.resize(1,3);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+            dirs.resize(1,4);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+            dirs.resize(1,5);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+        }
+
+    } else if( dim == 2 ) {
+        vm.resize(2,primary);
+        mults.resize(2);
+        dirs.resize(2);
+        //direction X
+        mults[0] = 1.;
+        mults[1] = -diff[1];
+        dirs[0] = 0;
+        dirs[1] = 2;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        //direction Y
+        mults[0] = 1.;
+        mults[1] = diff[0];
+        dirs[0] = 1;
+        jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+        addConstraint(jd);
+
+        if (includeRotations){
+            vm.resize(1,primary);
+            mults.resize(1,1);
+            dirs.resize(1,2);
+            jd = new JointDoF(dependent, dirs [ 0 ], vm, dirs, mults);
+            addConstraint(jd);
+        }
+    }
 }

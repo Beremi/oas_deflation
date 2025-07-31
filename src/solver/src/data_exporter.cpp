@@ -7,13 +7,17 @@
 #include "element_discrete.h"
 #include "solver.h"
 
+#define buffersize 200
+
 using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC DATA EXPORTER - master class
-void DataExporter :: giveFileName(unsigned step, char *buffer) const {
-    sprintf(buffer, "%s_%05d.out", filename.c_str(), step);
+void DataExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
+
+    if (iteration<0) sprintf(buffer, "%s_%05d.out", filename.c_str(), step);
+    else sprintf(buffer, "%s_%05d_iter_%05d.out", filename.c_str(), step, iteration);
 }
 
 //////////////////////////////////////////////////////////
@@ -45,8 +49,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 times_to_save.push_back(val);
             }
-            sort( times_to_save.begin(), times_to_save.end() );    // sort times
-            times_to_save.erase( std :: unique( times_to_save.begin(), times_to_save.end() ), times_to_save.end() );       // store only unique values
+            sort(times_to_save.begin(), times_to_save.end() );       // sort times
+            times_to_save.erase(std :: unique(times_to_save.begin(), times_to_save.end() ), times_to_save.end() );             // store only unique values
         } else if ( param.compare("saveSteps") == 0 ) {
             iss >> num;
             unsigned val = 0;
@@ -54,8 +58,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
                 iss >> val;
                 steps_to_save.push_back(val);
             }
-            sort( steps_to_save.begin(), steps_to_save.end() );    // sort steps
-            steps_to_save.erase( std :: unique( steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );       // store only unique values
+            sort(steps_to_save.begin(), steps_to_save.end() );       // sort steps
+            steps_to_save.erase(std :: unique(steps_to_save.begin(), steps_to_save.end() ), steps_to_save.end() );             // store only unique values
         } else if ( param.compare("timeShift") == 0 ) {
             iss >> saveTime_last;
         } else if ( param.compare("stepShift") == 0 ) {
@@ -64,6 +68,8 @@ void DataExporter :: readFromLine(istringstream &iss) {
             iss >> precision;
         } else if ( param.compare("multiplier") == 0 ) {
             iss >> multiplier;
+        } else if ( param.compare("saveIterations") == 0 ) {
+            iss >> save_iterations;
         }
     }
 }
@@ -95,16 +101,16 @@ void DataExporter :: init() {
 }
 
 //////////////////////////////////////////////////////////
-bool DataExporter :: doExportNow(const double &time, const unsigned &step) {
+bool DataExporter :: doExportNow(const double &time, const int &iteration, const unsigned &step) {
+    if (iteration>=0 && !save_iterations) return false;
     if ( ( time >= next_time_to_save ) || ( step >= next_step_to_save ) ) {
-        step_last = step;
-        time_last = time;
         return true;
     } else {
         return false;
     }
 }
 
+//////////////////////////////////////////////////////////
 void DataExporter :: updateNextTimeToSave(const double &time)
 {
     if ( ( time > next_time_to_save ) ) {
@@ -123,7 +129,7 @@ void DataExporter :: updateNextTimeToSave(const double &time)
     }
 }
 
-
+//////////////////////////////////////////////////////////
 void DataExporter :: updateNextStepToSave(const unsigned &step)
 {
     if ( ( step == next_step_to_save ) ) {
@@ -140,6 +146,12 @@ void DataExporter :: updateNextStepToSave(const unsigned &step)
         }
         next_step_to_save = s;
     }
+}
+
+
+//////////////////////////////////////////////////////////
+void DataExporter :: setSolverPointer(Solver *s) {
+    solver = s;
 }
 
 //////////////////////////////////////////////////////////
@@ -172,33 +184,29 @@ void TXTNodalExporter :: init() {
     unsigned ncod = codes.size();
     maxsize.resize(ncod);
     Vector res;
-    Vector fakeDoFs = Vector :: Zero(nodes->giveTotalNumDoFs() );
     for ( unsigned i = 0; i < ncod; i++ ) {
         maxsize [ i ] = 0;
-        for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
-            if ( codes [ i ].compare("reaction") == 0 ) {
-                res.resize( nodes->giveNode(n)->giveNumberOfDoFs() );
-            } else if (codes [ i ].rfind("extrapolated", 0) == 0 ) {
-                vector< Vector > results;
-                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[i].substr(12), results);
-                unsigned maxs = 0;
-                for (auto &p: results) {
-                    if (maxs<p.size()) maxs = p.size();
-                }
-                res.resize( maxs );
-            } else {
-                nodes->giveNode(n)->giveDoFBasedValues(codes [ i ], fakeDoFs, res);
+        if ( codes [ i ].rfind("extrapolated", 0) == 0 ) {
+            vector< Vector >results;
+            elems->extrapolateValuesFromIntegrationPointsToNodes(codes [ i ].substr(12), results); ///TOO LONG, only once
+            for ( auto &p: results ) {
+                maxsize [ i ] = max< size_t >(p.size(), maxsize [ i ]);
             }
-            maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );     // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
+        } else {
+            for ( unsigned n = 0; n < nodes->giveSize(); n++ ) {
+                nodes->giveNode(n)->giveValues(codes [ i ], solver, res);
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );       // (maxsize[i] < res.size()) ? res.size() : maxsize[i];
+            }
         }
     }
 }
 
+
 //////////////////////////////////////////////////////////
-void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    char buffer[ 100 ];
+void TXTNodalExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Node *nn;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     unsigned p;
@@ -215,11 +223,11 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
         }
         outputfile << "\n";
 
-        vector < vector < Vector > > rrres;
+        vector< vector< Vector > >rrres;
         for ( unsigned c = 0; c < codes.size(); c++ ) {
-            if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
-                vector < Vector > rres;
-                elems->extrapolateValuesFromIntegrationPointsToNodes(codes[c].substr(12), rres);
+            if ( codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                vector< Vector >rres;
+                elems->extrapolateValuesFromIntegrationPointsToNodes(codes [ c ].substr(12), rres);
                 rrres.push_back(rres);
             }
         }
@@ -233,25 +241,20 @@ void TXTNodalExporter :: exportData(unsigned step, const Vector &DoFs, const Vec
             outputfile << nn->giveID();
             expid = 0;
             for ( unsigned c = 0; c < codes.size(); c++ ) {
-                if ( codes [ c ].compare("reaction") == 0 ) {
-                    res.resize( nn->giveNumberOfDoFs() );
-                    for ( unsigned i = 0; i < nn->giveNumberOfDoFs(); i++ ) {
-                        res [ i ] = reactions [ nn->giveStartingDoF() + i ];
-                    }
-                } else if (codes [ c ].rfind("extrapolated", 0) == 0 ) {
-                    res = rrres[expid][n];
-                    expid ++;
+                if ( codes [ c ].rfind("extrapolated", 0) == 0 ) {
+                    res = rrres [ expid ] [ n ];
+                    expid++;
                 } else {
-                    nn->giveDoFBasedValues(codes [ c ], DoFs, res);
+                    nn->giveValues(codes [ c ], solver, res);
                 }
-                for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
                     outputfile <<  "\t" << 0;
                 }
             }
-            outputfile << endl;
+            outputfile << "\n";
         }
         outputfile.close();
     }
@@ -291,18 +294,16 @@ void TXTElementExporter :: init() {
         maxsize [ i ] = 0;
         for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
             elems->giveElement(e)->giveValues(codes [ i ], res);
-            maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );
+            maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) DoFs;
-    ( void ) reactions;
-    char buffer[ 100 ];
+void TXTElementExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Element *ee;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
     Vector res;
     unsigned p;
@@ -326,7 +327,7 @@ void TXTElementExporter :: exportData(unsigned step, const Vector &DoFs, const V
             outputfile << ee->giveID();
             for ( unsigned c = 0; c < codes.size(); c++ ) {
                 ee->giveValues(codes [ c ], res);
-                for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
+                for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                     outputfile << "\t" << res [ p ] * multiplier;
                 }
                 for ( ; p < maxsize [ c ]; p++ ) {
@@ -378,21 +379,19 @@ void TXTIntegrationPointExporter :: init() {
             nIP = ee->giveNumIP();
             for ( unsigned k = 0; k < nIP; k++ ) {
                 ee->giveIPValues(codes [ i ], k, res);
-                maxsize [ i ] = max< size_t >(maxsize [ i ], res.size() );
+                maxsize [ i ] = max< size_t >( maxsize [ i ], res.size() );
             }
         }
     }
 }
 
 //////////////////////////////////////////////////////////
-void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) DoFs;
-    ( void ) reactions;
-    char buffer[ 100 ];
+void TXTIntegrationPointExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Element *ee;
     size_t nIP;
     Vector res;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile( ( resultDir / buffer ).string() );
 
     unsigned p;
@@ -418,7 +417,7 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
                 outputfile << ee->giveID() << "\t" << k;
                 for ( unsigned c = 0; c < codes.size(); c++ ) {
                     ee->giveIPValues(codes [ c ], k, res);
-                    for ( p = 0; p < min< size_t >(maxsize [ c ], res.size() ); p++ ) {
+                    for ( p = 0; p < min< size_t >( maxsize [ c ], res.size() ); p++ ) {
                         outputfile << "\t" << res [ p ] * multiplier;
                     }
                     for ( ; p < maxsize [ c ]; p++ ) {
@@ -434,10 +433,246 @@ void TXTIntegrationPointExporter :: exportData(unsigned step, const Vector &DoFs
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EXPORT X, K, K_effective, K_condensed MATRICES with or without BC rows/columns and with solver or DoFOrder numbering of rows/columns
+//////////////////////////////////////////////////////////
+void MatrixExporter :: readFromLine(istringstream &iss) {
+    iss >> filename;
+    unsigned int numMasters;
+
+    std :: string token;
+    while ( iss >> token ) {
+        if ( token == "matrix_type" ) {
+            iss >> matrix_type;
+        } else if ( token == "Stiff_matrix_type" ) {
+            iss >> Stiff_matrix_type;
+        } else if ( token == "BC_applied" ) {
+            std :: string bc_app;
+            iss >> bc_app;
+            if ( bc_app == "true" ) {
+                BC_applied = true;
+            } else if ( bc_app == "false" ) {
+                BC_applied = false;
+            } else {
+                cout << "Matrix Exporter: " << bc_app << "  BC_applied can only be 'true' or 'false', using 'true' \n";
+            }
+        } else if ( token == "numbering_type" ) {
+            std :: string slvr_nmbr;
+            iss >> slvr_nmbr;
+            if ( slvr_nmbr == "solver" ) {
+                solver_numbering = true;
+            } else if ( slvr_nmbr == "DoFOrder" ) {
+                solver_numbering = false;
+            } else {
+                cout << "Matrix Exporter: " << slvr_nmbr << " numbering type not supported using the solver type \n";
+                solver_numbering = true;
+            }
+        } else if ( token == "masters" ) {
+            iss >> numMasters;
+            CondMasters.resize(numMasters);
+            for ( unsigned k = 0; k < numMasters; k++ ) {
+                iss >> CondMasters [ k ];
+            }
+        }
+    }
+
+    if ( matrix_type == "K_condensed" and numMasters == 0 ) {
+        cerr << "Matrix Exporter: " << "for K_condensed matrix master DoFs ('masters') must be specified \n";
+    }
+
+
+    DataExporter :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: init() {
+    X_init = constraints->giveMatrixX(nodes, bccont, solver, BC_applied);
+    K_init = elems->prepareOutputStiffnessMatrix(BC_applied);
+    fullMasterIDs = constraints->giveFullMasterIDs();
+    blockedDofsIDs = bccont->giveArrayOfBlockedDoFs();   // BC DoFs IDs in DoFOrder numbering
+    DataExporter :: init();
+
+    std :: vector< int >solverOrder;
+    for (int i = 0; i < 12; ++i) {
+        solverOrder.push_back( nodes->giveDoFid(i) );
+    }
+}
+
+//////////////////////////////////////////////////////////  Reorders the X matrix without BC_applied from DoFOrder to solver numbering
+const CoordinateIndexedSparseMatrix MatrixExporter :: MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix &matriX) const {
+    CoordinateIndexedSparseMatrix matrix = const_cast< CoordinateIndexedSparseMatrix & >( matriX );
+
+    int matrixsizerows = matrix.rows();
+    int matrixsizecols = matrix.cols();
+
+    std :: vector< int >solverOrder;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        solverOrder.push_back( nodes->giveDoFid(i) );
+        cout << nodes->giveDoFid(i) << " ";
+    }
+
+    std :: vector< int >masterFullPositions;
+    for (const int i : fullMasterIDs) {
+        auto it1 = std :: find(solverOrder.begin(), solverOrder.end(), i);
+        masterFullPositions.push_back( std :: distance(solverOrder.begin(), it1) );
+    }
+
+    std :: vector< int >indices( masterFullPositions.size() );
+    for (size_t i = 0; i < masterFullPositions.size(); ++i) {
+        indices [ i ] = i;
+    }
+
+    // Sort the indices based on the values in vec1
+    std :: sort(indices.begin(), indices.end(), [ & masterFullPositions ](int i1, int i2) {
+        return masterFullPositions [ i1 ] < masterFullPositions [ i2 ];
+    });
+
+    CoordinateIndexedSparseMatrix newMatrix(matrixsizerows, matrixsizecols);
+
+    std :: vector< int >rowNums;
+    for (int i = 0; i < matrixsizerows; ++i) {
+        rowNums.push_back(i);
+    }
+
+    std :: vector< int >colNums;
+    for (int i = 0; i < matrixsizecols; ++i) {
+        colNums.push_back(i);
+    }
+
+    for (const int i : rowNums) {
+        for (const int j : colNums) {
+            newMatrix.coeffRef(solverOrder [ i ], indices [ j ]) = matrix.coeffRef(i, j);
+        }
+    }
+
+    return newMatrix;
+}
+
+//////////////////////////////////////////////////////////
+void MatrixExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
+    CoordinateIndexedSparseMatrix Mat_out;
+    CoordinateIndexedSparseMatrix K;
+    CoordinateIndexedSparseMatrix X;
+
+    if ( BC_applied ) {  // matrices indentical for solver and DoFOrder numbering
+        K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied);
+        X = X_init;
+    } else {
+        if ( solver_numbering == false ) {
+            K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = X_init;
+        } else {
+            K = elems->updateOutputStiffnessMatrix(K_init, Stiff_matrix_type, BC_applied, solver_numbering);
+            X = MatrixXSwitchRowsCols(X_init);
+        }
+    }
+
+    if ( matrix_type == "K_all_DoFs" ) {
+        Mat_out = K;
+    } else if ( matrix_type == "K_effective" ) {
+        Mat_out = X.transpose() * K * X; // Keff
+    } else if ( matrix_type == "K_condensed" ) {
+        Mat_out = X.transpose() * K * X; // Keff
+        unsigned eff_size = Mat_out.rows(); // number of rows of Keff
+        unsigned master_size = CondMasters.size(); // number of master rows
+
+        // finds rows in Keff corresponding to masters (from read from line) - CondMasters
+        std :: vector< unsigned int >master_rows;
+        master_rows.resize(master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {
+            unsigned n = std :: distance( fullMasterIDs.begin(), std :: find(fullMasterIDs.begin(), fullMasterIDs.end(), CondMasters [ i ]) ); //finds index of value "j"
+            master_rows [ i ] = n;
+        }
+
+        // rows in Keff corresponding to slaves
+        unsigned slave_size = eff_size - master_size; // number of slave rows
+        std :: vector< unsigned int >slave_rows;
+        for ( unsigned ind = 0; ind < eff_size; ind++ ) {
+            slave_rows.push_back(ind);
+        }
+        for ( unsigned i : master_rows ) {
+            slave_rows.erase( std :: remove(slave_rows.begin(), slave_rows.end(), i), slave_rows.end() );
+        }
+
+        // masters X masters  submatrix - K_mm
+        Matrix K_mm;
+        K_mm.resize(master_size, master_size);
+        unsigned k = 0;
+        unsigned l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : master_rows) {
+                K_mm(k, l) = Mat_out.coeffRef(i, j);
+                l++;
+            }
+            k++;
+        }
+
+        // masters X slaves  submatrix - K_ms = transpose(K_sm)
+        Matrix K_ms;
+        K_ms.resize(master_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : master_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ms(k, l) = Mat_out.coeffRef(i, j);
+                l++;
+            }
+            k++;
+        }
+
+        // slaves X slaves  submatrix - K_ss
+        Matrix K_ss;
+        K_ss.resize(slave_size, slave_size);
+        k = 0;
+        l = 0;
+        for (int i : slave_rows) {
+            l = 0;
+            for (int j : slave_rows) {
+                K_ss(k, l) = Mat_out.coeffRef(i, j);
+                l++;
+            }
+            k++;
+        }
+
+        // condensed matrix Kcond - Static condensation = Guyan reduction : K_reduced = K_mm - K_ms * K_ss-1 * K_sm;
+        Matrix K_cond;
+        K_cond.resize(master_size, master_size);
+        K_cond = K_mm - K_ms * K_ss.inverse() * K_ms.transpose();
+
+        // export
+        Mat_out.resize(master_size, master_size);
+        for ( unsigned i = 0; i < master_size; i++ ) {
+            for ( unsigned j = 0; j < master_size; j++ ) {
+                Mat_out.coeffRef(i, j) = K_cond(i, j);
+            }
+        }
+    } else if ( matrix_type == "X" ) {
+        Mat_out = X;
+    }
+
+    giveFileName(step, iteration, buffer);
+    ofstream outputfile( ( resultDir / buffer ).string() );
+
+    // unsigned p;
+    if ( outputfile.is_open() ) {
+        outputfile << std :: scientific;
+        outputfile.precision(precision);
+
+        outputfile <<  Mat_out;
+
+        outputfile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // GAUGE EXPORTERS
-void Gauge :: giveFileName(unsigned step, char *buffer) const {
+void Gauge :: giveFileName(unsigned step, int iteration, char *buffer) const {
     ( void ) step;
-    sprintf(buffer, "%s.out", filename.c_str() );
+    ( void ) iteration;
+    sprintf( buffer, "%s.out", filename.c_str() );
 }
 
 
@@ -458,7 +693,7 @@ void Gauge :: giveFileName(unsigned step, char *buffer) const {
  */
 void ForceGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     unsigned num;
@@ -475,17 +710,17 @@ void ForceGauge :: readFromLine(istringstream &iss) {
         } else {
             std :: cout << "type of force 'mech' or 'trsp' for ForceGauge not determined, by default, 'mech' is considered" << '\n';
         }
-        Block bl(nodes->giveNode(0)->giveDimension() );
+        Block bl( nodes->giveNode(0)->giveDimension() );
         bl.readFromLine(iss);
         for ( auto const &nod : * nodes ) {
-            if ( bl.isInside(nod->givePoint() ) ) {
+            if ( bl.isInside( nod->givePoint() ) ) {
                 if ( ( nod->doesMechanics() && mech ) || ( nod->doesTransport() && !mech ) ) {
-                    this->n.push_back(nodes->giveNodeId(nod) );
+                    this->n.push_back( nodes->giveNodeId(nod) );
                 }
             }
         }
     } else {
-        num = std :: stoul(param.c_str() );
+        num = std :: stoul( param.c_str() );
         this->n.resize(num);
         for ( unsigned i = 0; i < num; i++ ) {
             iss >> this->n [ i ];
@@ -495,21 +730,22 @@ void ForceGauge :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-ForceGauge :: ForceGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
+ForceGauge :: ForceGauge(string &f, string &gaugename, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : Gauge(dimension) {
     nodes = nc;
     filename = f;
-    name = gname;
+    gname = gaugename;
     n = nn;
     codes.resize(1);
     codes [ 0 ] = c;
     multiplier = m;
+    name = "ForceGauge";
 }
 
 //////////////////////////////////////////////////////////
 void ForceGauge :: init() {
     DataExporter :: init();
 
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveOrderOfEnergyConjugateCode(codes [ 0 ]);
     }
@@ -519,18 +755,17 @@ void ForceGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) full_f;
-    char buffer[ 100 ];
+void ForceGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     double value = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
-            value += reactions [ DoFs [ i ] ];
+            value += solver->giveExternalForce(DoFs [ i ]);
         }
         outputfile <<  "\t" << value * multiplier;
     }
@@ -554,7 +789,7 @@ void ForceGauge :: exportData(unsigned step, const Vector &full_f, const Vector 
  */
 
 //////////////////////////////////////////////////////////
-DoFGauge :: DoFGauge(string &f, string &gname, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gname, c, nn, nc, m, dimension) {}
+DoFGauge :: DoFGauge(string &f, string &gaugename, string &c, vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension) : ForceGauge(f, gaugename, c, nn, nc, m, dimension) {    name = "DoFGauge"; }
 
 //////////////////////////////////////////////////////////
 void DoFGauge :: init() {
@@ -577,7 +812,7 @@ void DoFGauge :: init() {
             DoFpos = 2;
         }
     } else if ( all_of(codes [ 0 ].begin(), codes [ 0 ].end(), :: isdigit) ) {
-        DoFpos = atoi( codes [ 0 ].c_str() );
+        DoFpos = atoi(codes [ 0 ].c_str() );
     } else {
         if ( dim == 3 ) {
             cerr << "Error in DoFGauge: only 'ux', 'uy', 'uz', 'rx', 'ry' or 'rz' can be exported by DoFGauge in 3D model" << endl;
@@ -588,7 +823,7 @@ void DoFGauge :: init() {
         }
     }
 
-    DoFs.resize(n.size() );
+    DoFs.resize( n.size() );
     for ( unsigned i = 0; i < n.size(); i++ ) {
         DoFs [ i ] = nodes->giveNode(n [ i ])->giveStartingDoF() + DoFpos;
     }
@@ -598,18 +833,17 @@ void DoFGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
-    char buffer[ 100 ];
+void DoFGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     double value = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         for ( unsigned i = 0; i < DoFs.size(); i++ ) {
-            value += full_f [ DoFs [ i ] ];
+            value += solver->giveTrialDoFValue(DoFs [ i ]);
         }
         outputfile <<  "\t" << value * multiplier;
     }
@@ -621,7 +855,7 @@ void DoFGauge :: exportData(unsigned step, const Vector &full_f, const Vector &r
 // EXPORT OF IP VALUES
 void IntegrationPointGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     transform(codes [ 0 ].begin(), codes [ 0 ].end(), codes [ 0 ].begin(), :: tolower);
@@ -647,20 +881,18 @@ void IntegrationPointGauge :: init() {
     for ( unsigned e = 0; e < elems.size(); e++ ) {
         ee = elemcont->giveElement(elems [ e ]);
         ee->giveIPValues(codes [ 0 ], ipnums [ e ], res);
-        maxsize [ 0 ] = max< size_t >( maxsize [ 0 ], res.size() );
+        maxsize [ 0 ] = max< size_t >(maxsize [ 0 ], res.size() );
     }
 }
 
 
 //////////////////////////////////////////////////////////
-void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) full_f;
-    ( void ) reactions;
-    char buffer[ 100 ];
+void IntegrationPointGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector values;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
     Vector sum = Vector :: Zero(maxsize [ 0 ]);
 
@@ -671,7 +903,7 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
         for ( unsigned i = 0; i < elems.size(); i++ ) {
             e = elemcont->giveElement(elems [ i ]);
             e->giveIPValues(codes [ 0 ], ipnums [ i ], res);
-            for ( unsigned p = 0; p < min< size_t >(maxsize [ 0 ], res.size() ); p++ ) {
+            for ( unsigned p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
                 sum [ p ] += res [ p ];
             }
         }
@@ -693,7 +925,7 @@ void IntegrationPointGauge :: exportData(unsigned step, const Vector &full_f, co
 // EXPORT OF SUMMATIONS AND AVERAGES FROM ELEMENT CONTAINER
 void ElementContainerGauge :: readFromLine(istringstream &iss) {
     iss >> this->filename;
-    iss >> this->name;
+    iss >> this->gname;
     this->codes.resize(1);
     iss >> this->codes [ 0 ];
     DataExporter :: readFromLine(iss);
@@ -710,14 +942,12 @@ void ElementContainerGauge :: init() {
 
 
 //////////////////////////////////////////////////////////
-void ElementContainerGauge :: exportData(unsigned step, const Vector &full_f, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) full_f;
-    ( void ) reactions;
-    char buffer[ 100 ];
+void ElementContainerGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector values;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     Vector res;
     elemcont->giveValues(codes [ 0 ], res);
 
@@ -756,7 +986,7 @@ void ElementContainerGauge :: exportData(unsigned step, const Vector &full_f, co
  */
 void DisplacementGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
-    iss >> name;
+    iss >> gname;
     codes.resize(1);
     iss >> codes [ 0 ];
     double x, y, z;
@@ -794,20 +1024,20 @@ void DisplacementGauge :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
-    char buffer[ 100 ];
+void DisplacementGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
+    char buffer[ buffersize ];
     Vector res;
     double valueA = 0;
     double valueB = 0;
-    giveFileName(step, buffer);
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+    Vector DoFs = solver->giveTrialDoFValues();
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         if ( elemA ) {
-            Vector mv = elemA->giveMasterVariables(& natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemA->giveMasterVariables( & natCoordsA, elemA->giveElemDoFsFromFullDoFs(DoFs) );
             valueA = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueA = mv [ 0 ];
@@ -817,7 +1047,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
                 valueA = mv [ 2 ];
             }
         } else {
-            nodeA->giveDoFBasedValues(codes [ 0 ], DoFs, res);
+            nodeA->giveValues(codes [ 0 ], solver, res);
             if ( res.size() > 0 ) {
                 valueA = res [ 0 ];
             } else {
@@ -825,7 +1055,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
             }
         }
         if ( elemB ) {
-            Vector mv = elemB->giveMasterVariables(& natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
+            Vector mv = elemB->giveMasterVariables( & natCoordsB, elemB->giveElemDoFsFromFullDoFs(DoFs) );
             valueB = 0;
             if ( codes [ 0 ].compare("ux") == 0 ) {
                 valueB = mv [ 0 ];
@@ -835,7 +1065,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
                 valueB = mv [ 2 ];
             }
         } else {
-            nodeB->giveDoFBasedValues(codes [ 0 ], DoFs, res);
+            nodeB->giveValues(codes [ 0 ], solver, res);
             if ( res.size() > 0 ) {
                 valueB = res [ 0 ];
             } else {
@@ -852,7 +1082,7 @@ void DisplacementGauge :: exportData(unsigned step, const Vector &DoFs, const Ve
 // EXPORT OF SOLVER VALUES
 void SolverGauge :: readFromLine(istringstream &iss) {
     iss >> filename;
-    iss >> name;
+    iss >> gname;
     codes.resize(1);
     iss >> codes [ 0 ];
     DataExporter :: readFromLine(iss);
@@ -868,26 +1098,18 @@ void SolverGauge :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void SolverGauge :: setSolverPointer(Solver *s) {
-    solver = s;
-}
-
-
-//////////////////////////////////////////////////////////
-void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const {
-    ( void ) reactions;
-    ( void ) DoFs;
+void SolverGauge :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     Vector res;
     size_t p;
-    char buffer[ 100 ];
-    giveFileName(step, buffer);
+    char buffer[ buffersize ];
+    giveFileName(step, iteration, buffer);
     ofstream outputfile;
-    outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+    outputfile.open( ( resultDir / buffer ).string(), ios :: app);
     if ( outputfile.good() ) {
         outputfile << std :: scientific;
         outputfile.precision(precision);
         solver->giveValues(codes [ 0 ], res);
-        for ( p = 0; p < min< size_t >(maxsize [ 0 ], res.size() ); p++ ) {
+        for ( p = 0; p < min< size_t >( maxsize [ 0 ], res.size() ); p++ ) {
             outputfile << "\t" << res [ p ] * multiplier;
         }
         for ( ; p < maxsize [ 0 ]; p++ ) {
@@ -896,50 +1118,6 @@ void SolverGauge :: exportData(unsigned step, const Vector &DoFs, const Vector &
     }
     outputfile.close();
 }
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-/*
- * void StructuralExporter :: readFromLine(istringstream &iss) {
- *  iss >> filename;
- *  iss >> name;
- *  codes.resize(1);
- *  iss >> codes [ 0 ];
- *  DataExporter :: readFromLine(iss);
- * }
- * //////////////////////////////////////////////////////////
- * void StructuralExporter :: init() {
- *  time_each = 0;
- *  time_last = 0;
- * }
- *
- * //////////////////////////////////////////////////////////
- * void StructuralExporter :: exportData(unsigned step, const MyVector &DoFs, const MyVector &reactions, fs :: path resultDir) const {
- *  ( void ) DoFs;
- *  ( void ) reactions;
- *  char buffer [ 100 ];
- *  double value = calcValue();
- *  giveFileName(step, buffer);
- *  ofstream outputfile;
- *  outputfile.open( ( resultDir / buffer ).string(), ios :: app );
- *  if ( outputfile.good() ) {
- *      outputfile << std :: scientific;
- *      outputfile.precision(precision);
- *      outputfile << "\t" << value * multiplier;
- *  }
- *  outputfile.close();
- * }
- *
- * double StructuralExporter :: calcValue() const {
- *  double value = 0;
- *  for ( auto const &e : * elems ) {
- *      for ( unsigned i = 0; i < e->giveNumIP(); i++ ) {
- *          value += e->giveIPValue(codes [ 0 ], i);
- *      }
- *  }
- *  return value;
- * }
- */
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -968,10 +1146,11 @@ ExporterContainer :: ~ExporterContainer() {
  * - %VTKRBExporter - for other parameters see VTKRB2DExporter::readFromLine
  * - %VTKRCExporter - for other parameters see VTKRCExporter::readFromLine
  */
-void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, unsigned dimension) {
+void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, ElementContainer *e, ConstraintContainer *c, BCContainer *b, unsigned dimension) {
+    cout << "Input file '" <<  filename;
     size_t origsize = exporters.size();
     string line, exptype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1029,6 +1208,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     VTKElementExporter *newexp = new VTKElementExporter(e, n, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("VTKRebarExporter") == 0 ) {
+                    VTKRebarExporter *newexp = new VTKRebarExporter(e, n, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else if ( exptype.compare("VTKRBExporter") == 0 ) {
                     if ( dimension == 2 ) {
                         VTKRB2DExporter *newexp = new VTKRB2DExporter(e, n, dimension);
@@ -1049,6 +1232,10 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
                     ElementStatsExporter *newexp = new ElementStatsExporter(e, dimension);
                     newexp->readFromLine(iss);
                     exporters.push_back(newexp);
+                } else if ( exptype.compare("MatrixExporter") == 0 ) {
+                    MatrixExporter *newexp = new MatrixExporter(e, n, b, c, dimension);
+                    newexp->readFromLine(iss);
+                    exporters.push_back(newexp);
                 } else {
                     cerr << "Error: Data exporter '" <<  exptype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -1056,7 +1243,7 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << exporters.size() - origsize << " exporters found" << endl;
+        cout << "' succesfully loaded; " << exporters.size() - origsize << " exporters found" << endl;
     } else {
         cerr << "Error ExporterContainer: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);
@@ -1066,19 +1253,13 @@ void ExporterContainer :: readFromFile(const string filename, NodeContainer *n, 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: setSolver(Solver *s) {
     for ( auto &exp : exporters ) {
-        SolverGauge *sg = dynamic_cast< SolverGauge * >( exp );
-        VTKElementExporter *vtkee = dynamic_cast< VTKElementExporter * >( exp );
-        if ( sg ) {
-            sg->setSolverPointer(s);
-        }
-        if ( vtkee ) {
-            vtkee->setSolverPointer(s);
-        }
+        exp->setSolverPointer(s);
     }
 }
 
 //////////////////////////////////////////////////////////
 void ExporterContainer :: init(const bool &initial) {
+
     fs :: create_directories(resultDir);
 
     bool newname;
@@ -1097,13 +1278,12 @@ void ExporterContainer :: init(const bool &initial) {
             }
         }
     }
-
     if ( initial ) {
         //gauge files header
-        char buffer[ 100 ];
+        char buffer[ buffersize ];
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-            ( * unique )->giveFileName(0, buffer);
-            ofstream outputfile;
+            ( * unique )->giveFileName(0, -1, buffer);
+            ofstream outputfile;;
             outputfile.open( ( resultDir / buffer ).string() );
             if ( outputfile.good() ) {
                 outputfile << "#step" << "\t" << "time";
@@ -1115,27 +1295,26 @@ void ExporterContainer :: init(const bool &initial) {
         for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
             Gauge *g = dynamic_cast< Gauge * >( * d );
             if ( g ) {
-                g->giveFileName(0, buffer);
+                g->giveFileName(0, -1, buffer);
                 ofstream outputfile;
-                outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+                outputfile.open( ( resultDir / buffer ).string(), ios :: app);
                 if ( outputfile.good() ) {
                     maxsize = g->giveMaxSize(0);
                     if ( maxsize == 1 ) {
-                        outputfile << "\t" << g->giveName();
+                        outputfile << "\t" << g->giveGaugeName();
                     } else {
                         for ( p = 0; p < maxsize; p++ ) {
-                            outputfile << "\t" << g->giveName() << "_" << p;
+                            outputfile << "\t" << g->giveGaugeName() << "_" << p;
                         }
                     }
                 }
                 outputfile.close();
             }
         }
-
         for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-            ( * unique )->giveFileName(0, buffer);
+            ( * unique )->giveFileName(0, -1, buffer);
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << endl;
             }
@@ -1157,14 +1336,14 @@ void ExporterContainer :: clear() {
 
 
 //////////////////////////////////////////////////////////
-void ExporterContainer :: exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const {
+void ExporterContainer :: exportData(unsigned step, int iteration, double time, const bool &exportAll) const {
     //add step number to gauge exporter files
-    char buffer[ 100 ];
+    char buffer[ buffersize ];
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
-        if ( ( * unique )->doExportNow(time, step) || exportAll ) {
+        ( * unique )->giveFileName(0, -1, buffer);
+        if ( ( * unique )->doExportNow(time, iteration, step) || exportAll ) {
             ofstream outputfile;
-            outputfile.open( ( resultDir / buffer ).string(), ios :: app );
+            outputfile.open( ( resultDir / buffer ).string(), ios :: app);
             if ( outputfile.good() ) {
                 outputfile << std :: scientific;
                 outputfile << step << "\t" << time;
@@ -1175,26 +1354,26 @@ void ExporterContainer :: exportData(unsigned step, double time, const Vector &D
 
     // export
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
-        if ( ( * d )->doExportNow(time, step) || exportAll ) {
-            ( * d )->exportData(step, DoFs, reactions, resultDir);
+        if ( ( * d )->doExportNow(time, iteration, step) || exportAll ) {
+            ( * d )->exportData(step, iteration, resultDir);
         }
     }
 
     // add end line to gauge exporter files
     for ( vector< DataExporter * > :: const_iterator unique = unique_file_exporters.begin(); unique != unique_file_exporters.end(); ++unique ) {
-        ( * unique )->giveFileName(0, buffer);
+        ( * unique )->giveFileName(0, -1, buffer);
         ofstream outputfile;
-        outputfile.open( ( resultDir / buffer ).string(), ios :: app );
-        if ( outputfile.good() && ( ( * unique )->doExportNow(time, step) || exportAll ) ) {
+        outputfile.open( ( resultDir / buffer ).string(), ios :: app);
+        if ( outputfile.good() && ( ( * unique )->doExportNow(time, iteration, step) || exportAll ) ) {
             outputfile << endl;
         }
         outputfile.close();
     }
 
-    updateAllTimeAndStepToSave(step, time);
+    if (iteration<0) updateAllTimeAndStepToSave(step, time);
 };
 
-
+//////////////////////////////////////////////////////////
 void ExporterContainer :: updateAllTimeAndStepToSave(unsigned step, double time) const {
     for ( vector< DataExporter * > :: const_iterator d = exporters.begin(); d != exporters.end(); ++d ) {
         ( * d )->updateNextTimeToSave(time);
@@ -1235,7 +1414,7 @@ void ExportAllElementsNodalStress(std :: vector< Matrix > &stress, const Vector 
         if ( el->giveName().rfind("LTCB", 0) == 0 ) {
             rbc = static_cast< RigidBodyContact * >( el );
             elDoFs = el->giveDoFs();
-            elDoFvalues.resize(elDoFs.size() );
+            elDoFvalues.resize( elDoFs.size() );
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = DoFs [ elDoFs [ i ] ];
             }

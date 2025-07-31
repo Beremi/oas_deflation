@@ -56,6 +56,7 @@ endif ()
 option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
+option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" ON)
@@ -92,7 +93,9 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb
+    #-ffast-math disables all NaN and Inf checks
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb  -fopenmp
+    #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb  -fopenmp
     if (CHECK_CONVERSION)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
     endif()
@@ -123,9 +126,31 @@ set (CMAKE_CXX_STANDARD 20)
 set(TARGETNAME OAS)
 
 # detect
-find_package(PythonInterp REQUIRED)
+#find_package (Python3 COMPONENTS Interpreter)
 find_package (Eigen3 3.3.9 NO_MODULE)
 find_package(OpenMP REQUIRED)
+
+if (USE_MPI)
+    if (MPI_DIR)
+        include_directories ("${MPI_DIR}/include")
+        find_library (MPI_LIBRARY NAMES mpi PATHS ${MPI_DIR}/lib64 ${MPI_DIR}/lib)
+        find_library (MPI_CXX_LIBRARY NAMES mpi_cxx PATHS ${MPI_DIR}/lib64 ${MPI_DIR}/lib)
+        list (APPEND EXT_LIBS ${MPI_LIBRARY})
+        if (MPI_CXX_LIBRARY)
+            list (APPEND test_eigen_LIBRARIES ${MPI_CXX_LIBRARY})
+        endif ()
+    else ()
+        include (FindMPI)
+        find_package (MPI REQUIRED)
+        set (CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILES_FLAGS} ${MPI_COMPILE_FLAGS})
+        set (CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS})
+        add_definitions (-DMPICH_IGNORE_CXX_SEEK)
+        include_directories (${MPI_INCLUDE_PATH})
+        list (APPEND test_eigen_LIBRARIES ${MPI_LIBRARIES})
+    endif (MPI_DIR)
+    list (APPEND MODULE_LIST "MPI")
+    # Compile and link flags?
+endif ()
 
 if(TARGET Eigen3::Eigen)
   message(STATUS "Eigen3 v${EIGEN3_VERSION_STRING} found in ${EIGEN3_INCLUDE_DIR}")
@@ -144,17 +169,43 @@ else()
   include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0)
 endif()
 
+add_custom_target(unpack-spectra
+  ALL
+  COMMAND
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/spectra-1.1.0.tar.gz
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT
+    "Unpacking Spectra in ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0"
+  )
+include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0/include)
+
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 
 include_directories ("${OAS_BINARY_DIR}")
 set (LIB_TYPE OBJECT) # set (LIB_TYPE SHARED)
 
+
+include_directories ("${OAS_SOURCE_DIR}/src/solver/src")
+add_subdirectory ("${OAS_SOURCE_DIR}/src/solver/src")
+
 if (USE_SOLVER)
-  include_directories ("${OAS_SOURCE_DIR}/src/solver/src")
-  add_subdirectory ("${OAS_SOURCE_DIR}/src/solver/src")
   #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
   target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
+endif ()
+
+if (USE_ML_TORCH)
+  find_package(Torch REQUIRED PATHS "${CMAKE_BINARY_DIR}/libtorch")
+  if (NOT TORCH_FOUND)
+    message("-- Torch not found")
+  else ()
+    message("-- Torch (${Torch_VERSION}) found in ${Torch_DIR}.")
+    list (APPEND LIBS $<TARGET_OBJECTS:ml_torch> )
+    target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
+    list (APPEND EXT_LIBS ${TORCH_LIBRARIES})
+    add_definitions(-DML_TORCH_FOUND)
+  endif ()
 endif ()
 
 #file(GLOB SOURCE "${OAS_SOURCE_DIR}/src/solver/src/*.h" "${OAS_SOURCE_DIR}/src/*.cpp")
@@ -187,6 +238,7 @@ if (USE_VTK)
         target_compile_definitions(solver PUBLIC __VTK_MODULE)
         list (APPEND EXT_LIBS ${VTK_LIBRARIES})
         list (APPEND MODULE_LIST "VTK")
+        add_definitions(-DVTK_FOUND)
     else ()
         message("-- VTK found: ${VTK_VERSION}")
         target_compile_definitions(solver PUBLIC __VTK_MODULE)
@@ -197,6 +249,7 @@ if (USE_VTK)
             TARGETS ${TARGETNAME} solver
             MODULES ${VTK_LIBRARIES}
             )
+        add_definitions(-DVTK_FOUND)
     endif ()
 endif ()
 
@@ -223,6 +276,7 @@ endif()
 if (NOT TARGET Eigen3::Eigen)
   add_dependencies(solver unpack-eigen)
 endif()
+add_dependencies(solver unpack-spectra)
 
 target_link_libraries(solver
                       PRIVATE
@@ -230,6 +284,16 @@ target_link_libraries(solver
                       ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
+
+if (USE_ML_TORCH)
+  target_compile_definitions (solver PUBLIC -DML_TORCH_FOUND)
+  target_link_libraries(ml_torch
+                        PRIVATE
+                        ${CXX_FILESYSTEM_LIBRARIES}
+                        ${EXT_LIBS}
+                        #Eigen3::Eigen
+                      )
+endif ()
 
 target_link_libraries(${TARGETNAME}
                       PRIVATE
@@ -315,7 +379,8 @@ add_custom_command(
     ${OAS_BINARY_DIR}/generated/version.h
     ALL
   COMMAND
-    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${OAS_BINARY_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${OAS_SOURCE_DIR}/version.cmake
+    ${CMAKE_COMMAND} -D TARGET_NAME=${TARGETNAME} -D TARGET_DIR=${OAS_BINARY_DIR} -D SOURCE_DIR=${OAS_SOURCE_DIR} -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                     -D VTK_VERSION=${VTK_VERSION} -P ${OAS_SOURCE_DIR}/version.cmake
   WORKING_DIRECTORY
     ${OAS_SOURCE_DIR}
   )
@@ -333,7 +398,7 @@ add_custom_target(
 add_dependencies(${TARGETNAME} get_git_hash)
 
 
-# Copy binary 
+# Copy binary
 if (ARCHIVE_BINARIES)
   #add_custom_command(
   #        TARGET ${TARGETNAME} POST_BUILD

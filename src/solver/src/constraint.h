@@ -8,6 +8,7 @@
 class Node; //forward declaration
 class NodeContainer; //forward declaration
 class ElementContainer;  // forward declaration
+class Element;  // forward declaration
 class ConstraintContainer;  // forward declaration
 class BCContainer;  // forward declaration
 class Solver;  // forward declaration
@@ -26,7 +27,7 @@ public:
     JointDoF() {};
     virtual ~JointDoF() {};
     JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
-    void readFromLine(std :: istringstream &iss, NodeContainer *nodes);
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *nodes);
     void print();
     virtual void init(Solver *solver);
     unsigned giveSlaveDoF() const;
@@ -47,6 +48,19 @@ public:
     std :: vector< Function * >giveTimeFns() { return time_fns; };
     Function *giveTimeFn(unsigned k) const { return time_fns [ k ]; };
     bool isTimeDependent() { return !time_fns.empty(); };
+    bool replaceDependentMasters(std :: vector<unsigned> &depms, std :: vector<JointDoF*> &depmsJDs);
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+class LagrangeMultiplier : public JointDoF
+{
+protected:
+public:
+    LagrangeMultiplier() {};
+    LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    virtual ~LagrangeMultiplier() {};
+    virtual void init(Solver *solver);
 };
 
 //////////////////////////////////////////////////////////
@@ -92,7 +106,10 @@ private:
     NodeContainer *nodes;
     BCContainer *bconds;
     std :: vector< JointDoF * >constraints;
+    std :: vector< LagrangeMultiplier * >lagmults;
     CoordinateIndexedSparseMatrix X;  // for connection due to geometry
+    CoordinateIndexedSparseMatrix X_full;  // for export
+    std :: vector< unsigned int >fullMasterIDs;  // for export
     bool time_dependent = false;
 
 public:
@@ -101,16 +118,24 @@ public:
     void readFromFile(const std :: string filename, const unsigned ndim, NodeContainer *nodes);
     // void calculateSlaveDoFfield(NodeContainer *nodes);
     void init(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
+    void initFull(NodeContainer *nodes, BCContainer *bconds, Solver *solver); // here matrix X will be created
+    CoordinateIndexedSparseMatrix giveMatrixX(NodeContainer *nodecont, BCContainer *bccont, Solver *solver, bool BC_applied = true);
+    std :: vector< unsigned int >giveFullMasterIDs();
     void clear();
     void transformToConstraintSpace(CoordinateIndexedSparseMatrix &K, const double time_now = 0);
     void calculateDependentDoFs(Vector &fullDoFs, const double time_now = 0.0, const bool all = false) const;
     void calculateDoFsDependentOnConjugates(Vector &full_ddr, const Vector &fullDoFs, const Vector &fullFExt) const;
     void calculateMasterForces(Vector &fullForces);
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
+    LagrangeMultiplier *giveLagrangeMultiplier(const unsigned &i) { return lagmults [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
-    size_t giveSize() { return constraints.size(); };
+    size_t giveConstraintsSize() { return constraints.size(); };
+    size_t giveLagrangeMultsSize() { return lagmults.size(); };
     bool isActive() const { return !constraints.empty(); }
     void removeConstraint(unsigned i);
+    void addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations);
+    void addHangingNodeConstraint(Node* dependent, Element* primary);
+    void checkInternalDependencies();
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }

@@ -27,9 +27,9 @@ Matrix TrsprtTriangle :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix TrsprtTriangle :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(DoFids.size() );
+    Vector phi = Vector :: Zero( DoFids.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(1, DoFids.size() );
+    Matrix H = Matrix :: Zero( 1, DoFids.size() );
     for ( unsigned k = 0; k < DoFids.size(); k++ ) {
         H(0, k) = phi(k);
     }
@@ -54,7 +54,7 @@ Vector TrsprtTriangle :: giveStrain(unsigned i, const Vector &DoFs) {
 TrsprtQuad :: TrsprtQuad() {
     numOfNodes = 4;
     name = "TrsprtQuad";
-    vtk_cell_type = 10;
+    vtk_cell_type = 9;
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
 }
@@ -70,18 +70,19 @@ TrsprtTetra :: TrsprtTetra() {
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrTetra4();
     physicalFields [ 1 ] = true; //transport
+
 }
 
 
 //////////////////////////////////////////////////////////
-void TrsprtTetra :: init(){
+void TrsprtTetra :: init() {
     //check orientation of vertices
-    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
-        Node* a = nodes[3];
-        nodes[3] = nodes[2];
-        nodes[2] = a;        
+    if ( tetraVolumeSigned( nodes [ 0 ]->givePointPointer(), nodes [ 1 ]->givePointPointer(), nodes [ 2 ]->givePointPointer(), nodes [ 3 ]->givePointPointer() ) < 0. ) {
+        Node *a = nodes [ 3 ];
+        nodes [ 3 ] = nodes [ 2 ];
+        nodes [ 2 ] = a;
     }
-    TrsprtTriangle::init();
+    TrsprtTriangle :: init();
 }
 
 //////////////////////////////////////////////////////////
@@ -124,7 +125,7 @@ Matrix TrsprtTemprtrCoupledBrick :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix TrsprtTemprtrCoupledBrick :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(DoFids.size() );
+    Vector phi = Vector :: Zero( DoFids.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(2,  numOfNodes * 2);
     for ( unsigned k = 0; k < numOfNodes; k++ ) {
@@ -153,27 +154,86 @@ MechanicalTriangle :: MechanicalTriangle() : Element(2) {
     shafunc = new Linear2DTriShapeF();
     inttype = new IntegrTri3(); //ONE IP suffices, but it does not work in extrapolation routine
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
+void MechanicalTriangle :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+    Element :: readFromLine(iss, fullnodes, fullmatrs);
+
+    //iss.clear(); // clear string stream
+    //iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;
+    while (  iss >> param ) {
+        if ( param.compare("b_bar_int") == 0 ) {
+            b_bar_integration_split = true;
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: setIntegrationPointsAndWeights() {
+    Element :: setIntegrationPointsAndWeights();
+    if ( b_bar_integration_split ) {
+        if ( ndim == 2 ) {
+            TensMechMaterial *tmm = dynamic_cast< TensMechMaterial * >( mat );
+            if ( tmm && tmm->isPlaneStress() ) {
+                cerr << "WARNING: The B-bar integration for plane stress problem is not supported and it is therefore skipped" << endl;
+            }
+        }
+        computeAverageBVolumeMatrix();
+    }
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: computeAverageBVolumeMatrix() {
+    Matrix phiG = Matrix :: Zero( ndim, nodes.size() );
+    averageVolumeB = Matrix :: Zero( ndim, nodes.size() );
+    double sumw = 0;
+    for ( unsigned ipnum = 0; ipnum < inttype->giveNumIP(); ipnum++ ) {
+        shafunc->giveShapeFGrad(inttype->giveIPLocationPointer(ipnum), phiG);
+        averageVolumeB += phiG * inttype->giveIPWeight(ipnum);
+        sumw += inttype->giveIPWeight(ipnum);
+    }
+    averageVolumeB /= ndim * sumw;
+}
+
+//////////////////////////////////////////////////////////
+void MechanicalTriangle :: applyAverageVolumeB(Matrix &B, const Matrix phiG) const {
+    int s = 0;
+    for ( unsigned i = 0; i < numOfNodes; i++ ) {
+        for ( unsigned d = 0; d < ndim; d++ ) {
+            for ( unsigned dd = 0; dd < ndim; dd++ ) {
+                B(dd, s + d) -= phiG(d, i) / ndim - averageVolumeB(d, i);
+            }
+        }
+        s += nodes [ i ]->giveNumberOfDoFs();
+    }
+}
+
+
+//////////////////////////////////////////////////////////
 Matrix MechanicalTriangle :: giveBMatrix(const Point *x) const {
-    Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
+    Matrix phiG = Matrix :: Zero( ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
-    Matrix B = Matrix :: Zero(3, DoFids.size() );
+    Matrix B = Matrix :: Zero( 3, DoFids.size() );
 
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         B(0, 2 * i)     =   B(2, 2 * i + 1) =   phiG(0, i);
-        B(1, 2 * i)     =   B(0, 2 * i + 1) =   0.;
         B(1, 2 * i + 1) =   B(2, 2 * i)     =   phiG(1, i);
+    }
+    if ( b_bar_integration_split ) {
+        applyAverageVolumeB(B, phiG);
     }
     return B;
 }
 
 //////////////////////////////////////////////////////////
 Matrix MechanicalTriangle :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(ndim, DoFids.size() );
+    Matrix H = Matrix :: Zero( ndim, DoFids.size() );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < numOfNodes; j++ ) {
             H(i, ndim * j + i) = phi(j);
@@ -191,6 +251,7 @@ MechanicalQuad :: MechanicalQuad() {
     vtk_cell_type = 9;
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
@@ -204,28 +265,32 @@ MechanicalTetra :: MechanicalTetra() {
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrTetra4();
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalTetra :: init(){
+void MechanicalTetra :: init() {
     //check orientation of vertices
-    if (tetraVolumeSigned(nodes[0]->givePointPointer(),nodes[1]->givePointPointer(),nodes[2]->givePointPointer(),nodes[3]->givePointPointer())<0.){
-        Node* a = nodes[3];
-        nodes[3] = nodes[2];
-        nodes[2] = a;        
+    if ( tetraVolumeSigned( nodes [ 0 ]->givePointPointer(), nodes [ 1 ]->givePointPointer(), nodes [ 2 ]->givePointPointer(), nodes [ 3 ]->givePointPointer() ) < 0. ) {
+        Node *a = nodes [ 3 ];
+        nodes [ 3 ] = nodes [ 2 ];
+        nodes [ 2 ] = a;
     }
-    Element::init();
+    Element :: init();
 }
 
 //////////////////////////////////////////////////////////
 Matrix MechanicalTetra :: giveBMatrix(const Point *x) const {
-    Matrix phiG = Matrix :: Zero(ndim, nodes.size() );
+    Matrix phiG = Matrix :: Zero( ndim, nodes.size() );
     shafunc->giveShapeFGrad(x, phiG);
-    Matrix B = Matrix :: Zero(6, DoFids.size() );
+    Matrix B = Matrix :: Zero( 6, DoFids.size() );
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         B(0, 3 * i)       =   B(4, 3 * i + 2)  =   B(5, 3 * i + 1) =   phiG(0, i);
         B(1, 3 * i + 1)   =   B(3, 3 * i + 2)  =   B(5, 3 * i)     =   phiG(1, i);
         B(2, 3 * i + 2)   =   B(3, 3 * i + 1)  =   B(4, 3 * i)     =   phiG(2, i);
+    }
+    if ( b_bar_integration_split ) {
+        applyAverageVolumeB(B, phiG);
     }
     return B;
 }
@@ -240,11 +305,12 @@ MechanicalBrick :: MechanicalBrick() {
     vtk_cell_type = 12;
     shafunc = new Linear3DBrickShapeF();
     inttype = new IntegrBrick8();
+    b_bar_integration_split = false;
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalBrick :: init(){
-    Element::init();
+void MechanicalBrick :: init() {
+    Element :: init();
 }
 
 //////////////////////////////////////////////////////////
@@ -258,6 +324,7 @@ CosseratQuad :: CosseratQuad() {
     shafunc = new Linear2DQuadShapeF();
     inttype = new IntegrQuad4();
     physicalFields [ 0 ] = true; //mechanics
+    b_bar_integration_split = false;
 }
 
 
@@ -265,9 +332,9 @@ CosseratQuad :: CosseratQuad() {
 Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(6, DoFids.size() );
+    Matrix B = Matrix :: Zero( 6, DoFids.size() );
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 03
@@ -284,34 +351,37 @@ Matrix CosseratQuad :: giveBMatrix(const Point *x) const {
         B(4, 3 * i + 2) =  phiG(0, i);
         B(5, 3 * i + 2) =  phiG(1, i);
     }
+    if ( b_bar_integration_split ) {
+        applyAverageVolumeB(B, phiG);
+    }
     return B;
 }
 
 //////////////////////////////////////////////////////////
 Matrix CosseratQuad :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(3, DoFids.size() );       //2 transl, 1 rot
+    Matrix H = Matrix :: Zero( 3, DoFids.size() );         //2 transl, 1 rot
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         H(0, 3 * j) = H(1, 3 * j + 1) = H(1, 3 * j + 2) = phi(j);
     }
     return H;
 }
 
+
 //////////////////////////////////////////////////////////
-Matrix CosseratQuad :: giveMassMatrix() const {
-    Matrix H = MechanicalQuad :: giveMassMatrix();
-    //the micro inertia effect are wrong as they are based on density. Better delete them.
+void CosseratQuad :: computeMassMatrix() {
+    MechanicalQuad :: computeMassMatrix();
+    TensCosseratMechMaterial *cosmat = static_cast< TensCosseratMechMaterial * >( mat );
     for ( unsigned i = 0; i < 4; i++ ) {
         for ( unsigned j = 0; j < 4; j++ ) {
-            H(3 * i + 2, 3 * j + 2) = 0;
-            H(3 * i + 1, 3 * j + 2) = 0;
-            H(3 * i + 2, 3 * j + 1) = 0;
+            massM(3 * i + 2, 3 * j + 2) *= 0.5 * pow(cosmat->giveParticleSize(), 2);
+            massM(3 * i + 1, 3 * j + 2) = 0;
+            massM(3 * i + 2, 3 * j + 1) = 0;
+            massM(3 * i + 1, 3 * j) = 0;
+            massM(3 * i + 2, 3 * j) = 0;
         }
     }
-    //cout << "---------------------" << endl;
-    //cout << H << endl;
-    return H;
 }
 
 //////////////////////////////////////////////////////////
@@ -332,9 +402,9 @@ CosseratBrick :: CosseratBrick() {
 Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(18, DoFids.size() );       //9 strains, 9 curvatures
+    Matrix B = Matrix :: Zero( 18, DoFids.size() );         //9 strains, 9 curvatures
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 08 06
@@ -362,15 +432,39 @@ Matrix CosseratBrick :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix CosseratBrick :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(6, DoFids.size() );       //3 transl, 3 rot
+    Matrix H = Matrix :: Zero( 6, DoFids.size() );         //3 transl, 3 rot
     for ( unsigned v = 0; v < ndim; v++ ) {
         for ( unsigned j = 0; j < numOfNodes; j++ ) {
             H(v, 6 * j + v) = H(3 + v, 6 * j + 3 + v) = phi(j);
         }
     }
     return H;
+}
+
+//////////////////////////////////////////////////////////
+void CosseratBrick :: computeMassMatrix() {
+    MechanicalBrick :: computeMassMatrix();
+    TensCosseratMechMaterial *cosmat = static_cast< TensCosseratMechMaterial * >( mat );
+    unsigned k = 2 * ndim - 3; //number of rotations
+    for ( unsigned i = 0; i < 4; i++ ) {
+        for ( unsigned j = 0; j < 4; j++ ) {
+            for (unsigned d = 0; d < k; d++) {
+                for (unsigned e = 0; e < k; e++) {
+                    if ( e == d ) {
+                        massM(3 * i + e + ndim, 3 * j + d + ndim) *= 0.5 * pow(cosmat->giveParticleSize(), 2);
+                    } else {
+                        massM(3 * i + e + ndim, 3 * j + d + ndim) *= 0;
+                    }
+                }
+                for (unsigned e = 0; e < ndim; e++) {
+                    massM(3 * i + d + ndim, 3 * j + e) = 0;
+                    massM(3 * i + e, 3 * j + d + ndim) = 0;
+                }
+            }
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -392,9 +486,9 @@ CoupledCosseratTransportQuad :: CoupledCosseratTransportQuad() {
 Matrix CoupledCosseratTransportQuad :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(8, DoFids.size() );       //4 strains, 2 curvatures, 2 pressure gradients
+    Matrix B = Matrix :: Zero( 8, DoFids.size() );         //4 strains, 2 curvatures, 2 pressure gradients
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 03
@@ -420,9 +514,9 @@ Matrix CoupledCosseratTransportQuad :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratTransportQuad :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(4, DoFids.size() );       //2 transl, 1 rot, 1 pressure
+    Matrix H = Matrix :: Zero( 4, DoFids.size() );         //2 transl, 1 rot, 1 pressure
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         H(0, 4 * j) = H(1, 4 * j + 1) = H(2, 4 * j + 2) = H(3, 4 * j + 3) = phi(j);
     }
@@ -496,9 +590,9 @@ Vector CoupledCosseratTransportBrick :: giveStrain(unsigned i, const Vector &DoF
 Matrix CoupledCosseratTransportBrick :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix B = Matrix :: Zero(21, DoFids.size() );       //9 strains, 9 curvatures, 3 pressure gradients
+    Matrix B = Matrix :: Zero( 21, DoFids.size() );         //9 strains, 9 curvatures, 3 pressure gradients
     for ( unsigned i = 0; i < numOfNodes; i++ ) {
         //strains
         // 00 08 06
@@ -531,9 +625,9 @@ Matrix CoupledCosseratTransportBrick :: giveBMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 Matrix CoupledCosseratTransportBrick :: giveHMatrix(const Point *x) const {
-    Vector phi = Vector :: Zero(nodes.size() );
+    Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero(7, DoFids.size() );       //3 transl, 3 rot, 1 pressure
+    Matrix H = Matrix :: Zero( 7, DoFids.size() );         //3 transl, 3 rot, 1 pressure
     for ( unsigned j = 0; j < numOfNodes; j++ ) {
         for ( unsigned v = 0; v < ndim; v++ ) {
             H(v, 7 * j + v) = H(3 + v, 7 * j + 3 + v) = phi(j);
@@ -544,9 +638,8 @@ Matrix CoupledCosseratTransportBrick :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratTransportBrick :: giveDampingMatrix() const {
-    //return giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
-    return Element :: giveDampingMatrix();
+void CoupledCosseratTransportBrick :: computeDampingMatrix() {
+    Element :: computeDampingMatrix();
 }
 
 //////////////////////////////////////////////////////////
@@ -563,10 +656,10 @@ void CoupledCosseratBrickWithDependentUpperZLayer :: setIntegrationPointsAndWeig
     if ( bindlayers ) {
         stats.resize(inttype->giveNumIP() / 2.);
     } else {
-        stats.resize(inttype->giveNumIP() );
+        stats.resize( inttype->giveNumIP() );
     }
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
-        inttype->setIPWeight(k, inttype->giveIPWeight(k) * shafunc->giveJacobian( inttype->giveIPLocationPointer(k) ) );
+        inttype->setIPWeight( k, inttype->giveIPWeight(k) * shafunc->giveJacobian(inttype->giveIPLocationPointer(k) ) );
 
         if ( k < 4 || !bindlayers ) {
             stats [ k ] = mat->giveNewMaterialStatus(this, k);
@@ -612,7 +705,7 @@ Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveStiffnessMatrix(strin
 
 //////////////////////////////////////////////////////////
 Vector CoupledCosseratBrickWithDependentUpperZLayer :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    Vector intF = Vector :: Zero(DoFids.size() );
+    Vector intF = Vector :: Zero( DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         if ( i < 4 || !bindlayers ) {
@@ -640,7 +733,7 @@ Vector CoupledCosseratBrickWithDependentUpperZLayer :: giveInternalForces(const 
 
 //////////////////////////////////////////////////////////
 Vector CoupledCosseratBrickWithDependentUpperZLayer :: integrateInternalSources() {
-    Vector intS = Vector :: Zero(DoFids.size() );
+    Vector intS = Vector :: Zero( DoFids.size() );
     Vector intmats;
     unsigned q;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -658,9 +751,9 @@ Vector CoupledCosseratBrickWithDependentUpperZLayer :: integrateInternalSources(
 
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveDampingMatrix() const {
+void CoupledCosseratBrickWithDependentUpperZLayer :: computeDampingMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    dampC = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     unsigned q;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -670,15 +763,14 @@ Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveDampingMatrix() const
             q = i - 4;
         }
         c = stats [ q ]->giveDampingTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////
-Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveMassMatrix() const {
+void CoupledCosseratBrickWithDependentUpperZLayer :: computeMassMatrix() {
     unsigned nDoFs = DoFids.size();
-    Matrix M = Matrix :: Zero(nDoFs, nDoFs);
+    massM = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     unsigned q;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
@@ -688,9 +780,8 @@ Matrix CoupledCosseratBrickWithDependentUpperZLayer :: giveMassMatrix() const {
             q = i - 4;
         }
         c = stats [ q ]->giveMassTensor();
-        M += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
+        massM += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
-    return M;
 }
 
 //////////////////////////////////////////////////////////

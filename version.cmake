@@ -1,17 +1,50 @@
-# in case Git is not available, we default to "unknown"
-set(GIT_HASH "unknown" CACHE STRING "Description" FORCE)
+# in case Git is not available, we default to "nogit"
+set(GIT_HASH "nogit" CACHE STRING "Description" FORCE)
 
 # find Git and if available set GIT_HASH variable
 find_package(Git QUIET)
 if(GIT_FOUND)
   execute_process(
+    WORKING_DIRECTORY ${SOURCE_DIR}
     #COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%h
     COMMAND ${GIT_EXECUTABLE} describe --abbrev=10 --long --always --dirty --tags
     OUTPUT_VARIABLE GIT_HASH
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
     )
-endif()
+  if (WIN32)
+    execute_process(
+      WORKING_DIRECTORY ${SOURCE_DIR}
+      #COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%h
+      COMMAND cmd /C ${GIT_EXECUTABLE} diff ":!*version.*" ${SOURCE_DIR}/src/solver/src
+      OUTPUT_VARIABLE GIT_DIFF
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+      )
+  else ()
+    execute_process(
+      WORKING_DIRECTORY ${SOURCE_DIR}
+      #COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%h
+      COMMAND bash -c "${GIT_EXECUTABLE} diff -- ':!*version.*' ${SOURCE_DIR}/src/solver/src"
+      OUTPUT_VARIABLE GIT_DIFF
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+      )
+  endif ()
+endif ()
+
+if(GIT_HASH STREQUAL "")
+    set(GIT_HASH "nogit")
+endif ()
+
+if(GIT_DIFF STREQUAL "")
+    if(GIT_HASH STREQUAL "nogit")
+        set(GIT_DIFF "It was not possible to get differences between the source code and the git version.")
+    else ()
+        set(GIT_DIFF "There is no difference between the source code and the git version.")
+    endif ()
+endif ()
+
 # git diff -- src/solver/src/* CMakeLists.txt
 # git diff -- *.{cpp,h}
 

@@ -64,6 +64,7 @@ class Model:
         self.edgeMinDistCoef=1.0
 
         self.node_coords = []
+        self.node_file = None
 
         self.node_coords_polar = []
 
@@ -133,6 +134,9 @@ class Model:
 
         self.supportDivision = None
         self.blank = 0
+
+        self.nodefile = None
+
         for i in range (len(r)):
             if (r[i]=='blank'):
                 self.blank = int(r[i+1])
@@ -160,7 +164,8 @@ class Model:
                 self.span = float(r[i+1])
             if (r[i]=='gradientZoneWidth'):
                 self.gradientZoneWidth = float(r[i+1])
-
+            if (r[i]=='nodefile'):
+                self.nodefile = r[i+1]
             if (r[i]=='interfaceMinDist'):
                 self.interfaceMinDist = float(r[i+1])
             if (r[i]=='fineRingThickness'):
@@ -354,7 +359,7 @@ class Model:
         if dirNam is None:
             self.master_folder = '%s_minDist%.4f_seed%02d' % (self.modelType,self.minDist, self.seed)
         else:
-            self.master_folder = dirNam
+            self.master_folder = dirNam + '_seed%02d' % (self.seed)
 
         try:
             if not os.path.exists(self.master_folder):
@@ -414,6 +419,9 @@ class Model:
 
         if self.modelType == '3d_cube':
             self.run_3d_cube()
+
+        if self.modelType == '3d_cube_with_periodic_faces':
+            self.run_3d_cube(periodic_faces = True)
 
         if self.modelType == '3d_balbet':
             self.run_3d_balbet()
@@ -549,8 +557,8 @@ class Model:
 
 
 
-    def run_3d_cube(self, node_coords_init=None):
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init )
+    def run_3d_cube(self, periodic_faces = False, node_coords_init=None):
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.vor, self.areas, self.functions, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.trsprtBC_merged, self.trsprtIC_merged) = utilitiesModeling.create3dCube(self.maxLim, self.minDist, self.trials, self.powerTes, coupled=self.coupled, node_coords_init=node_coords_init, periodic = periodic_faces)
         self.materialZones=None
         self.measuringGauges = utilitiesModeling.assembleMeasuringGauges('box3d', maxLim=self.maxLim)
 
@@ -567,12 +575,14 @@ class Model:
         (self.node_coords,self.mechBC_merged,self.mechIC_merged,self.trsprtBC_merged,self.trsprtIC_merged,self.vor,self.areas,self.functions,self.govNodes,self.govNodesMechBC,self.rigidPlates, self.node_indices_dogbone)   = utilitiesModeling.create2dDogBone(self.minDist, self.trials, D=self.dogboneD, excentricity=self.dogboneExcentricityFrac, symmetric=self.symmetric, edgeMinDistCoef=self.edgeMinDistCoef, roughDogBone=self.roughDogBone, roughEdgeDogbone = self.roughEdgeDogbone, roughMinDistCoef=self.roughMinDistCoef, interLayerThickness=self.interLayerThickness, powerTes = self.powerTes, weakboundary = self.weakboundary)
         self.materialZones=None
         if self.elasticZone > 0:
-            elaHeight = 1/4*self.dogboneD
+            print("ELASTIC ZONE")
+            elaHeight = self.elasticZone * self.dogboneD
             if self.roughDogBone >1:
                 elaHeight = 3/4*self.dogboneD - (self.roughDogBone-1)*self.minDist
             if self.symmetric:
                 if self.dmgBand == 1:
                     elaHeight = 3 / 4 * self.dogboneD - self.minDist / 4
+                    #elaHeight = self.elasticZone * self.dogboneD
 
                 self.materialZones = utilitiesModeling.assembleMaterialZones(elaHeight, 2, model='dogboneStrip', D=self.dogboneD)
             else:
@@ -798,13 +808,13 @@ class Model:
     def run_3d_Hanging_FracZone(self, node_coords_init=None):
         self.activeTransport = False
 
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create3d_Hanging_FracZone(self.maxLim, self.minDist, 0.01, self.trials)
 
         coords = np.asarray(self.node_coords)
         lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),
         np.amax(coords[:,1]),np.amin(coords[:,2]),np.amax(coords[:,2]) ]
 
-        self.materialZones= utilitiesModeling.assembleMaterialZones (0, 3, model='hangingfraczone', maxLim=lims)
+        #self.materialZones= utilitiesModeling.assembleMaterialZones (0, 3, model='hangingfraczone', maxLim=lims)
 
         if self.activeTransport == False:
             self.rigidPlatesTrspt = []
@@ -865,7 +875,7 @@ class Model:
 
     def run_2d_cantileverBending(self):
         print('2d_cantilever bending')
-        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials )
+        (self.node_coords, self.mechBC_merged, self.mechIC_merged, self.trsprtBC_merged, self.trsprtIC_merged, self.vor, self.areas, self.functions, self.radii)   = utilitiesModeling.create2dCantileverBending(self.maxLim, self.minDist, self.trials, self.powerTes, nodefile = self.nodefile)
         self.materialZones=None
 
     def run_3d_dam(self):
@@ -1037,7 +1047,7 @@ class Model:
         df = self.defaultFilesFolder
         print('df %s' %df)
 
-        if df != None:
+        if (df != None) and os.path.exists(df):
             files=os.listdir(df)
             for fname in files:
                 print(os.path.join(self.defaultFilesFolder ,fname))
@@ -1080,6 +1090,28 @@ class Model:
                 sys.exit(1)
 
             linElMaterial = utilitiesMech.linearElasticMaterial(young, alpha, density)
+            self.materials.append(linElMaterial)
+            print('done.')
+
+        if (r[1]=='VectMechMaterial'):
+            #
+            young = None
+            alpha = None
+            density = None
+            #
+            for i in range (len(r)):
+                if (r[i]=='young' or r[i]=='E0'):
+                    young = float(r[i+1])
+                if (r[i]=='alpha'):
+                    alpha = float(r[i+1])
+                if (r[i]=='density'):
+                    density = float(r[i+1])
+            #
+            if (young == None or alpha == None or density == None):
+                print ('!! VectMechMaterial incomplete. Exiting. !!')
+                sys.exit(1)
+
+            linElMaterial = utilitiesMech.linearElasticMaterial_old(young, alpha, density)
             self.materials.append(linElMaterial)
             print('done.')
 
@@ -1243,7 +1275,8 @@ class Solver:
     def __init__(self, row):
         print('Setting solver...', end='')
         #setting default solver
-        self.solverType = 'SteadyStateNonLinearSolver'
+        #self.solverType = 'SteadyStateNonLinearSolver'
+        self.solverType = 'EigenLDLT'
         self.time_step = 1e-6
         self.max_time_step = 1e-1
         self.min_time_step = 1e-8

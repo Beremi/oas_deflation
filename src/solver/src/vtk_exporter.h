@@ -12,11 +12,11 @@ class VTKExporter : public DataExporter
 private:
 
 public:
-    VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true; };
+    VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true;   name = "VTKExporter"; };
     virtual ~VTKExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual void giveFileName(unsigned step, char *buffer) const;
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
+    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
 protected:
     unsigned cell_data_size, node_data_size;
     bool binaryswitch;
@@ -31,16 +31,29 @@ class VTKElementExporter : public VTKExporter
 protected:
     ElementContainer *elems;
     NodeContainer *nodes;
-    Solver *solver;
 public:
-    VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKElementExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKElementExporter"; };
     ~VTKElementExporter() {};
-    void setSolverPointer(Solver *s);
     // virtual void readFromLine(istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT REBARS TO VTK (VTU)
+class VTKRebarExporter : public VTKExporter
+{
+protected:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+public:
+    VTKRebarExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRebarExporter"; };
+    ~VTKRebarExporter() {};
+    // virtual void readFromLine(istringstream &iss);
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
+protected:
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -52,10 +65,10 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKRB2DExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRB2DExporter"; };
     ~VTKRB2DExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -69,10 +82,10 @@ private:
     ElementContainer *elems;
     NodeContainer *nodes;
 public:
-    VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n; };
+    VTKRCExporter(ElementContainer *e, NodeContainer *n, unsigned dimension) : VTKExporter(dimension) { elems = e; nodes = n;   name = "VTKRCExporter"; };
     ~VTKRCExporter() {};
     // virtual void readFromLine(istringstream &iss, unsigned dimension);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 

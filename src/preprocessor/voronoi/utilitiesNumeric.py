@@ -70,15 +70,222 @@ def runMirroredVoronoiTDCB (data, dim, sizes, holeDiameter):
 
 
 ##run voronoi, mirrored data
+def mirror_circ(data, dist, S, D):
+    dist = np.expand_dims(dist, 1)
+    v = data - S
+    v_normed = v / dist
+    return (v - v_normed * (dist - 0.725 * D) * 2) + S
+
+def is_inside_dogbone(points, radii, D, SL, SR):
+    ''' return boolean array (True == inside) and
+    indices array of positions of points inside of dogbone
+    '''
+    mask = (((points[:, 0] > radii) &
+            (points[:, 0] < (D - radii))) &
+            ((points[:, 1] > radii) &
+            (points[:, 1] < (1.5 * D - radii))))
+
+    mask_tmp = mask.copy()
+    mask_tmp[((points[:, 1] < D/4) | (points[:, 1] > (D/4 + D)))] = False
+    mask_circ = (
+                ((np.sum((points[mask_tmp] - SL)**2, axis=1)**0.5 - 0.725 * D) - radii[mask_tmp] > 0) &
+                 ((np.sum((points[mask_tmp] - SR)**2, axis=1)**0.5 - 0.725 * D) - radii[mask_tmp] > 0))
+    mask[mask_tmp] = mask_circ
+    return mask
+
 def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
-    vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
-    #fig, ax = plt.subplots()
-    #voronoi_plot_2d(vor, ax=ax)
-    #plt.show()
+    points = node_coords
+    bound_lim = D/2
+    SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+    # Find vertices outside of dogbone and find its ridge_point
+    pt = PowerTesselation(points, None, limits='auto')#Voronoi(points)#PowerTesselation(points, radii, limits='auto')
+    mask_outside = ~is_inside_dogbone(pt.vertices, np.zeros(pt.vertices.shape[0]), D, SL, SR)
+    outside_idx = np.where(mask_outside)[0]
+    out_region = []
+    for region in pt.regions[1:]:
+        out_region.append(np.any(np.array(region)[:, None] == outside_idx[None, :]))
+    points_to_mirror_idx = (pt.point_region[out_region]-1).tolist()
+    points_to_mirror = points[points_to_mirror_idx]
+    #points_to_mirror = points
+
+    CLB = np.array([0, 0]) # np.array([0, D/4])
+    CLT = np.array([0, 2* D/4 + D]) # np.array([0, D/4 + D])
+    CRB = np.array([D, 0]) # np.array([D, D/4])
+    CRT = np.array([D, 2 * D/4 + D]) # np.array([D, D/4 + D])
+    vLB = SL - CLB
+    vLT = CLT - SL
+    mask1 = ~(np.cross(points_to_mirror-CLB, vLB) < 0)
+    mask2 = ~(np.cross(points_to_mirror-CLT, vLT) < 0)
+    vRB = SR - CRB
+    vRT = CRT - SR
+    mask3 = ~(np.cross(points_to_mirror-CRB, vRB) > 0)
+    mask4 = ~(np.cross(points_to_mirror-CRT, vRT) > 0)
+    mask_circle = mask1 & mask2 & mask3 & mask4
+    # print(mask_circle.shape, points_to_mirror.shape)
+    points_to_mirror_circle = points_to_mirror[mask_circle]
+
+
+    mask_top = points_to_mirror[:, 1] > (1.5 * D - bound_lim)
+    mask_bottom = points_to_mirror[:, 1] < (bound_lim)
+    # mask_left = (points_to_mirror[:, 0] < (bound_lim)) & ((points_to_mirror[:, 1] < (D/4)) | (points_to_mirror[:, 1] > (D/4 + D)))
+    # mask_right = (points_to_mirror[:, 0] > (D - bound_lim)) & ((points_to_mirror[:, 1] < (D/4)) | (points_to_mirror[:, 1] > (D/4 + D)))
+    mask_left = (points_to_mirror[:, 0] < (bound_lim)) & ((points_to_mirror[:, 1] < (D/2)) | (points_to_mirror[:, 1] > (D)))
+    mask_right = (points_to_mirror[:, 0] > (D - bound_lim)) & ((points_to_mirror[:, 1] < (D/2)) | (points_to_mirror[:, 1] > (D)))
+    dist2_L = np.sum((points_to_mirror_circle - SL)**2, axis=1)
+    dist_L = dist2_L**0.5
+    mask_left_circ = ((dist_L < (0.725 * D + bound_lim)) &
+                    ((points_to_mirror_circle[:, 1] > (D/8)) &
+                    (points_to_mirror_circle[:, 1] < (D/4 + D/8 + D))))
+    # mask_left_circ = ((dist_L < (0.725 * D + bound_lim)) &
+    #                   ((points_to_mirror_circle[:, 1] > (D/4)) &
+    #                    (points_to_mirror_circle[:, 1] < (D/4 + D))))
+    dist2_R = np.sum((points_to_mirror_circle - SR)**2, axis=1)
+    dist_R = dist2_R**0.5
+    mask_right_circ = ((dist_R < (0.725 * D + bound_lim)) &
+                    ((points_to_mirror_circle[:, 1] > (D/8)) &
+                        (points_to_mirror_circle[:, 1] < (D/4 + D/8 + D))))
+    # mask_right_circ = ((dist_R < (0.725 * D + bound_lim)) &
+    #                    ((points_to_mirror_circle[:, 1] > (D/4)) &
+    #                     (points_to_mirror_circle[:, 1] < (D/4 + D))))
+
+
+    pointsOut= np.vstack((
+    points,
+    np.array([0,3*D]) + points_to_mirror[mask_top, :] * np.array([1,-1]), #nahoru
+    np.array([0,0]) + points_to_mirror[mask_bottom, :] * np.array([1,-1]), #dolu
+    np.array([0,0]) + points_to_mirror[mask_left] * np.array([-1,1]), #doleva
+    np.array([D*2,0]) + points_to_mirror[mask_right] * np.array([-1,1]), #doprava
+    mirror_circ(points_to_mirror_circle[mask_left_circ], dist_L[mask_left_circ], SL, D),
+    mirror_circ(points_to_mirror_circle[mask_right_circ], dist_R[mask_right_circ], SR, D),
+
+    # np.array([0,0]) + points * np.array([-1,-1]), #nahoru doleva
+    # np.array([2*D,0]) + points * np.array([-1,-1]), #nahoru doprava
+    # np.array([0,6/4*2*D]) + points * np.array([-1,-1]), #dolu doleva
+    # np.array([2*D,6/4*2*D]) + points * np.array([-1,-1]), #dolu doprava
+    ))
+
+    points = pointsOut
+
+    #vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
+    vor = PowerTesselation(points, None, limits='auto')#Voronoi(points)
+    if SHOW_PLOT:
+        fig, ax = plt.subplots()
+        voronoi_plot_2d(vor, ax=ax)
+        ax.set_aspect('equal')
+        plt.show()
     return vor
+
 
 ##run power, mirrored data
 def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, radii = []):
+    points = node_coords
+    bound_lim = D/4
+    SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+    # Find vertices outside of dogbone and find its ridge_point
+    pt = PowerTesselation(points, radii, limits='auto')
+    mask_outside = ~is_inside_dogbone(pt.vertices, np.zeros(pt.vertices.shape[0]), D, SL, SR)
+    outside_idx = np.where(mask_outside)[0]
+    out_region = []
+    for region in pt.regions[1:]:
+        out_region.append(np.any(np.array(region)[:, None] == outside_idx[None, :]))
+    points_to_mirror_idx = (pt.point_region[out_region]-1).tolist()
+    points_to_mirror = points[points_to_mirror_idx]
+    #points_to_mirror = points
+    radii_to_mirror = radii[points_to_mirror_idx]
+    #radii_to_mirror = radii
+
+    CLB = np.array([0, 0]) # np.array([0, D/4])
+    CLT = np.array([0, 2* D/4 + D]) # np.array([0, D/4 + D])
+    CRB = np.array([D, 0]) # np.array([D, D/4])
+    CRT = np.array([D, 2 * D/4 + D]) # np.array([D, D/4 + D])
+    vLB = SL - CLB
+    vLT = CLT - SL
+    mask1 = ~(np.cross(points_to_mirror-CLB, vLB) < 0)
+    mask2 = ~(np.cross(points_to_mirror-CLT, vLT) < 0)
+    vRB = SR - CRB
+    vRT = CRT - SR
+    mask3 = ~(np.cross(points_to_mirror-CRB, vRB) > 0)
+    mask4 = ~(np.cross(points_to_mirror-CRT, vRT) > 0)
+    mask_circle = mask1 & mask2 & mask3 & mask4
+    # print(mask_circle.shape, points_to_mirror.shape)
+    points_to_mirror_circle = points_to_mirror[mask_circle]
+    radii_to_mirror_circle = radii_to_mirror[mask_circle]
+
+
+    mask_top = points_to_mirror[:, 1] > (1.5 * D - bound_lim)
+    mask_bottom = points_to_mirror[:, 1] < (bound_lim)
+    mask_left = (points_to_mirror[:, 0] < (bound_lim)) & ((points_to_mirror[:, 1] < (D/4)) | (points_to_mirror[:, 1] > (D/4 + D)))
+    mask_right = (points_to_mirror[:, 0] > (D - bound_lim)) & ((points_to_mirror[:, 1] < (D/4)) | (points_to_mirror[:, 1] > (D/4 + D)))
+    dist2_L = np.sum((points_to_mirror_circle - SL)**2, axis=1)
+    dist_L = dist2_L**0.5
+    mask_left_circ = ((dist_L < (0.725 * D + bound_lim)) &
+                    ((points_to_mirror_circle[:, 1] > (D/8)) &
+                    (points_to_mirror_circle[:, 1] < (D/4 + D/8 + D))))
+    # mask_left_circ = ((dist_L < (0.725 * D + bound_lim)) &
+    #                   ((points_to_mirror_circle[:, 1] > (D/4)) &
+    #                    (points_to_mirror_circle[:, 1] < (D/4 + D))))
+    dist2_R = np.sum((points_to_mirror_circle - SR)**2, axis=1)
+    dist_R = dist2_R**0.5
+    mask_right_circ = ((dist_R < (0.725 * D + bound_lim)) &
+                    ((points_to_mirror_circle[:, 1] > (D/8)) &
+                        (points_to_mirror_circle[:, 1] < (D/4 + D/8 + D))))
+    # mask_right_circ = ((dist_R < (0.725 * D + bound_lim)) &
+    #                    ((points_to_mirror_circle[:, 1] > (D/4)) &
+    #                     (points_to_mirror_circle[:, 1] < (D/4 + D))))
+
+
+    pointsOut= np.vstack((
+    points,
+    np.array([0,3*D]) + points_to_mirror[mask_top, :] * np.array([1,-1]), #nahoru
+    np.array([0,0]) + points_to_mirror[mask_bottom, :] * np.array([1,-1]), #dolu
+    np.array([0,0]) + points_to_mirror[mask_left] * np.array([-1,1]), #doleva
+    np.array([D*2,0]) + points_to_mirror[mask_right] * np.array([-1,1]), #doprava
+    mirror_circ(points_to_mirror_circle[mask_left_circ], dist_L[mask_left_circ], SL, D),
+    mirror_circ(points_to_mirror_circle[mask_right_circ], dist_R[mask_right_circ], SR, D),
+
+    # np.array([0,0]) + points * np.array([-1,-1]), #nahoru doleva
+    # np.array([2*D,0]) + points * np.array([-1,-1]), #nahoru doprava
+    # np.array([0,6/4*2*D]) + points * np.array([-1,-1]), #dolu doleva
+    # np.array([2*D,6/4*2*D]) + points * np.array([-1,-1]), #dolu doprava
+    ))
+
+    if len(radii) > 0:
+        #radii = np.tile(radii, 9) #hstack radii 9x
+        radii = np.hstack((radii,
+                        radii_to_mirror[mask_top],
+                        radii_to_mirror[mask_bottom],
+                        radii_to_mirror[mask_left],
+                        radii_to_mirror[mask_right],
+                        radii_to_mirror_circle[mask_left_circ],
+                        radii_to_mirror_circle[mask_right_circ]
+                        ))
+
+    points = pointsOut
+
+    vor = PowerTesselation(points, radii, limits='auto')
+    #
+    # # PLOT
+    # fig, ax = plt.subplots()
+    #
+    # for i, p in enumerate(points):
+    #     circle = plt.Circle(p, radii[i], color='grey', fill=True)
+    #     ax.add_artist(circle)
+    # ax.scatter(points.T[0], points.T[1])
+    # voronoi_plot_2d(vor, ax=ax, show_points=False, show_vertices=False)
+    # for r in vor.ridge_points:
+    #     if (r[0] >= 0) and (r[1] >= 0):
+    #         p1 = vor.points[r[0]]
+    #         p2 = vor.points[r[1]]
+    #         ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color='red')
+    #
+    # ax.set_aspect('equal')
+    # plt.show()
+    #
+    return vor
+
+def runMirroredPowerDogBone_old (node_coords, dim, D, shifts=0, thickness = None, radii = []):
     # vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
 
     node_coords, radii = voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness, radii = radii)

@@ -1104,8 +1104,212 @@ def generateNodesRectPeriodic_cython(double[:] maxLim,
           node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
 
 
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateParticlesDogbonePow_cython(double D, double minDiam, double maxDiam, double volumeRatio, 
+                                int dim, int trials,
+                                list node_coords, list radii, bint allow_domain_overlap=False,
+                                bint periodic_distance=False, bint useLowBound=False):
+    cdef:
+        int generatedPoints = 0
+        double distInt2, dx
+        double minDiff, diff_tmp
+        double dist1, dist2
+        bint approved
+
+        double gap = .1
+        double h = D / 5.
+        double s = D
+        double Volume = (1.5 * D**2 - 2 * (1/(64.*h**2)*((s**2 + 4*h**2)**2 *
+                                             np.arccos((s**2 - 4*h**2) / (s**2 + 4.*h**2)) -
+                                             4 * s * h * (s**2 - 4*h**2))))
+        vector[double] node_coords_temp
+        vector[double] coords
+        int node_coords_input_len = len(node_coords)
+        vector[double] radii_temp
+        double saturation = 0
+        int iters = 0
+        int p, d, di = 0
+        double radius = maxDiam/2.
+
+    SL = np.array([-0.725*D+D/5., 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5., 0.75*D]) # right circle centeroid
+
+    for d in range(dim):
+        coords.push_back(0.0)
+
+    if node_coords:
+        for node in node_coords:
+            for d in range(dim):
+                node_coords_temp.push_back(node[d])
+
+    if radii:
+        for rad in radii:
+                radii_temp.push_back(rad)
+
+    diam = np.flipud(np.linspace(minDiam/4., maxDiam, 30))
+    if(dim==2):
+        freq = (1.065*np.sqrt(diam/maxDiam)-0.053*np.power(diam/maxDiam,4)-0.012*np.power(diam/maxDiam,6)-0.0045*np.power(diam/maxDiam,8)-0.0025*np.power(diam/maxDiam,10))#fuller2D(diam, maxDiam)
+    elif(dim==3):
+        NotImplementedError('3D not implemented')
+        #freq = fuller3D(diam, maxDiam)
+
+    while (2 * radius > minDiam) and (iters < trials):
+        coords[0] = np.random.rand() * D
+        coords[1] = np.random.rand() * (D + 2 * D/4)
+        if (coords[1] > D/4.) and (coords[1] < (D/4. + D)):
+            #kx = ((0.725 * D)**2 - (py - D/2 - D/4)**2)**0.5 - (0.725 * D - D/5)
+            #if (px < kx + radius) or (px > (D - kx-radius)): # simplified version of round boundary limit
+            dist1 = 0
+            for d in range(dim):
+                dist1 += (coords[d] - SL[d])**2
+            dist1 = dist1**0.5 - 0.725 * D
+            
+            dist2 = 0
+            for d in range(dim):
+                dist2 += (coords[d] - SR[d])**2
+            dist2 = dist2**0.5 - 0.725 * D
+            if (dist1 < radius) or (dist2 < radius):
+                continue
+        else:
+            #if (px < radius) or (px > (D)) or (py < radius) or (py > (1.5 * D)):
+            if (coords[0] < radius) or (coords[0] > (D - radius)) or (coords[1] < radius) or (coords[1] > (1.5 * D - radius)):
+                continue
+                
+        approved = False
+        if (node_coords_input_len==0): approved = True
+        else:
+            if (periodic_distance):
+                NotImplementedError('Periodic version not implemented!')
+            minDiff = 1e30
+            for p in range(node_coords_input_len + generatedPoints):
+                distInt2 = 0
+                for d in range(dim):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt2 += dx * dx
+                #distInt = distInt**0.5
+                diff_tmp = distInt2 - ((1. + gap) * (radii_temp[p] + radius))**2
+                if minDiff > diff_tmp:
+                    minDiff = diff_tmp
+            if (minDiff > 0): approved = True
+        if approved:
+            for d in range(dim):
+                node_coords_temp.push_back(coords[d])
+            radii_temp.push_back(radius)
+            generatedPoints += 1
+
+            saturation += np.pi * radius**2 / Volume
+            while ((1. - saturation / volumeRatio ) < freq[di]):
+                di += 1
+            radius = (diam[di] +(diam[di - 1] - diam[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+            iters = 0
+        else:
+            iters += 1
+
+    # Copy back to lists
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
+        if (dim==3):
+          node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+          radii.append(radii_temp[p])
+        if (dim==3):
+            NotImplementedError('3D not implemented')
 
 
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True)
+def generateParticlesDogbone_cython(double D, double minDiam, double maxDiam, double volumeRatio, 
+                                int dim, int trials,
+                                list node_coords, list radii, bint allow_domain_overlap=False,
+                                bint periodic_distance=False, bint useLowBound=False):
+    cdef:
+        int generatedPoints = 0
+        double distInt2, dx
+        double minDiff, diff_tmp
+        double dist1, dist2
+        bint approved
+
+        double h = D / 5.
+        double s = D
+        vector[double] node_coords_temp
+        vector[double] coords
+        int node_coords_input_len = len(node_coords)
+        int iters = 0
+        int p, d = 0
+        double radius = maxDiam/2.
+
+    SL = np.array([-0.725*D+D/5., 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5., 0.75*D]) # right circle centeroid
+
+    for d in range(dim):
+        coords.push_back(0.0)
+
+    if node_coords:
+        for node in node_coords:
+            for d in range(dim):
+                node_coords_temp.push_back(node[d])
+
+    while (iters < trials):
+        coords[0] = np.random.rand() * D
+        coords[1] = np.random.rand() * (D + 2 * D/4)
+        if (coords[1] > D/4.) and (coords[1] < (D/4. + D)):
+            #kx = ((0.725 * D)**2 - (py - D/2 - D/4)**2)**0.5 - (0.725 * D - D/5)
+            #if (px < kx + radius) or (px > (D - kx-radius)): # simplified version of round boundary limit
+            dist1 = 0
+            for d in range(dim):
+                dist1 += (coords[d] - SL[d])**2
+            dist1 = dist1**0.5 - 0.725 * D
+            
+            dist2 = 0
+            for d in range(dim):
+                dist2 += (coords[d] - SR[d])**2
+            dist2 = dist2**0.5 - 0.725 * D
+            if (dist1 < radius) or (dist2 < radius):
+                continue
+        else:
+            #if (px < radius) or (px > (D)) or (py < radius) or (py > (1.5 * D)):
+            if (coords[0] < radius) or (coords[0] > (D - radius)) or (coords[1] < radius) or (coords[1] > (1.5 * D - radius)):
+                continue
+                
+        approved = False
+        if (node_coords_input_len==0): approved = True
+        else:
+            if (periodic_distance):
+                NotImplementedError('Periodic version not implemented!')
+            minDiff = 1e30
+            for p in range(node_coords_input_len + generatedPoints):
+                distInt2 = 0
+                for d in range(dim):
+                    dx = node_coords_temp[p*dim+d]
+                    dx -= coords[d]
+                    distInt2 += dx * dx
+                #distInt = distInt**0.5
+                diff_tmp = distInt2 - 4 * radius**2
+                if minDiff > diff_tmp:
+                    minDiff = diff_tmp
+            if (minDiff > 0): approved = True
+        if approved:
+            for d in range(dim):
+                node_coords_temp.push_back(coords[d])
+            generatedPoints += 1
+
+            iters = 0
+        else:
+            iters += 1
+
+    # Copy back to lists
+    for p in range(node_coords_input_len, node_coords_input_len + generatedPoints):
+        if (dim==2):
+            node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1]])
+        if (dim==3):
+            NotImplementedError('3D not implemented')
+            #node_coords.append([node_coords_temp[p*dim], node_coords_temp[p*dim+1], node_coords_temp[p*dim+2]])
 
 
 @cython.boundscheck(False)  # Deactivate bounds checking

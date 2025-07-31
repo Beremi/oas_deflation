@@ -12,4 +12,8 @@ const std::string OS_PLATFORM = "@_OS_PLATFORM@";
 const std::string GIT_HASH = "@GIT_HASH@";
 const std::string BUILD_TYPE = "@CMAKE_BUILD_TYPE@";
 
-std :: string version_info();
+const std::string VTK_VERSION = "@VTK_VERSION@";
+
+std :: string version_info(bool diff=false);
+
+const std::string GIT_DIFF = R"-(@GIT_DIFF@)-";

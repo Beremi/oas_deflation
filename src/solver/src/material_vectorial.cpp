@@ -112,11 +112,14 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     Vector ints = Vector :: Zero(1);
     VectTrsprtCoupledMaterial *m = static_cast< VectTrsprtCoupledMaterial * >( mat );
 
+
     ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    if ( crackVolumeRate > 0 || temp_crackVolume > 0 ) {
+    if ( crackVolumeRate > 0 || pressureRate > 0 ) {
         DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
         double vol = trs->giveVolume();
-        ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        if ( temp_crackVolume > 0 ) {
+            ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        }
         ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
     }
     return ints * m->giveDensity();
@@ -132,7 +135,7 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
     } else if ( code.compare("crack_volume") == 0 ) {
         temp_crackVolume = value;
     } else {
-        TensTrsprtMaterialStatus :: setParameterValue(code, value);
+        VectTrsprtMaterialStatus :: setParameterValue(code, value);
     }
 }
 
@@ -269,7 +272,7 @@ Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &stra
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize(strain.size() );
+    temp_stress.resize( strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -338,7 +341,7 @@ bool VectMechMaterialStatus ::  giveValues(string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 VectMechMaterial :: VectMechMaterial(unsigned dimension) : Material(dimension) {
-    name = "Vect mechanical material";    
+    name = "Vect mechanical material";
 }
 
 //////////////////////////////////////////////////////////
@@ -385,11 +388,119 @@ MaterialStatus *VectMechMaterial :: giveNewMaterialStatus(Element *e, unsigned i
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// VECTORIAL MECHANICAL ELASTIC MATERIAL WITH VOLUMETRIC-DEVIATORIC SPLIT
+//////////////////////////////////////////////////////////
+
+VectMechVolDevSplitMaterialStatus :: VectMechVolDevSplitMaterialStatus(VectMechVolDevSplitMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
+    name = "discrete mechanical mat. status with volumetric-deviatoric split";
+    temp_volumetricStrain = 0;
+}
+
+//////////////////////////////////////////////////////////
+Matrix VectMechVolDevSplitMaterialStatus :: giveStiffnessTensor(string type) const {
+    ( void ) type;
+    unsigned ss = mat->giveStrainSize();
+    VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
+    Matrix D = Matrix :: Zero(ss, ss);
+    D(0, 0) = m->giveE0();
+    for ( size_t i = 1; i < ss; i++ ) {
+        D(i, i) =  m->giveE0();
+    }
+    return D;
+}
+
+//////////////////////////////////////////////////////////
+Vector VectMechVolDevSplitMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    ( void ) timeStep;
+    temp_strain = addEigenStrain(strain);
+    VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
+    temp_stress.resize( strain.size() );
+    double ED = m->giveE0();
+    double EV = m->giveAlpha();
+
+    temp_stress [ 0 ] = ED * temp_strain [ 0 ] + ( EV - ED ) * temp_volumetricStrain;
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+        temp_stress [ i ] = ED * temp_strain [ i ];
+    }
+
+    return temp_stress;
+};
+
+//////////////////////////////////////////////////////////
+void VectMechVolDevSplitMaterialStatus :: setParameterValue(string code, double value) {
+    if ( code.compare("volumetric_strain") == 0 ) {
+        temp_volumetricStrain = value;
+    } else {
+        MaterialStatus :: setParameterValue(code, value);
+    }
+}
+
+//////////////////////////////////////////////////////////
+bool VectMechVolDevSplitMaterialStatus ::  giveValues(string code, Vector &result) const {
+    if ( code.compare("volumetric_strain") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temp_volumetricStrain;
+        return true;
+    } else {
+        return VectMechMaterialStatus :: giveValues(code, result);
+    }
+}
+
+
+//////////////////////////////////////////////////////////
+VectMechVolDevSplitMaterial :: VectMechVolDevSplitMaterial(unsigned dimension) : VectMechMaterial(dimension) {
+    name = "Vect mechanical material with volumetric-deviatoric split";
+}
+
+//////////////////////////////////////////////////////////
+void VectMechVolDevSplitMaterial :: readFromLine(istringstream &iss) {
+    string param;
+
+    bool bED, bEV, bdensity;
+    bED = bEV = bdensity = false;
+
+    while (  iss >> param ) {
+        if ( param.compare("ED") == 0 ) {
+            bED = true;
+            iss >> E0;
+        } else if ( param.compare("EV") == 0 ) {
+            bEV = true;
+            iss >> alpha;
+        } else if ( param.compare("density") == 0 ) {
+            bdensity = true;
+            iss >> density;
+        }
+    }
+    if ( !bED ) {
+        cerr << name << ": material parameter 'ED' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bEV ) {
+        cerr << name << ": material parameter 'EV' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+    if ( !bdensity ) {
+        cerr << name << ": material parameter 'density' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ;
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *VectMechVolDevSplitMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    VectMechVolDevSplitMaterialStatus *newStatus = new VectMechVolDevSplitMaterialStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // VECTORIAL MECHANICAL ELASTIC MATERIAL WITH ROTATIONAL STIFFNESS
 //////////////////////////////////////////////////////////
 
 VectMechMaterialWithRotationalStiffnessStatus :: VectMechMaterialWithRotationalStiffnessStatus(VectMechMaterialWithRotationalStiffness *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
-    name = "discrete mechanical mat. status";
+    name = "discrete mechanical mat. status with rotational stiffness";
     mat = m;
 }
 
@@ -401,8 +512,6 @@ Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(stri
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
     double A = rbcr->giveArea();
     double I = rbcr->giveMomentOfInertia();
-    double l = rbcr->giveLength();
-    double nIP = rbcr->giveNumIP();
     Matrix D = Matrix :: Zero(ss, ss);
     D(0, 0) = m->giveE0();
     size_t i = 1;
@@ -420,19 +529,17 @@ Vector VectMechMaterialWithRotationalStiffnessStatus ::  giveStressWithFrozenInt
     ( void ) timeStep;
     temp_strain = addEigenStrain(strain);
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
-    temp_stress.resize(strain.size() );
+    temp_stress.resize( strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     unsigned dim = m->giveDimension();
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );
     double A = rbcr->giveArea();
     double I = rbcr->giveMomentOfInertia();
-    double l = rbcr->giveLength();
-    double nIP = rbcr->giveNumIP();
     size_t i = 1;
     for ( ; i < dim; i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
     }
-    for ( ; i < strain.size(); i++ ) {
+    for ( ; i < ( size_t ) strain.size(); i++ ) {
         temp_stress [ i ] =  m->giveBeta() * m->giveE0() * temp_strain [ i ] * I *rbcr->giveNumIP() / A;
     }
     return temp_stress;

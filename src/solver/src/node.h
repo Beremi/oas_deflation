@@ -10,6 +10,7 @@
 class BoundaryCondition; //forward declaration
 class RigidBodyContact; //forward declaration
 class Transp1D; //forward declaration
+class Solver; //forward declaration;
 
 /**
  * \brief A more elaborate Node class description.
@@ -51,7 +52,7 @@ public:
     bool doesMechanics() const { return physicalFields [ 0 ]; };
     bool doesTransport() const { return physicalFields [ 1 ]; };
     bool doesTemperature() const { return physicalFields [ 2 ]; };
-    virtual bool giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
+    virtual bool giveValues(std :: string code, const Solver *solver, Vector &result) const;
     unsigned giveRelativeDoFPhysicalFieldNum(unsigned k) const;
     unsigned giveAbsoluteDoFPhysicalFieldNum(unsigned k) const;
     std :: vector< unsigned >givePhysicalFieldsDoFNum() const { return physicalFieldsDoFNum; };
@@ -63,6 +64,7 @@ public:
     Simplex *addElementToSimplex(RigidBodyContact *rbc);
     void initSimplex();
     void updateSimplexVolumetricStrain(const Vector &fullDoFs);
+    bool stealSimplexVolumetricStrain();
     Simplex *giveSimplex() { return simplex; }
     bool hasSimplex()const { return simplex != nullptr; }
     bool hasValidSimplex() const { if ( !simplex ) { return false; } return simplex->isValid(); }
@@ -103,7 +105,7 @@ private:
 
 protected:
 public:
-    TrsNode(unsigned dimension) : Node(dimension) { name = "TransportNode"; physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; };
+    TrsNode(unsigned dimension) : Node(dimension) { name = "TransportNode"; physicalFields [ 1 ] = true; physicalFieldsDoFNum [ 1 ] = 1; physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0; };
     virtual ~TrsNode() {};
 };
 
@@ -116,7 +118,7 @@ private:
 
 protected:
 public:
-    TempNode(unsigned dimension) : Node(dimension) { name = "TempNode"; physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1; };
+    TempNode(unsigned dimension) : Node(dimension) { name = "TempNode"; physicalFields [ 2 ] = true; physicalFieldsDoFNum [ 2 ] = 1;  physicalFields [ 0 ] = false; physicalFieldsDoFNum [ 0 ] = 0; };
     virtual ~TempNode() {};
 };
 
@@ -195,11 +197,12 @@ protected:
     double r;  // radius in case of power tessellation
 public:
     Particle(unsigned dimension) : MechNode(dimension) { name = "Particle";  physicalFieldsDoFNum [ 0 ] = 3 * ( dim - 1 ); };
+    Particle(unsigned dimension, double radius, Point x) : Particle(dimension) { r = radius; point = x;};
     virtual ~Particle() {};
     virtual void readFromLine(std :: istringstream &iss);
     double giveRadius() const { return r; };
     void setRadius(const double num) { r = num; };
-    virtual bool giveDoFBasedValues(std :: string code, const Vector &DoFs, Vector &result) const;
+    virtual bool giveValues(std :: string code, const Solver *solver, Vector &result) const;
     virtual unsigned giveOrderOfEnergyConjugateCode(std :: string code) const;
     virtual std :: string giveLineToSave() const;
     Vector calculateRigidBodyMotionVector(const Point *x, const Vector &DoFs) const;

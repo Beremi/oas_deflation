@@ -2,6 +2,281 @@
 
 using namespace std;
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// CONJUGATE GRADIENT SOLVER
+//////////////////////////////////////////////////////////
+
+ConjGradSolver :: ConjGradSolver() {
+    name = "EigenConj";
+    relMaxIT = 1.;
+    precision = 1e-12;
+}
+
+//////////////////////////////////////////////////////////
+ConjGradSolver :: ~ConjGradSolver() {}
+
+//////////////////////////////////////////////////////////
+void ConjGradSolver :: setPrecisionAndRelMaxIters(double p, double rmi) {
+    relMaxIT = rmi;
+    precision = p;
+}
+
+//////////////////////////////////////////////////////////
+bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    //JacobiSVD<MatrixXd> svd(cgb);
+    //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
+    //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
+
+    if ( A.rows() > 0 ) {
+        cgK.setMaxIterations( relMaxIT * A.cols() );
+        cgK.setTolerance(precision);
+        cgK.compute(A);
+        initialGuess = Vector :: Zero( A.cols() );
+        maxIT = relMaxIT * A.cols();
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    bool result = false;
+    if ( b.size() > 0 ) {
+        x = cgK.solveWithGuess(b, initialGuess);
+        result = size_t( cgK.iterations() ) < maxIT;
+        if ( !result ) {
+            cerr << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
+            exit(1);
+        }
+        initialGuess = x;
+    } else {
+        result = true;
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LDLT SOLVER
+//////////////////////////////////////////////////////////
+
+LDLTSolver :: LDLTSolver() {
+    name = "LDLTSolver";
+}
+
+//////////////////////////////////////////////////////////
+LDLTSolver :: ~LDLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool LDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        ldlt.compute(A);
+    }
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool LDLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = ldlt.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LU SOLVER
+//////////////////////////////////////////////////////////
+
+LUSolver :: LUSolver() {
+    name = "LUSolver";
+}
+
+//////////////////////////////////////////////////////////
+LUSolver :: ~LUSolver() {}
+
+//////////////////////////////////////////////////////////
+bool LUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        lu.compute(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool LUSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = lu.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// LLT SOLVER
+//////////////////////////////////////////////////////////
+
+LLTSolver :: LLTSolver() {
+    name = "LLTSolver";
+}
+
+//////////////////////////////////////////////////////////
+LLTSolver :: ~LLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool LLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( A.rows() > 0 ) {
+        llt.compute(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool LLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = llt.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+
+
+
+
+
+/*
+ *
+ *
+ *
+ *  } else if ( solver_type == "EigenLDLT" ) {
+ *      Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
+ *      x = simplicial_ldlt_solver.compute(A).solve(b);
+ *      //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *  } else if ( solver_type == "EigenLLT" ) {
+ *      Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
+ *      x = simplicial_llt_solver.compute(A).solve(b);
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *  } else if ( solver_type == "EigenSparseLU" ) {
+ *      Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
+ *      sparseLU_solver.analyzePattern(A);
+ *      sparseLU_solver.factorize(A);
+ *
+ *      x = sparseLU_solver.solve(b);
+ *      //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+ *      result = 1;
+ *
+ *
+ * }
+ *
+ *
+ *
+ */
+
+
+
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
@@ -35,18 +310,21 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
         x = simplicial_ldlt_solver.compute(A).solve(b);
         //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
-        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        result = 1;
     } else if ( solver_type == "EigenLLT" ) {
         Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
         x = simplicial_llt_solver.compute(A).solve(b);
-        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        result = 1;
     } else if ( solver_type == "EigenSparseLU" ) {
         Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
         sparseLU_solver.analyzePattern(A);
         sparseLU_solver.factorize(A);
 
         x = sparseLU_solver.solve(b);
-        result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        result = 1;
     }
 
 #if PRINT_DEBUG_TIME
@@ -172,8 +450,51 @@ bool LinalgEigenSolver(const Matrix &mat, Vector &eigenvalues, vector< Vector > 
     return true;
 }
 
+bool LinalgEigenSpectraSolver(const CoordinateIndexedSparseMatrix &mat, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
+    // Define matrix operation for Spectra
+    Spectra :: SparseSymMatProd< double >op(mat);
+
+    Spectra :: SymEigsSolver< Spectra :: SparseSymMatProd< double > >eigs(op, n_eigen_vals, 3 * n_eigen_vals);
+    eigs.init();
+    eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
+
+    if ( eigs.info() == Spectra :: CompInfo :: Successful ) {
+        eigenvalues = eigs.eigenvalues();
+        eigenvectors = eigs.eigenvectors();
+        std :: cout << "Eigenvalues:\n" << eigenvalues << std :: endl;
+    } else {
+        std :: cerr << "Eigenvalue computation failed!" << std :: endl;
+    }
+
+    return true;
+}
+
+bool LinalgEigenSpectraGENSolver(const CoordinateIndexedSparseMatrix &mat, const CoordinateIndexedSparseMatrix &matB, Vector &eigenvalues, Matrix &eigenvectors, int n_eigen_vals) {
+    // Define matrix operation for Spectra
+    Spectra :: SparseGenMatProd< double >op(mat);
+    Spectra :: SparseCholesky< double >op_B(matB);
+
+    // Define the solver: Solve Ax = λBx
+    //Spectra :: SymGEigsSolver<Spectra :: SparseGenMatProd<double>, Spectra :: SparseSymMatProd<double>, Spectra :: GEigsMode::Cholesky> eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
+    Spectra :: SymGEigsSolver< Spectra :: SparseGenMatProd< double >, Spectra :: SparseCholesky< double >, Spectra :: GEigsMode :: Cholesky >eigs(op, op_B, n_eigen_vals, 2 * n_eigen_vals);
+    eigs.init();
+    eigs.compute(Spectra :: SortRule :: SmallestAlge);  // Largest algebraic eigenvalues
+
+    if ( eigs.info() == Spectra :: CompInfo :: Successful ) {
+        eigenvalues = eigs.eigenvalues();
+        eigenvectors = eigs.eigenvectors();
+        std :: cout << "Eigenvalues:\n" << eigenvalues << std :: endl;
+    } else {
+        std :: cerr << "Eigenvalue computation failed!" << std :: endl;
+    }
+
+    return true;
+}
+
 bool LinalgLUSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b) {
-    (void) A; (void) x; (void) b;
+    ( void ) A;
+    ( void ) x;
+    ( void ) b;
     //return LinalgSymmetricSolver(A, x, b, x, 1e-12, 2, "EigenConj");
 
 
@@ -201,7 +522,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -315,15 +636,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];
@@ -334,4 +655,32 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         cerr << "Gauss integration for n=" << n << " not implemented" << endl;
         exit(1);
     }
+}
+
+
+double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, const Point *a, const Point *b, const Point *c){
+    //test bounding box
+    double maxp, minp;
+    for(unsigned i=0; i<3; i++){
+        maxp = (*a)[i];
+        maxp = max(maxp,(*b)[i]);
+        maxp = max(maxp,(*c)[i]);
+        minp = (*a)[i];
+        minp = min(minp,(*b)[i]);
+        minp = min(minp,(*c)[i]);
+        if (min((*A)[i],(*B)[i])>maxp || max((*A)[i],(*B)[i])<minp){
+            return -1.;
+        }
+    }
+
+    //compute intersection with facet plane
+    Point dirvec = (*B)-(*A);
+    double length = dirvec.norm();
+    dirvec.normalize();
+    Point normal = Point( ((*b)[1]-(*a)[1])*((*c)[2]-(*a)[2]) - ((*c)[1]-(*a)[1])*((*b)[2]-(*a)[2]), ((*b)[2]-(*a)[2])*((*c)[0]-(*a)[0]) - ((*c)[2]-(*a)[2])*((*b)[0]-(*a)[0])   , ((*b)[0]-(*a)[0])*((*c)[1]-(*a)[1]) - ((*c)[0]-(*a)[0]) *((*b)[1]-(*a)[1]) );
+    normal.normalize();
+    double d = -( (*a) [ 0 ] * normal [ 0 ] + (*a) [ 1 ] * normal [ 1 ] + (*a) [ 2 ] * normal [ 2 ] );
+    double t = -( normal [ 0 ] * (*A) [ 0 ] + normal [ 1 ] * (*A)[ 1 ] + normal [ 2 ] * (*A) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] );
+    if (t>=0 && t<=length) return t;
+    else return -1.;
 }

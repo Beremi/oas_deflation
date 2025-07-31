@@ -78,11 +78,18 @@ public:
 class MechanicalTriangle : public Element
 {
 protected:
+    Matrix averageVolumeB;
+    bool b_bar_integration_split;
+    void applyAverageVolumeB(Matrix &B, const Matrix phiG) const;
+    virtual void computeAverageBVolumeMatrix();
+    virtual void setIntegrationPointsAndWeights();
+
 public:
     MechanicalTriangle();
     virtual ~MechanicalTriangle() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
+    virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
 };
 
 //////////////////////////////////////////////////////////
@@ -128,13 +135,12 @@ public:
 class CosseratQuad : public MechanicalQuad
 {
 protected:
-
+    virtual void computeMassMatrix();
 public:
     CosseratQuad();
     virtual ~CosseratQuad() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Matrix giveMassMatrix() const;
 };
 
 
@@ -144,7 +150,7 @@ public:
 class CosseratBrick : public MechanicalBrick
 {
 protected:
-
+    virtual void computeMassMatrix();
 public:
     CosseratBrick();
     virtual ~CosseratBrick() {};
@@ -173,13 +179,12 @@ public:
 class CoupledCosseratTransportBrick : public CosseratBrick
 {
 protected:
-
+    virtual void computeDampingMatrix();
 public:
     CoupledCosseratTransportBrick();
     virtual ~CoupledCosseratTransportBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Matrix giveDampingMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 
@@ -190,7 +195,8 @@ class CoupledCosseratBrickWithDependentUpperZLayer : public CoupledCosseratTrans
 {
 protected:
     bool bindlayers;
-
+    virtual void computeMassMatrix();
+    virtual void computeDampingMatrix();
 public:
     CoupledCosseratBrickWithDependentUpperZLayer();
     virtual ~CoupledCosseratBrickWithDependentUpperZLayer() {};
@@ -198,8 +204,6 @@ public:
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
     virtual Vector integrateInternalSources();
-    virtual Matrix giveDampingMatrix() const;
-    virtual Matrix giveMassMatrix() const;
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
 };
 #endif  /* _ELEMENT_CONTINUOUS_H */

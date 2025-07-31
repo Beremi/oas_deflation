@@ -10,6 +10,14 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+try:
+    from power_tesselation_cython import _generate_voronoi_parts_2d_cython
+    print('Using Cython version of power tesselation - _generate_voronoi_parts_2d_cython.')
+except:
+    _generate_voronoi_parts_2d_cython = None
+    print('''Using Python version of power tesselation. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 class TimeFilter(logging.Filter):
 
     def filter(self, record):
@@ -122,13 +130,16 @@ class PowerTesselation(object):
     def __init__(self, points, weights=None, limits='unit', check_distances=False):
         self._points = np.asarray(points, dtype=np.float64)
         self._npoints, self._ndim = points.shape
-        print ('len weiights %d' %len(weights))
 
         if weights is None:
             print('no WEIGHTS ')
             self._weights = np.zeros(self._npoints)
         else:
             self._weights = np.asarray(weights, dtype=np.float64)
+        # print ('points shape', points.shape)
+        # print ('len weights', len(weights))
+        # np.savetxt('points.txt', np.hstack((self._points, self.weights[:, None])))
+
         if self._ndim not in [2, 3]:
             raise ValueError('Shape of array has to be (npoints, ndim) for ndim = [2, 3] but ndim = {}.'.format(self._ndim))
         if not self._points.shape[0] == self._weights.shape[0]:
@@ -177,9 +188,9 @@ class PowerTesselation(object):
             point_distances = cdist(points, points)
             point_distances[np.diag_indices_from(point_distances)] = 1
             #point_distances = point_distances[np.triu_indices(point_distances.shape[0], k=1)]
-            print('distances', point_distances.min(), point_distances.max())
-            print(np.argwhere(point_distances == 0))
-            print(point_distances.shape)
+            #print('distances', point_distances.min(), point_distances.max())
+            #print(np.argwhere(point_distances == 0))
+            #print(point_distances.shape)
             if np.nanmin(point_distances) == 0:
                 raise ValueError('There are identical points (distance is zero).')
 
@@ -327,38 +338,54 @@ class PowerTesselation(object):
 
 
     def _generate_voronoi_parts_2d(self):
+        #start = time.time()
         self._total_volume = 0.0
         connection_list = []
+        connection_set = set()
         ridge_vertices = []
         vertices = []
         vertex_start_num = 0
         regions = [[], ]
         point_region = []
+        # start = time.time()
+        # _generate_voronoi_parts_2d_cython(self.diagram, self.container, connection_list, vertices,
+        #                                 regions, ridge_vertices, point_region)
+        # print('čas cython', start - time.time())
+        #print(connection_list)
+        #print(vertices)
+        #print(regions)
+        #print(ridge_vertices)
+        #print(point_region)
         for i, cell in enumerate(self.diagram):
             point_region.append(i+1)
             (id_, x, y, z, r) = self.container.get(i)
             self._total_volume += cell.volume()
             for side in cell.sides:
                 # TODO: why not - if not np.allclose(np.array(side.as_coords())[:, -1], 0):
-                if not np.all(np.array(side.as_coords())[:, -1] == 0):
-                    continue
+                side_coords = np.array(side.as_coords())
+                side_vert_indices = np.array(side.as_list())
+                if not np.all(side_coords[:, -1] == 0):
+                    pass # continue
                 else:
-                    verts = np.array(side.as_list()) + vertex_start_num
-                    for id_, (x, y, z) in zip(verts, side.as_coords()):
+                    verts = side_vert_indices + vertex_start_num
+                    for id_, (x, y, z) in zip(verts, side_coords):
                         vertices.append((id_, x, y, z))
                     regions.append(verts)
 
-            for side in cell.sides:
-                if (np.allclose(np.array(side.as_coords())[:, 2], 0)
-                        or np.allclose(np.array(side.as_coords())[:, 2], 1)):
+            #for side in cell.sides:
+                if (np.allclose(side_coords[:, 2], 0)
+                        or np.allclose(side_coords[:, 2], 1)):
                     continue
 
                 point_con = tuple(sorted((i, side.neighbour)))
-                if point_con not in connection_list:
+                if point_con not in connection_set:
                     connection_list.append(point_con)
-                    ridge_vertices.append(np.array(side.as_list()) + vertex_start_num)
+                    connection_set.add(point_con)
+                    ridge_vertices.append(side_vert_indices + vertex_start_num)
 
             vertex_start_num += cell.vertices.size()
+
+        #print('čas python', start - time.time())
 
         self._ridge_vertices = ridge_vertices
         self._vertices = vertices

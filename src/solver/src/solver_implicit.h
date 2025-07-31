@@ -10,6 +10,13 @@ protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
     CoordinateIndexedSparseMatrix Keff, K;
+    std :: unique_ptr< LinAlgSolver >linalgsolver;
+    std :: string symsolver_type = "EigenConj";
+
+    int stiffnessMatrixUpdate; //update matrices every X iteration
+    std :: string stiffMatType, stiffMatTypeFirstIT;
+
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
@@ -26,6 +33,7 @@ public:
     virtual void solve();
     virtual void reset();
     virtual void rebuild();
+    virtual void factorizeLinearSystem();
 };
 
 //////////////////////////////////////////////////////////
@@ -34,7 +42,7 @@ class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 protected:
     unsigned it, restarts; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
-    Vector W_ext_old, W_int_old, W_ext, W_int, W_kin, EPS2;
+    Vector EPS2;
     double disErr, resErr, eneErr;
     double maxDisErr, maxResErr, maxEneErr;
     double limitDisErr, limitResErr, limitEneErr;
@@ -46,15 +54,13 @@ protected:
     double step_decrease;  ///> decreased in case the number of iteration is in upper 1/2
     double critical_step_decrease;  ///> decreased in case of step restart (not satisfying tolerance)
 
-    IndirectDC *idc;        //indirect displacement control
+    IndirectControl *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
-    int stiffnessMatrixUpdate, dampingMatrixUpdate, massMatrixUpdate; //update matrices every X iteration
     void printAllVectors();
     void checkAllVectorsForNaNs();
     void evaluateErrors();
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration);
     virtual void reset();
     virtual void giveValues(std :: string code, Vector &result) const;
 
@@ -76,12 +82,17 @@ class TransientLinearTransportSolver : public SteadyStateNonLinearSolver /// sol
 protected:
     double alpha_f, alpha_m, gamma, beta;
     CoordinateIndexedSparseMatrix C;
-    Vector v, v_old;
+    Vector v_old;
+    unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark
+    bool check_time_integr_params;
+    int dampingMatrixUpdate; //update matrices every X iteration
 
     virtual void applySpectralRadius(double rhoinfty);
+    virtual void checkIntegrationParams();
+    virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration);
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
@@ -117,14 +128,18 @@ class TransientLinearMechanicalSolver : public TransientNonLinearTransportSolver
 protected:
     CoordinateIndexedSparseMatrix M;
     Vector a, a_old;
-
+    virtual void computeTotalKineticEnergy();
     virtual void applySpectralRadius(double rhoinfty);
+    virtual void checkIntegrationParams();
+    virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(std :: string matrixType, unsigned iteration);
+    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
+    int massMatrixUpdate; //update matrices every X iteration
+    bool lumpMassM;
 public:
     TransientLinearMechanicalSolver();
     virtual ~TransientLinearMechanicalSolver();     //destructor
@@ -132,6 +147,7 @@ public:
     virtual void solve();
     virtual void runBeforeEachStep();
     virtual void runAfterEachStep();
+    virtual Solver *readFromFile(const std :: string filename);
 };
 
 //////////////////////////////////////////////////////////

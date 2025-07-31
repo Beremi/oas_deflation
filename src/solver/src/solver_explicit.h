@@ -23,7 +23,6 @@ public:
     void computeAcceleration();
     virtual Solver *readFromFile(const std :: string filename);
     virtual void runBeforeEachStep();
-    void lumpMassMatrix();
 };
 
 #endif /* _SOLVER_EXPLICIT_H */

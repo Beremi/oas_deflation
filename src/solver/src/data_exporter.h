@@ -4,6 +4,8 @@
 #include "globals.h"
 #include "node_container.h"
 #include "element_container.h"
+#include "constraint.h"
+#include "boundary_condition.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -18,37 +20,40 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier = 1.; };
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier = 1.; save_iterations = false;};
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual bool doExportNow(const double &time, const unsigned &step);
+    virtual bool doExportNow(const double &time, const int &iteration, const unsigned &step);
     virtual void updateNextTimeToSave(const double &time);
     virtual void updateNextStepToSave(const unsigned &step);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const = 0;
-    virtual void giveFileName(unsigned step, char *buffer) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
+    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
     std :: string giveFileName() const { return filename; };
     virtual void init();
     size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
+    void setSolverPointer(Solver *s);
+    std :: string giveName() { return name; };
 protected:
     unsigned dim;
+    std :: string name;
     std :: string filename;
     unsigned precision;
     std :: vector< std :: string >codes;
     std :: vector< size_t >maxsize;
+    bool save_iterations;
     double multiplier;
+    Solver *solver;
 
     std :: vector< double >times_to_save;  // vector to store times for export
     double saveTime_each = std :: numeric_limits< double > :: max(); // time period
     double saveTime_last = 0; // last saved time using time period
-    double time_last = 0; // time of the last export
     double next_time_to_save = std :: numeric_limits< double > :: max(); // time to perform the next export
     unsigned saveTimes_idx = 0; // possition in vector of times_to_save
 
     std :: vector< unsigned >steps_to_save;  // vector to store steps for export
     unsigned saveStep_each = std :: numeric_limits< unsigned > :: max(); // step period
     unsigned saveStep_last = 0; // last saved step using step period
-    unsigned step_last = 0; // step of the last export
     unsigned next_step_to_save = std :: numeric_limits< unsigned > :: max(); // step to perform the next export
     unsigned saveSteps_idx = 0; // possition in vector of steps_to_save
 };
@@ -62,11 +67,11 @@ private:
     NodeContainer *nodes;
     ElementContainer *elems;
 public:
-    TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e; };
+    TXTNodalExporter(NodeContainer *n, ElementContainer *e, unsigned dimension) : DataExporter(dimension) { nodes = n; elems = e;  name = "TXTNodalExporter"; };
     ~TXTNodalExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -78,11 +83,11 @@ class TXTElementExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
+    TXTElementExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; name = "TXTElementExporter"; };
     ~TXTElementExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -94,11 +99,42 @@ class TXTIntegrationPointExporter : public DataExporter
 private:
     ElementContainer *elems;
 public:
-    TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e; };
+    TXTIntegrationPointExporter(ElementContainer *e, unsigned dimension) : DataExporter(dimension) { elems = e;   name = "TXTIntegrationPointExporter"; };
     ~TXTIntegrationPointExporter() {};
     virtual void init();
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
+protected:
+};
+
+/////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EXPORT MATRIX TO TXT
+class MatrixExporter : public DataExporter
+{
+private:
+    ElementContainer *elems;
+    NodeContainer *nodes;
+    BCContainer *bccont;
+    ConstraintContainer *constraints;
+    CoordinateIndexedSparseMatrix K_init;
+    CoordinateIndexedSparseMatrix X_init;
+    bool BC_applied = true; // true - Matrices without BC DoFs, false - Matrices with all DoFs
+    bool solver_numbering = true; // true - numbering in solver, false - numbering by input order of DoFs
+    std :: string matrix_type = "K_all_DoFs"; // type of exported matrix - K_all_DoFs, K_effective, K_condensed, X
+    std :: string Stiff_matrix_type = "elastic"; // type of stiffness matrix - elastic, tangent, consistent, ...
+    std :: vector< unsigned int >CondMasters;  // input vector of master DoFs for static condensation
+    std :: vector< unsigned int >fullMasterIDs;  // IDs of master DoFs in DoF numbering
+    std :: vector< unsigned int >blockedDofsIDs;  // IDs of blocked DoFs (BCs) in DoF numbering
+    const CoordinateIndexedSparseMatrix MatrixXSwitchRowsCols(const CoordinateIndexedSparseMatrix &matrix) const;
+
+
+public:
+    MatrixExporter(ElementContainer *e, NodeContainer *n, BCContainer *bc, ConstraintContainer *cc, unsigned dimension) : DataExporter(dimension) { elems = e; nodes = n; bccont = bc;  constraints = cc; name = "MatrixExporter"; };
+    ~MatrixExporter() {};
+    virtual void init();
+    void readFromLine(std :: istringstream &iss);
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
 protected:
 };
 
@@ -108,12 +144,12 @@ protected:
 class Gauge : public DataExporter
 {
 protected:
-    std :: string name;
+    std :: string gname;
 public:
-    Gauge(unsigned dimension) : DataExporter(dimension) {};
+    Gauge(unsigned dimension) : DataExporter(dimension) {   name = "Gauge"; };
     ~Gauge() {};
-    virtual void giveFileName(unsigned step, char *buffer) const;
-    std :: string giveName() { return name; };
+    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
+    std :: string giveGaugeName() const { return gname; }
 };
 
 //////////////////////////////////////////////////////////
@@ -126,11 +162,11 @@ protected:
     std :: vector< unsigned >DoFs;
     std :: vector< unsigned >n;
 public:
-    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc; };
-    ForceGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    ForceGauge(NodeContainer *nc, unsigned dimension) : Gauge(dimension) { nodes = nc;   name = "ForceGauge"; };
+    ForceGauge(std :: string &f, std :: string &gaugename, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~ForceGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -141,10 +177,10 @@ public:
 class DoFGauge : public ForceGauge
 {
 public:
-    DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {};
-    DoFGauge(std :: string &f, std :: string &gname, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
+    DoFGauge(NodeContainer *nc, unsigned dimension) : ForceGauge(nc, dimension) {  name = "DoFGauge"; };
+    DoFGauge(std :: string &f, std :: string &gaugename, std :: string &c, std :: vector< unsigned > &nn, NodeContainer *nc, double m, unsigned dimension);
     ~DoFGauge() {};
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -158,10 +194,10 @@ protected:
     std :: vector< unsigned >ipnums;
     ElementContainer *elemcont;
 public:
-    IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    IntegrationPointGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1;   name = "IntegrationPointGauge"; };
     ~IntegrationPointGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -173,10 +209,10 @@ class ElementContainerGauge : public Gauge
 protected:
     ElementContainer *elemcont;
 public:
-    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1; };
+    ElementContainerGauge(ElementContainer *ec, unsigned dimension) : Gauge(dimension) { elemcont = ec; multiplier = 1;   name = "ElementContainerGauge"; };
     ~ElementContainerGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
 };
 
@@ -194,10 +230,10 @@ private:
     Point natCoordsA, natCoordsB;
     Element *elemA, *elemB;
 public:
-    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr; };
+    DisplacementGauge(NodeContainer *n, ElementContainer *e, unsigned dimension) : Gauge(dimension) { nodes = n; elems = e;  multiplier = 1; elemA = nullptr; elemB = nullptr;   name = "DisplacementGauge"; };
     ~DisplacementGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
 protected:
 };
@@ -208,14 +244,12 @@ protected:
 class SolverGauge : public Gauge
 {
 private:
-    Solver *solver;
 public:
-    SolverGauge(unsigned dimension) : Gauge(dimension) {};
+    SolverGauge(unsigned dimension) : Gauge(dimension) {  name = "SolverGauge"; };
     ~SolverGauge() {};
     void readFromLine(std :: istringstream &iss);
-    virtual void exportData(unsigned step, const Vector &DoFs, const Vector &reactions, fs :: path resultDir) const;
+    virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const;
     virtual void init();
-    void setSolverPointer(Solver *s);
 protected:
 };
 
@@ -252,8 +286,8 @@ private:
 public:
     ExporterContainer() {};
     ~ExporterContainer();
-    void readFromFile(const std :: string filename, NodeContainer *n, ElementContainer *e, unsigned dimension);
-    void exportData(unsigned step, double time, const Vector &DoFs, const Vector &reactions, const bool &exportAll) const;
+    void readFromFile(const std :: string filename, NodeContainer *n, ElementContainer *e, ConstraintContainer *c, BCContainer *b, unsigned dimension);
+    void exportData(unsigned step, int iteration, double time, const bool &exportAll) const;
     void addExporter(DataExporter *de) { exporters.push_back(de); };
     size_t giveSize() { return exporters.size(); }
     void init(const bool &initial = true);

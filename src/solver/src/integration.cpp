@@ -27,6 +27,60 @@ void IntegrationType :: init(const vector< Node * > &nodes, const vector< vector
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// EMPTY INTEGRATION
+//////////////////////////////////////////////////////////
+void EmptyIntegration :: init() {
+    ip_locs.resize(0);
+    ip_weights.resize(0);
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SINGLE POINT INTEGRATION FOR DISCRETE MODELS
+//////////////////////////////////////////////////////////
+void IntegrLine :: init() {}
+
+//////////////////////////////////////////////////////////
+void IntegrLine :: setNumIP(unsigned n) {
+    ip_locs.resize(n);
+    ip_weights.resize(n);
+    if (n==1){
+        ip_locs[0] = Point(0,0,0);
+        ip_weights[0] = 2.;
+    }else if(n==2){
+        ip_locs[0] = Point(-1./sqrt(3.),0,0);
+        ip_locs[1] = -ip_locs[0];
+        ip_weights[0] = ip_weights[1] = 1.;
+    }else if(n==3){
+        ip_locs[0] = Point(-sqrt(3./5.),0,0);
+        ip_locs[1] = Point(0,0,0);
+        ip_locs[2] = -ip_locs[0];
+        ip_weights[0] = ip_weights[2] = 5./9.;
+        ip_weights[1] = 8./9.;
+    }else if(n==4){
+        ip_locs[0] = Point(-sqrt(3./7.-2./7.*sqrt(6./5.)),0,0);
+        ip_locs[1] = Point(-sqrt(3./7.+2./7.*sqrt(6./5.)),0,0);
+        ip_locs[2] = -ip_locs[1];
+        ip_locs[3] = -ip_locs[0];
+        ip_weights[0] = ip_weights[3] = (18.+sqrt(30.))/36.;
+        ip_weights[1] = ip_weights[2] = (18.-sqrt(30.))/36.;
+    }else if(n==5){
+        ip_locs[0] = Point(-sqrt(5.-2.*sqrt(10./7.))/3.,0,0);
+        ip_locs[1] = Point(-sqrt(5.+2.*sqrt(10./7.))/3.,0,0);
+        ip_locs[2] = Point(0,0,0);
+        ip_locs[3] = -ip_locs[1];
+        ip_locs[4] = -ip_locs[0];
+        ip_weights[0] = ip_weights[4] = (322.+13.*sqrt(70.))/900.;
+        ip_weights[1] = ip_weights[3] = (322.-13.*sqrt(70.))/900.;
+        ip_weights[2] = 128./225.;
+    }else{
+        cerr << "Error: IntegrLine is not prepared for " << n << " integration points" << endl;
+        exit(1);
+    }
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // SINGLE POINT INTEGRATION FOR DISCRETE MODELS
 //////////////////////////////////////////////////////////
 void IntegrDiscrete1 :: init() {}
@@ -81,7 +135,7 @@ void IntegrBrick8 :: init() {
 //////////////////////////////////////////////////////////
 void IntegrTetra4 :: init() {
     ip_locs.resize(4);
-    double a= ( 5. + 3. * sqrt(5.) ) / 20.;
+    double a = ( 5. + 3. * sqrt(5.) ) / 20.;
     double b = ( 5. - sqrt(5.) ) / 20.;
     ip_locs [ 0 ] = Point(a, b, b);
     ip_locs [ 1 ] = Point(b, a, b);
@@ -114,9 +168,9 @@ void IntegrTri3 :: init() {
 //////////////////////////////////////////////////////////
 // ONE POINT INTEGRATION IN TRIANGLE
 //////////////////////////////////////////////////////////
-void IntegrTri1 :: init(){
+void IntegrTri1 :: init() {
     ip_locs.resize(1);
-    ip_locs [ 0 ] = Point(1./3., 1./3., 0.);
+    ip_locs [ 0 ] = Point(1. / 3., 1. / 3., 0.);
     ip_weights.resize(1);
     ip_weights [ 0 ] = 1. / 2.;
 }
@@ -183,7 +237,7 @@ void IntegrPolygon :: init(const vector< Node * > &nodes, const vector< vector< 
                 for ( unsigned s = 0; s < nIP; s++ ) {
                     ip_locs [ 4 * i + r ] += ( * pp [ s ] ) * phi [ s ];
                 }
-                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian( localINT.giveIPLocationPointer(r) );
+                ip_weights [ 4 * i + r ] = localINT.giveIPWeight(r) * localSF.giveJacobian(localINT.giveIPLocationPointer(r) );
             }
             a = c;
         }

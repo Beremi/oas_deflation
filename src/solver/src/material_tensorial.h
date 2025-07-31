@@ -37,7 +37,11 @@ public:
 class TensTrsprtMaterial : public Material
 {
 protected:
-    double permeability, viscosity, capacity, density, a, m;
+    double permeability; //[m2]
+    double viscosity; //[Pa s]
+    double capacity; //[s2/m2]
+    double density; //[kg/m3]
+    double a, m;
 public:
     TensTrsprtMaterial(unsigned dimension) : Material(dimension) { name = "transport material"; a = -1.; m = 0; };
     ~TensTrsprtMaterial() {};
@@ -99,7 +103,7 @@ class TensMechMaterial;
 class TensMechMaterialStatus : public MaterialStatus
 {
 protected:
-
+    Matrix giveElasticStiffnessTensor3D() const;
 public:
     TensMechMaterialStatus(TensMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensMechMaterialStatus() {};
@@ -110,6 +114,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
     virtual Matrix giveMassTensor() const;
+    virtual Matrix giveDampingTensor() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -125,6 +130,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveElasticModulus() const { return E; }
+    double giveShearModulus() const { return E/(2.+2.*nu); }
     double givePoissonsRatio() const { return nu; }
     double giveDensity() const { return density; };
     bool isPlaneStress() { return planeStress; };
@@ -152,16 +158,17 @@ public:
 class TensCosseratMechMaterial : public TensMechMaterial
 {
 protected:
-    double lc, muc;
+    double lc, muc, psize;
 
 public:
-    TensCosseratMechMaterial(unsigned dimension) : TensMechMaterial(dimension) { name = "elastic Cosserat mechanical material"; planeStress = true; };
+    TensCosseratMechMaterial(unsigned dimension);
     ~TensCosseratMechMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveCharacteristicLength() const { return lc; }
     double giveCosseratShearParam() const { return muc; }
-    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont); strainsize = dim * dim; }
+    double giveParticleSize() const { return psize; }
+    virtual void init(MaterialContainer *matcont) { TensMechMaterial :: init(matcont); }
 };
 
 #endif /* _MATERIAL_CONTINUOUS_H */

@@ -10,7 +10,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy
 from IPython.display import clear_output
 import sys, os, math
-from sklearn import preprocessing
 from scipy.ndimage import rotate
 from scipy.spatial import Voronoi
 from scipy.spatial import voronoi_plot_2d

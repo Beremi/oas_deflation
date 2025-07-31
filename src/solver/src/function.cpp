@@ -63,10 +63,16 @@ void PieceWiseLinearFunction :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 double PieceWiseLinearFunction :: giveY(double t) const {
-    t = Function :: checkTimeBellowZero(t);
+    //t = Function :: checkTimeBellowZero(t);
 
     if ( x.size() <= 0 ) {
         return 0;
+    }
+
+    if ( t < x [ 0 ] ) {
+        cerr << "Warning in Function: asking for value below the minimal time (t=" << t << "), returning value " << y[0] << endl;
+        exit(1);
+        return y [ 0 ];
     }
 
     //indexovani ma typ podle typu velikosti pole
@@ -179,7 +185,7 @@ double ConstSawToothFunction :: giveY(double t) const {
         return multip * t * lower / ( abs(time_shift) );
     } else {
         return ( ( upper - lower ) - ( ( ( upper - lower ) / ( 0.5 * period ) ) *
-                                       abs(fmod( ( t + time_shift ), period ) - 0.5 * period) ) +
+                                       abs(fmod( ( t + time_shift ), period) - 0.5 * period) ) +
                  lower ) * multip;
     }
 }
@@ -326,9 +332,10 @@ FunctionContainer :: ~FunctionContainer() {
 
 //////////////////////////////////////////////////////////
 void FunctionContainer :: readFromFile(const string filename) {
+    cout << "Input file '" <<  filename;
     size_t origsize = functions.size();
     string line, ftype;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -370,7 +377,7 @@ void FunctionContainer :: readFromFile(const string filename) {
                     VaryingSawToothFunction *newf = new VaryingSawToothFunction();
                     newf->readFromLine(iss);
                     // it is necessary to specify which of two parent classes will the tree go throug
-                    functions.push_back( ( ConstSawToothFunction * ) newf );
+                    functions.push_back( ( ConstSawToothFunction * ) newf);
                 } else {
                     cerr << "Error: function '" <<  ftype <<  "' is not implemented yet." << endl;
                     exit(EXIT_FAILURE);
@@ -378,7 +385,7 @@ void FunctionContainer :: readFromFile(const string filename) {
             }
         }
         inputfile.close();
-        cout << "Input file '" <<  filename << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
+        cout << "' succesfully loaded; " << functions.size() - origsize << " functions found" << endl;
     } else {
         cerr << "Error: unable to open input file '" <<  filename <<  "'" << endl;
         exit(EXIT_FAILURE);

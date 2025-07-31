@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 import scipy
 import math
@@ -190,6 +191,130 @@ def generateParticlesOrtoSurface(nodeA, nodeB, minDiam, maxDiam, volumeRatio, di
 #    print("Saturation of the volume: ", saturation)
 
     return node_coords, radii
+    
+
+def generateParticlesDogbonePow(D, minDiam, maxDiam, volumeRatio, dim, trials,
+                             node_coords, radii, allow_domain_overlap = False,
+                             periodic_distance=False,useLowBound=False):
+    gap = .1
+    h = D/5
+    s = D
+    Volume = (1.5 * D**2 - 2 * (1/(64*h**2)*((s**2 + 4*h**2)**2 *
+                                             np.arccos((s**2 - 4*h**2) / (s**2 + 4*h**2)) -
+                                             4 * s * h * (s**2 - 4*h**2))))
+    diam = np.flipud(np.linspace(minDiam/4, maxDiam, 30))
+    if(dim==2):
+        freq = fuller2D(diam, maxDiam)
+    elif(dim==3):
+        freq = fuller3D(diam, maxDiam)
+
+    saturation = 0;
+    iters = 0
+    di = 0
+    radius = maxDiam/2.
+
+    SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+
+    points = node_coords
+
+    while (2 * radius > minDiam) and (iters < trials):
+        px, py = random.random() * D, random.random() * (D + 2 * D/4)
+        point = np.array((px, py))
+        if (py > D/4) and py < (D/4 + D):
+            #kx = ((0.725 * D)**2 - (py - D/2 - D/4)**2)**0.5 - (0.725 * D - D/5)
+            #if (px < kx + radius) or (px > (D - kx-radius)): # simplified version of round boundary limit
+            if ((np.sum((point - SL)**2, )**0.5 - 0.725 * D) < radius) or ((np.sum((point - SR)**2)**0.5 - 0.725 * D) < radius):
+                continue
+        else:
+            #if (px < radius) or (px > (D)) or (py < radius) or (py > (1.5 * D)):
+            if (px < radius) or (px > (D - radius)) or (py < radius) or (py > (1.5 * D - radius)):
+                continue
+        approved = False
+        if ( len(points)==0): approved = True
+        else:
+            delta = np.abs(np.asarray(points) - point)
+            if (periodic_distance):
+                dist2 = np.sum(np.square(np.minimum(delta, maxLim-delta)), axis=1) # TODO: not working for dogbone
+            else:
+                dist2 = np.sum(np.square(delta), axis=1)
+            #if (np.min(dist2 - np.square((1. + gap) * (np.asarray(radii) + radius))) > 0): approved = True
+            if (np.min(dist2 - ((1. + gap) * (np.asarray(radii) + radius))**2) > 0): approved = True
+        if ( approved) :
+            points.append((px, py))
+            radii.append(radius)
+
+            saturation += np.pi * radius**2 / Volume
+            while ((1. - saturation / volumeRatio ) < freq[di]):
+                di+=1
+            radius = (diam[di] +(diam[di - 1] - diam[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+            iters = 0
+        else:
+            iters += 1
+
+    return points, radii
+
+try:
+    from point_generators_cython import generateParticlesDogbonePow_cython as generateParticlesDogbonePow
+    print('Using Cython version of point generator - generateParticlesDogbonePow.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
+def generateParticlesDogbone(D, minDiam, maxDiam, volumeRatio, dim, trials,
+                             node_coords, radii, allow_domain_overlap = False,
+                             periodic_distance=False,useLowBound=False):
+    SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
+    SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+
+    radius = minDiam / 2
+
+    tr = 0
+    while (tr < trials):
+        tr = 0
+
+        distIsGood = False
+        while (distIsGood == False):
+
+            px, py = random.random() * D, random.random() * (D + 2 * D/4)
+            point = np.array((px, py))
+            if (py > D/4) and py < (D/4 + D):
+                #kx = ((0.725 * D)**2 - (py - D/2 - D/4)**2)**0.5 - (0.725 * D - D/5)
+                #if (px < kx + radius) or (px > (D - kx-radius)): # simplified version of round boundary limit
+                if ((np.sum((point - SL)**2, )**0.5 - 0.725 * D) < radius) or ((np.sum((point - SR)**2)**0.5 - 0.725 * D) < radius):
+                    continue
+            else:
+                #if (px < radius) or (px > (D)) or (py < radius) or (py > (1.5 * D)):
+                if (px < radius) or (px > (D - radius)) or (py < radius) or (py > (1.5 * D - radius)):
+                    continue
+            distIsGood = False
+            if ( len(node_coords)==0): distIsGood = True
+            else:
+                delta = np.abs(np.asarray(node_coords) - point)
+                if (periodic_distance):
+                    dist2 = np.sum(np.square(np.minimum(delta, maxLim-delta)), axis=1) # TODO: not working for dogbone
+                else:
+                    dist2 = np.sum(np.square(delta), axis=1)
+                #if (np.min(dist2 - np.square((1. + gap) * (np.asarray(radii) + radius))) > 0): distIsGood = True
+                #if (np.min(dist2 - ((1. + gap) * (np.asarray(radii) + radius))**2) > 0): distIsGood = True
+                if np.min(dist2 - 4 * radius**2) > 0: distIsGood = True
+
+            if (distIsGood == False):
+                tr += 1
+
+            if (tr > trials): break
+        if (tr > trials): break
+
+        if ( tr < trials) :
+            node_coords.append((px, py))
+
+try:
+    from point_generators_cython import generateParticlesDogbone_cython as generateParticlesDogbone
+    print('Using Cython version of point generator - generateParticlesDogbone.')
+except:
+    print('''Using Python version of generator. To use the Cython version the
+          the code has to be build using: python setup.py build_ext --inplace.''')
+
 
 
 def generateParticlesRect(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, node_coords, radii, allow_domain_overlap = False, periodic_distance=False,useLowBound=False):
@@ -330,7 +455,9 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
     iters = 0
     di = 0
 
-    node_coords_polar = np.zeros((1, dim))
+    node_coords_polar = np.column_stack((np.arctan2(node_coords_cart[:,1], node_coords_cart[:,0]), np.sqrt(np.sum(np.square(node_coords_cart),axis=1))))
+
+    periodicity = np.zeros(dim); periodicity[-1] = maxLim
 
     if dim==2:
         freq = fuller2D(d, maxDiam)
@@ -339,33 +466,36 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
         freq = fuller3D(d, maxDiam)
         center = np.zeros(3)
 
-    nA = 1  # n of particle I am generating
+    nA = len(node_coords_cart)  # n of particle I am generating
 
-    # generate and add the first particle
-    # print('------ generating particle 1')
-    if allow_domain_overlap:
-        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
+    if nA==0:
+        # generate and add the first particle
+        # print('------ generating particle 1')
+        if allow_domain_overlap:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2)   # option to change origin
+        else:
+            point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
+
+        node_coords_cart[0] = point_cart
+        node_coords_polar[0] = point_polar
+        radii[0] = radius
+        if periodic_distance:
+             # print(point_polar, periodicity)
+            per_nodes_polar = point_polar - periodicity
+            per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
+
+        if dim == 2:
+            saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
+        elif dim == 3:
+            saturation += (4*np.pi*np.power(radius,3)/3) / (np.pi*np.power(maxLim,3)/8)
+
+        while ( (1. - saturation / volumeRatio ) < freq[di] ):
+            di += 1
+        radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+        nA += 1
     else:
-        point_cart, point_polar = randPointInSpherePolar(center, maxLim/2-radius)
-
-    node_coords_cart[0] = point_cart
-    node_coords_polar[0] = point_polar
-    radii[0] = radius
-    if periodic_distance:
-        periodicity = np.zeros(dim); periodicity[-1] = maxLim
-        # print(point_polar, periodicity)
-        per_nodes_polar = point_polar - periodicity
-        per_nodes_cart = np.array([polarToCart(point_polar - periodicity)])
-
-    if dim == 2:
-        saturation += (np.pi*np.power(radius,2)) / (np.pi*np.power(maxLim, 2)/4)
-    elif dim == 3:
-        saturation += (4*np.pi*np.power(radius,3)/4) / (np.pi*np.power(maxLim,3)/6)
-
-    while ( (1. - saturation / volumeRatio ) < freq[di] ):
-        di += 1
-    radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
-    nA += 1
+        per_nodes_polar = node_coords_polar
+        per_nodes_cart = np.copy(node_coords_cart)
 
     # generate other particles
     while 2*radius > minDiam and iters < trials:
@@ -401,8 +531,7 @@ def generateParticlesSphere(maxLim, minDiam, maxDiam, volumeRatio, dim, trials, 
             while ( (1. - saturation / volumeRatio ) < freq[di]):
                 di += 1
             radius = (d[di] +(d[di - 1] - d[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
-            nA += 1
-            # sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
+            nA += 1          # sys.stdout.write('\r'+'Particles:' +  str(len(node_coords)))
             # sys.stdout.flush()
         else:
             iters += 1
