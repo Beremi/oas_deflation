@@ -2531,7 +2531,8 @@ def saveTransportElements(master_folder,ridges_out, dim, node_count, vertCount, 
     sys.stdout.flush()
     transportElements = []
     transportElements_dict = {}
-    ridges_out = np.asarray(ridges_out)
+    ridges_out = np.asarray(ridges_out, dtype=object)
+
 
     onlyVerticesConnected = True
 
