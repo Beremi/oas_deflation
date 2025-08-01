@@ -49,7 +49,7 @@ class NeuralNetworkMaterial : public Material
 {
 protected:
     double E, nu, density;
-    double ft, Gt, RVEsize;
+    double E0, ft, Gt, RVEsize;
     bool planeStress;
     bool stiffness_from_matrix;
 
@@ -74,6 +74,7 @@ public:
     double givePoissonsRatio() const { return nu; }
     Matrix giveStiffnessMatrix() const { return stiffmat_elastic; };
     double giveDensity() const { return density; };
+    double giveE0() const { return E0; }
     double giveft() const { return ft; }
     double giveGt() const { return Gt; }
     double giveRVEsize() const { return RVEsize; }

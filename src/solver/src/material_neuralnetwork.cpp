@@ -33,7 +33,7 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     Vector input_norm = Eigen::VectorXd::Zero(10);
     
     input_norm.head(6) = temp_strain;
-    input_norm(6) = m -> giveElasticModulus() / 1e6;
+    input_norm(6) = m -> giveE0() / 1e6;
     input_norm(7) = m -> giveft() / 1e6;
     input_norm(8) = m -> giveGt();
     input_norm(9) = m -> giveRVEsize();
@@ -102,10 +102,10 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     // std::cout << "Stress Norm\n" << stress_norm << "\n" << std::flush;
 
     // // Denormalize output stress
-    Vector stress = ( stress_norm.array() * y_std.array() ) + y_mean.array();
+    temp_stress = ( stress_norm.array() * y_std.array() ) + y_mean.array();
 
     // std::cout << "returning stress\n"  << "\n";
-    return stress;
+    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -126,10 +126,7 @@ double NeuralNetworkMaterialStatus :: giveMassConstant() const {
 //////////////////////////////////////////////////////////
 Vector NeuralNetworkMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
-    // temp_stress = giveStress(temp_strain, timeStep);
-    return temp_stress;
+    return giveStress(strain, timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -207,7 +204,7 @@ Matrix NeuralNetworkMaterialStatus :: giveMassTensor() const {
 
 //////////////////////////////////////////////////////////
 std :: vector<std :: vector <torch::Tensor> > NeuralNetworkMaterialStatus :: giveHiddenState() const {
-    return hc_vectors;
+    return temp_hc_vectors;
 }
 
 //////////////////////////////////////////////////////////
@@ -330,8 +327,8 @@ Matrix NeuralNetworkMaterial :: readStiffMatrixFromFile() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     string param;
-    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bft, bGt, bRVEsize;
-    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bft = bGt = bRVEsize = false;
+    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bE0, bft, bGt, bRVEsize;
+    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bE0 = bft = bGt = bRVEsize = false;
     const int MAX_LAYERS = 5;
 
     while (  iss >> param ) {
@@ -344,6 +341,9 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("density") == 0 ) {
             bdensity = true;
             iss >> density;
+        } else if ( param.compare("E0") == 0 ) {
+            bE0 = true;
+            iss >> E0;
         } else if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
@@ -433,16 +433,20 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             exit(EXIT_FAILURE);
         }
     }
+    if ( !bE0 ) {
+        cerr << name << ": E0 was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
     if ( !bft ) {
-        cerr << name << ": ft model was not specified" << endl;
+        cerr << name << ": ft was not specified" << endl;
         exit(EXIT_FAILURE);
     }
     if ( !bGt ) {
-        cerr << name << ": Gt model was not specified" << endl;
+        cerr << name << ": Gt was not specified" << endl;
         exit(EXIT_FAILURE);
     }
     if ( !bRVEsize ) {
-        cerr << name << ": RVEsize model was not specified" << endl;
+        cerr << name << ": RVEsize was not specified" << endl;
         exit(EXIT_FAILURE);
     }
 
