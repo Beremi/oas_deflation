@@ -2691,11 +2691,15 @@ def assembleDiamondTest (maxLim, idtW, idtH):
 
 def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, fracZoneWidth = 0.15, orthogonalFracZone = False, notchWidth = -1, activeMechanics = True, activeTransport=False, coupled=False, node_coords_init=None, specifiedNodes=[], roughMinDistCoef=1, supportDivision=10,gapWidth=0,blank=0,powerTes=False,supportWidth=None,span=0,gradientZoneWidth=0):
 
+    radii = []
     print('Creating 3d simply supported beam, uniform load.')
     #govNodes, rigidPlates
-    node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes, roughMinDistCoef=roughMinDistCoef, supportDivision=supportDivision,gapWidth=gapWidth,blank=blank,powerTes=powerTes,supportWidth=supportWidth,span=span,gradientZoneWidth=gradientZoneWidth);
-    node_coords = np.asarray(node_coords)
-
+    if not blank:
+        node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii  = assemble3DSSBeamBending(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes, roughMinDistCoef=roughMinDistCoef, supportDivision=supportDivision,gapWidth=gapWidth,blank=blank,powerTes=powerTes,supportWidth=supportWidth,span=span,gradientZoneWidth=gradientZoneWidth);
+        node_coords = np.asarray(node_coords)
+    else:
+        node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii  = assemble3DSSBeamBendingBlank(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes, roughMinDistCoef=roughMinDistCoef, supportDivision=supportDivision,gapWidth=gapWidth,blank=blank,powerTes=powerTes,supportWidth=supportWidth,span=span,gradientZoneWidth=gradientZoneWidth);
+        node_coords = np.asarray(node_coords)
     for i in node_coords:
         if i[1]<0:
             print(i)
@@ -2720,6 +2724,7 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
 
     if powerTes==False:
         vor, volumes = utilitiesNumeric.runMirroredVoronoi (node_coords, 3, maxLim,notch=notch)
+        radii=[]
     else:
         vor, volumes = utilitiesNumeric.runMirroredPower(node_coords, radii, 3, maxLim,notch=notch)
 
@@ -2815,7 +2820,7 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     #return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, transportBC_merged, transportIC_merged
     #return node_coords, mechBC_merged, transportBC_merged, govNodes, govNodesMechBC, rigidPlates, vor, areas, functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC
     #return node_coords, mechBC_merged, mechInitC_merged,  vor, volumes, functions, notches, govNodes, govNodesMechBC, rigidPlates, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, transportBC_merged
-    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, [],notches
+    return node_coords, mechBC_merged, transportBC_merged,  govNodes, govNodesMechBC, rigidPlates, vor, [], functions, rigidPlatesTrspt, govNodesTrspt, govNodesTrsptBC, radii,notches
 
 def create3dCube(maxLim, minDist, trials, powerTes, coupled=False, node_coords_init=None, periodic = False ):
     print('Creating 3d cube. Power tesselation: %s' %powerTes)
@@ -7536,7 +7541,6 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
 
 
 def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1, coupled=False, node_coords_init=None, specifiedNodes=[], roughMinDistCoef=1, supportDivision=10,gapWidth=0,blank=0,powerTes=False,supportWidth=None,span=None,gradientZoneWidth=0):
-
     if span>maxLim[0]:
         print("Span has to be larger than XSIZE or none.")
         return
@@ -7640,7 +7644,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
                 #pointGenerators.generate_flat_orthogonal_grid(nx*2, nz, node_coords,constants=[maxLim[0]/2-notchWidth-gapWidth*2  ,maxLim[1]-indent,zind],sizes=[gapWidth*4+notchWidth,1,maxLim[2]-indent*2-zind*2])
 
                 oldl = len(node_coords)
-                pointGenerators.generate_flat_orthogonal_grid(nx, nz, node_coords,constants=[maxLim[0]/2-notchWidth-gapWidth*2  ,indent,zind],sizes=[gapWidth*2-xind,1,maxLim[2]-indent*2-zind*2])
+                pointGenerators.generate_flat_orthogonal_grid(nx, nz, node_coords,constants=[maxLim[0]/2-notchWidth-gapWidth*1.5  ,indent,zind],sizes=[gapWidth*1.5-xind,1,maxLim[2]-indent*2-zind*2])
                 newl = len(node_coords)
                 gridlen=newl-oldl
                 print('generated grid %d'%gridlen)
@@ -7654,7 +7658,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
                 """
 
                 oldl = len(node_coords)
-                pointGenerators.generate_flat_orthogonal_grid(nx, nz, node_coords,constants=[maxLim[0]/2+notchWidth+xind  ,indent,zind],sizes=[gapWidth*2-xind,1,maxLim[2]-indent*2-zind*2])
+                pointGenerators.generate_flat_orthogonal_grid(nx, nz, node_coords,constants=[maxLim[0]/2+notchWidth+xind  ,indent,zind],sizes=[gapWidth*1.5-xind,1,maxLim[2]-indent*2-zind*2])
                 newl = len(node_coords)
                 gridlen=newl-oldl
                 print('generated grid %d'%gridlen)
@@ -7958,7 +7962,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         nodeB = np.array([span_B, indent, maxLim[2]-indent])
         pointGenerators.generateNodesLine3dRand(nodeA, nodeB, minDist, dim, node_coords, trials, True, True)
 
-        if gapWidth>0:
+        if gapWidth>10:
             #front surf
             nodeA =  np.array([maxLim[0]/2-notchWidth-gapWidth*2 ,  indent, indent])
             nodeB =  np.array([maxLim[0]/2+notchWidth+gapWidth*2, maxLim[1] - indent, indent])
@@ -8017,13 +8021,9 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
         fracZone = []
         for i in range (oldLen, len(node_coords), 1):
             fracZone.append(i)
-        """
-        node_coords = np.asarray(node_coords)
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.scatter(node_coords[:,0],node_coords[:,1],node_coords[:,2])
-        plt.show()
-        """
+
+
+
         if (notch > 0):
             notchFrac = []
             notchFrac.append(notchSide0)
@@ -8078,13 +8078,12 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
 
-
         if gapWidth>0:
             maxLimF = np.array([
-            maxLim[0]/2-notchWidth-gapWidth,#*2,
+            maxLim[0]/2-notchWidth-gapWidth*2,
             indent,#* notch,
             indent,
-            maxLim[0]/2+notchWidth+gapWidth,#*2,
+            maxLim[0]/2+notchWidth+gapWidth*2,
             maxLim[1] -indent,#* notch,
             maxLim[2] - indent
             ])
@@ -8146,9 +8145,10 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
                 node_coords = node_coords.tolist()
 
 
+
         if gapWidth>0:
             maxLimF = np.array([
-            maxLim[0]/2-notchWidth-gapWidth*5,
+            maxLim[0]/2-notchWidth-gapWidth*2,
             indent,
             indent,
             maxLim[0]/2-notchWidth-gapWidth,#*2,
@@ -8165,19 +8165,19 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             maxLim[1] -indent,#* notch,
             maxLim[2] - indent
             ])
+        print("gap ",maxLimF)
         pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist*roughMinDistCoef, gradienDirection=0)
-
-
 
         if gapWidth>0:
             maxLimF = np.array([
-            maxLim[0]+fracZoneWidth/2,
-            indent,#* notch,
+            maxLim[0]/2+notchWidth+gapWidth,
             indent,
-            maxLim[0]+fracZoneWidth/2-gradientZoneWidth,
+            indent,
+            maxLim[0]/2+notchWidth+gapWidth*2,
             maxLim[1] -indent,#* notch,
             maxLim[2] - indent
             ])
+
         else:
 
             maxLimF = np.array([
@@ -8188,9 +8188,8 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             indent,#* notch,
             indent
             ])
-
-        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist, topMinDist = minDist*roughMinDistCoef, gradienDirection=0)
-
+        print("gap ",maxLimF)
+        pointGenerators.generateNodesRect(maxLimF, minDist, dim, trials, node_coords, useLowBound=True, bottomMinDist = minDist*roughMinDistCoef, topMinDist = minDist, gradienDirection=0)
 
         if blank == 0:
 
@@ -8226,7 +8225,7 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
 
-
+        print('last rect')
         ##########################################generating of points, homogeneous volume
         pointGenerators.generateNodesRect(maxLim, minDist*roughMinDistCoef, dim, trials, node_coords)
 
@@ -8254,6 +8253,45 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
 
 
 
+
+
+def assemble3DSSBeamBendingBlank (maxLim, minDist, trials, notch, loadWidth,  fracZoneWidth = 0.15, orthogonalFracZone=False, notchWidth = -1, coupled=False, node_coords_init=None, specifiedNodes=[], roughMinDistCoef=1, supportDivision=10,gapWidth=0,blank=0,powerTes=False,supportWidth=None,span=None,gradientZoneWidth=0):
+    dim = 3
+    if node_coords_init is None:
+        node_coords = []
+    else:
+        node_coords = node_coords_init
+    mechBC_merged = []
+    mechInitC_merged = []
+    govNodes = []
+    govNodesMechBC = []
+    rigidPlates = []
+    radii=[]
+    #exact notch
+    exactNotch = False
+
+    indent = 1e-7
+    notches=[]
+
+    if powerTes == True:
+        node_coords = np.zeros((0,dim))
+        radii = np.zeros(len(node_coords))
+        maxLimF= np.copy(maxLim)
+        maxLimF[0]=maxLim[0]/4
+        #node_coords, radii = pointGenerators.generateParticlesRect(maxLimF, 0.004, 0.010, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
+        #node_coords[:,0]+=maxLim[0]/4*1.5
+
+
+        #TPB
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.0010, 0.04, 0.999, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
+        #CYLINDER
+        #node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.012, 0.024, 0.95, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
+    else:
+        pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
+
+
+
+    return node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii
 
 
 

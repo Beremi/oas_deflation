@@ -298,7 +298,7 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
 
 
 
-        cdef int diam_len = 30
+        cdef int diam_len = 100
         for i in range(diam_len):
             dist_tmp = (minDiam * 0.5 - maxDiam)/(diam_len-1.)
             diam.push_back(maxDiam + dist_tmp*i )
@@ -317,6 +317,7 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
 
         radius = maxDiam / 2.
         while ((2 * radius > minDiam) and (iters < trials)):
+
             #rnd = np.random.rand(dim)
             if (allow_domain_overlap):
                 for d in range(dim):
@@ -376,8 +377,9 @@ def generateParticlesRect_cython(np.ndarray[np.float64_t, ndim=1] maxLim, double
                 while ((1. - saturation / volumeRatio ) < freq[di]):
                     di+=1
                 radius = (diam[di] + (diam[di - 1] - diam[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+
                 generatedPoints += 1
-                sys.stdout.write('\r'+'Particles:' +  str(node_coords_input_len + generatedPoints))
+                sys.stdout.write('\r'+'Particles:' +  str(node_coords_input_len + generatedPoints) + ' \t Radius ' +str(radius/2))
                 sys.stdout.flush()
             else: iters += 1
 
