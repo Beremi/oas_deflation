@@ -2700,11 +2700,11 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     else:
         node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii  = assemble3DSSBeamBendingBlank(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes, roughMinDistCoef=roughMinDistCoef, supportDivision=supportDivision,gapWidth=gapWidth,blank=blank,powerTes=powerTes,supportWidth=supportWidth,span=span,gradientZoneWidth=gradientZoneWidth);
         node_coords = np.asarray(node_coords)
+        np.savetxt('radii.txt', np.asarray(radii), fmt='%f') 
     for i in node_coords:
         if i[1]<0:
             print(i)
             return
-
 
     """
     if SHOW_PLOT:
@@ -8037,10 +8037,6 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             if exactNotch:
                 notches.append(notchFrac1)
 
-
-
-
-
         """
         #front surf
         nodeA =  np.array([indent , maxLim[1] - indent, indent])
@@ -8179,12 +8175,11 @@ def assemble3DSSBeamBending (maxLim, minDist, trials, notch, loadWidth,  fracZon
             ])
 
         else:
-
             maxLimF = np.array([
-            maxLim[0]/2+fracZoneWidth/2+gradientZoneWidth,
+            maxLim[0]/2+fracZoneWidth/2,
             maxLim[1] -indent,#* notch,
             maxLim[2] - indent,
-            maxLim[0]/2+fracZoneWidth/2,
+            maxLim[0]/2+fracZoneWidth/2+gradientZoneWidth,
             indent,#* notch,
             indent
             ])
@@ -8283,7 +8278,7 @@ def assemble3DSSBeamBendingBlank (maxLim, minDist, trials, notch, loadWidth,  fr
 
 
         #TPB
-        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.0010, 0.04, 0.999, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.0010, 0.03, 0.999, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
         #CYLINDER
         #node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.012, 0.024, 0.95, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
     else:
