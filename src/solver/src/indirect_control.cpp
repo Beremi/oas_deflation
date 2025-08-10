@@ -149,9 +149,15 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
         dd = 0;
         df = 0;
         for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ] + prev_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
-            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ] + diff_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
+            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];            
+            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
         }
+        if (requireForces()){
+            for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
+                dd += prev_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];            
+                df += diff_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
+            }        
+        }      
         lambda_temp = ( pdispl - dd ) / df;
         if ( lambda_temp < lambda ) {
             lambda = lambda_temp;
