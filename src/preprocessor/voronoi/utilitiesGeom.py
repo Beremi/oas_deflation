@@ -1217,7 +1217,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     # voronoi points inside the RVE (maxLim = circ diameter)
 
     inside_idcs = np.where(np.sum(np.square(node_coords),axis=1)<maxLim*maxLim/4.)[0]
-    is_positive = np.where(vor.points[:,0]>=0)[0]
+    is_positive = np.where(vor.points[:,1]>=0)[0]
 
     mechElemParticles_orig = np.zeros((0,2)).astype(int)
     mechElemVerts = []
@@ -1251,59 +1251,20 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         sys.stdout.write('\rRidge nr.' + str(ir) + ' / ' + str(len(vor.ridge_points)) + ' ')
         sys.stdout.flush()
         ridge.sort()    # contains two ridge nodes, smaller index is on the first position
-        if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
+        if ridge[1] in inside_idcs:  # both nodes inside RVE = both nodes are inside
             RVEnodes_orig.add(ridge[0]); RVEnodes_orig.add(ridge[1])
-            mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
-            mechElemVerts.append(vor.ridge_vertices[int(ir)])
+            #mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
+            #mechElemVerts.append(vor.ridge_vertices[int(ir)])
         elif (all(inode in is_positive for inode in ridge) and ridge[0] in inside_idcs and ridge [1] not in inside_idcs):
-            if ridge[0] not in masters_orig and ridge[1] not in slaves_orig:
-                islave = ridge[1]; imaster = islave - nnodes
+            if ridge[0] not in masters_orig and ridge[0] + nnodes not in slaves_orig:
+                islave = ridge[0] +1; imaster = ridge[0]
                 coupling_orig.append([imaster, islave]); RVEnodes_orig.add(islave)
                 slaves_orig.append(islave); masters_orig.append(imaster)
-
+        if ridge[1] in inside_idcs:  # one node inside RVE 
             mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
             mechElemVerts.append(vor.ridge_vertices[int(ir)])
 
     RVEnodes_orig = np.array(list(RVEnodes_orig)) # nodes with degrees of freedom
-
-    '''
-    ###################################################################
-    ## ver. B: select only regions on the boundary of the RVE
-    # from shapely.geometry import Point
-    # from shapely.geometry.polygon import Polygon
-
-    # boundary_regions = []
-    # iregions = []
-
-    # n = 25
-    # circ_points = np.zeros((n, dim))
-    # for i, angle in enumerate(np.linspace(-np.pi/2, np.pi/2, n)):
-    #     circ_points[i, 0] = maxLim/2*np.cos(angle); circ_points[i, 1] = maxLim/2*np.sin(angle)
-
-    # for iregion, region in enumerate(vor.regions):
-    #     points = []
-    #     for vertex in region:
-    #         if vertex != -1:
-    #             point = (vor.vertices[vertex, 0], vor.vertices[vertex, 1])
-    #             points.append(point)
-    #     polygon = Polygon(points)
-    #     for point in circ_points:
-    #         p = Point(point[0], point[1])
-    #         if polygon.contains(p):
-    #             boundary_regions.append(region); iregions.append(iregion)
-    #             break
-
-    # for ridge in vor.ridge_points:
-    #     ridge.sort()    # contains two ridge nodes, smaller index is on the first position
-    #     if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
-    #         RVEnodes.add(ridge[0]); RVEnodes.add(ridge[1])
-
-    # for i in iregions:
-    #     islave = np.where(vor.point_region == i)[0][0]
-    #     if islave in is_positive:
-    #         imaster = islave - nnodes
-    #         slaves.append(islave), masters.append(imaster); RVEnodes.add(islave); RVEnodes.add(imaster)
-    '''
 
     ########################################################################
     # renumbering
@@ -1331,45 +1292,42 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     #'''
     ########################################################################
     ## plot Voronoi
-    voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  linewidth=1, line_alpha=0.6, point_size=2)
-    ## plot points
-    # original numbering
-    for ipoint, sla in enumerate(slaves_orig):
-        mas = masters_orig[ipoint]
-        points = np.vstack((vor.points[sla], vor.points[mas]))
-        plt.plot(points[:,0], points[:,1], color='red')
-    #for mechElem_orig in mechElemParticles_orig:
-    #    pointsME = np.vstack((vor.points[mechElem_orig[0]], vor.points[mechElem_orig[1]]))
-    #    plt.plot(pointsME[:,0], pointsME[:,1], color='red', linestyle='-')
-    for trsElem in mechElemVerts:
-        pointsTE = np.vstack((vor.vertices[trsElem[0]], vor.vertices[trsElem[1]]))
-        plt.plot(pointsTE[:,0], pointsTE[:,1], color='red')
-    # renumbered things
-    for pair in coupling_renum:
-        coupled_points = np.vstack((RVEnodes_renum[pair[0]], RVEnodes_renum[pair[1]]))
-        plt.plot(coupled_points[:,0], coupled_points[:,1], color='black', linestyle=':')
-    #for mechElem in mechElemParticles_renum:
-    #    pointsME = np.vstack((RVEnodes_renum[mechElem[0]], RVEnodes_renum[mechElem[1]]))
-    #    plt.plot(pointsME[:,0], pointsME[:,1], color='black', linestyle=':')
-    for trspElem in trspElemNodes:
-        pointsTE = np.vstack((vertices_renum[trspElem[0]], vertices_renum[trspElem[1]]))
-        plt.plot(pointsTE[:,0], pointsTE[:,1], color='black', linestyle=':')
-    theta = np.linspace(0, 2*np.pi, 100)
-    xcirc = maxLim/2*np.cos(theta)
-    ycirc = maxLim/2*np.sin(theta)
-    plt.plot(xcirc,ycirc, color='black',  linewidth=1)
-    plt.axis('equal')
-    plt.xlim([-maxLim, maxLim])
-    plt.ylim([-maxLim, maxLim])
-    plt.show()
-    #'''
+    if (0):
+        voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  linewidth=1, line_alpha=0.6, point_size=2)
+        ## plot points
+        # original numbering
+        for ipoint, sla in enumerate(slaves_orig):
+            mas = masters_orig[ipoint]
+            points = np.vstack((vor.points[sla], vor.points[mas]))
+            plt.plot(points[:,0], points[:,1], color='blue')
+        #for mechElem_orig in mechElemParticles_orig:
+        #    pointsME = np.vstack((vor.points[mechElem_orig[0]], vor.points[mechElem_orig[1]]))
+        #    plt.plot(pointsME[:,0], pointsME[:,1], color='red', linestyle='-')
+        for trsElem in mechElemVerts:
+            pointsTE = np.vstack((vor.vertices[trsElem[0]], vor.vertices[trsElem[1]]))
+            plt.plot(pointsTE[:,0], pointsTE[:,1], color='red')
+        # renumbered things
+        for pair in coupling_renum:
+            coupled_points = np.vstack((RVEnodes_renum[pair[0]], RVEnodes_renum[pair[1]]))
+            #plt.plot(coupled_points[:,0], coupled_points[:,1], color='black', linestyle=':')
+        #for mechElem in mechElemParticles_renum:
+        #    pointsME = np.vstack((RVEnodes_renum[mechElem[0]], RVEnodes_renum[mechElem[1]]))
+        #    plt.plot(pointsME[:,0], pointsME[:,1], color='black', linestyle=':')
+        for trspElem in trspElemNodes:
+            pointsTE = np.vstack((vertices_renum[trspElem[0]], vertices_renum[trspElem[1]]))
+            #plt.plot(pointsTE[:,0], pointsTE[:,1], color='black', linestyle=':')
+        theta = np.linspace(0, 2*np.pi, 100)
+        xcirc = maxLim/2*np.cos(theta)
+        ycirc = maxLim/2*np.sin(theta)
+        #plt.plot(xcirc,ycirc, color='black',  linewidth=1)
+        plt.axis('equal')
+        plt.xlim([-maxLim, maxLim])
+        plt.ylim([-maxLim, maxLim])
+        plt.show()
+        #'''
 
 
-    i = 0
-    pairs = []    
-    while(abs(np.sum(np.square(node_coords[2*i]-node_coords[2*i+1]))-maxLim*maxLim)<1e-10):
-        pairs.append([2*i,2*i+1])
-        i+=1
+    pairs = np.column_stack((masters_orig,slaves_orig))
     savePeriodicBlock(master_folder, np.array(pairs), maxLim, RVEnodes_renum, dim)
 
     particles = np.column_stack((RVEnodes_renum, np.zeros(len(sort_idx))))
@@ -1392,229 +1350,6 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
 
     return node_coords, v_count, [], vertIdxStart, totalPointCount
-
-
-#old version for periodic 
-def output2DCircPeriodicX(master_folder, node_count, maxLim, vor, node_coords, node_coords_polar, areas, activeTransport, activeMechanics, minDist, mZ=None, notches=None, isTube=False, coupled=False):
-    dim = len(node_coords[0])
-
-    print('Extracting the geometry...',  end ='')
-    sys.stdout.flush()
-
-    # Mechanical Elements
-    #######################################################################################################
-
-    print ('Periodic model, filtering ridges...', end = '')
-    # voronoi points inside the RVE (maxLim = circ diameter)
-    inside_idcs = list(range(len(node_coords)))[:len(node_coords)//2]
-    is_positive = np.where(vor.points[:,0]>=0)[0]
-
-    mechElemParticles_orig = np.zeros((0,2)).astype(int)
-    mechElemVerts = []
-
-    print('\nPocet nodu, se kterymi pocital voronoj: %d' %len(vor.points))
-
-    maxIdx = vor.ridge_points.max()
-    print('Nejvyssi index nodu v ridges: %d' %maxIdx)
-
-    if (len(vor.points)-1 == (maxIdx)):
-        print('Ridge spojuji jen nody v samplu.')
-        print('Tohle dela powerTes 0.')
-        print('Export probehne v poradku.')
-    elif (len(vor.points)-1 < (maxIdx)):
-        print('Ridge se odkazuji na nejake nody s indexy, ktere nejsou v samplu!!!')
-        print('Tohle dela powerTes 1.')
-        print('Nastane chyba index out of bounds...')
-    #print('Stiskni enter!\n')
-    #a = input('').split(" ")[0]
-
-    nnodes = len(inside_idcs)     # n of nodes inside of the RVE
-    print('actual node count: %d' %nnodes)
-
-    coupling_orig = []; RVEnodes_orig = set()     # set does nothing when adding a duplicate value
-    masters_orig = []; slaves_orig = []
-
-    
-    ###################################################################
-    ## ver. A: slave nodes in regions also completely outside of the RVE
-    for ir, ridge in enumerate(vor.ridge_points):
-        sys.stdout.write('\rRidge nr.' + str(ir) + ' / ' + str(len(vor.ridge_points)) + ' ')
-        sys.stdout.flush()
-        ridge.sort()    # contains two ridge nodes, smaller index is on the first position
-        if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
-            RVEnodes_orig.add(ridge[0]); RVEnodes_orig.add(ridge[1])
-            mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
-            mechElemVerts.append(vor.ridge_vertices[int(ir)])
-        elif (all(inode in is_positive for inode in ridge) and ridge[0] in inside_idcs and ridge [1] not in inside_idcs):
-            if ridge[0] not in masters_orig and ridge[1] not in slaves_orig:
-                islave = ridge[1]; imaster = islave - nnodes
-                coupling_orig.append([imaster, islave]); RVEnodes_orig.add(islave)
-                slaves_orig.append(islave); masters_orig.append(imaster)
-
-            mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
-            mechElemVerts.append(vor.ridge_vertices[int(ir)])
-
-    RVEnodes_orig = np.array(list(RVEnodes_orig)) # nodes with degrees of freedom
-
-    '''
-    ###################################################################
-    ## ver. B: select only regions on the boundary of the RVE
-    # from shapely.geometry import Point
-    # from shapely.geometry.polygon import Polygon
-
-    # boundary_regions = []
-    # iregions = []
-
-    # n = 25
-    # circ_points = np.zeros((n, dim))
-    # for i, angle in enumerate(np.linspace(-np.pi/2, np.pi/2, n)):
-    #     circ_points[i, 0] = maxLim/2*np.cos(angle); circ_points[i, 1] = maxLim/2*np.sin(angle)
-
-    # for iregion, region in enumerate(vor.regions):
-    #     points = []
-    #     for vertex in region:
-    #         if vertex != -1:
-    #             point = (vor.vertices[vertex, 0], vor.vertices[vertex, 1])
-    #             points.append(point)
-    #     polygon = Polygon(points)
-    #     for point in circ_points:
-    #         p = Point(point[0], point[1])
-    #         if polygon.contains(p):
-    #             boundary_regions.append(region); iregions.append(iregion)
-    #             break
-
-    # for ridge in vor.ridge_points:
-    #     ridge.sort()    # contains two ridge nodes, smaller index is on the first position
-    #     if ridge[1] in inside_idcs:  # greater of the two nodes inside RVE = both nodes are inside
-    #         RVEnodes.add(ridge[0]); RVEnodes.add(ridge[1])
-
-    # for i in iregions:
-    #     islave = np.where(vor.point_region == i)[0][0]
-    #     if islave in is_positive:
-    #         imaster = islave - nnodes
-    #         slaves.append(islave), masters.append(imaster); RVEnodes.add(islave); RVEnodes.add(imaster)
-    '''
-
-    ########################################################################
-    # renumbering
-    ########################################################################
-    # RVEnodes_orig =   all the particles I have for the RVE (inside + on the side)
-    #                   indices of nodes from vor.points (particles for mechanics)
-    # RVEnodes_renum = renumbered
-    # sort_idx =    'new' indices (from zero to len(RVEnodes_orig))
-    # mechElemParticles_orig = particle connections (LTCBEAM elements) for RVE nodes (mechanical particles)
-    # mechElemParticles_renum = LTCBEAM elements from the new numbering
-    # coupling_orig = pairs of master + slave in RVEnodes numbering
-    # coupling_renum = pairs of master + slave in the new numbering
-
-    RVEnodes_renum = vor.points[RVEnodes_orig]
-    sort_idx = RVEnodes_orig.argsort()   # indices 0 to len(RVEnodes_orig)
-    mechElemParticles_renum = sort_idx[np.searchsorted(RVEnodes_orig, mechElemParticles_orig, sorter=sort_idx)]
-    coupling_renum = sort_idx[np.searchsorted(RVEnodes_orig, coupling_orig, sorter=sort_idx)]
-
-    vertices_orig = np.unique(mechElemVerts)
-    vertices_renum = vor.vertices[vertices_orig]
-    sort_idc = vertices_orig.argsort()   # indices 0 to len(vertices_orig)
-    trspElemNodes = sort_idc[np.searchsorted(vertices_orig, mechElemVerts, sorter=sort_idc)]
-    trspElemNodes_renum = trspElemNodes + len(RVEnodes_renum)   # indices reflecting the order of auxNodes
-
-    '''
-    ########################################################################
-    ## plot Voronoi
-    voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  linewidth=1, line_alpha=0.6, point_size=2)
-    ## plot points
-    # original numbering
-    for ipoint, sla in enumerate(slaves_orig):
-        mas = masters_orig[ipoint]
-        points = np.vstack((vor.points[sla], vor.points[mas]))
-        plt.plot(points[:,0], points[:,1], color='red')
-    for mechElem_orig in mechElemParticles_orig:
-        pointsME = np.vstack((vor.points[mechElem_orig[0]], vor.points[mechElem_orig[1]]))
-        plt.plot(pointsME[:,0], pointsME[:,1], color='red', linestyle='-')
-    for trsElem in mechElemVerts:
-        pointsTE = np.vstack((vor.vertices[trsElem[0]], vor.vertices[trsElem[1]]))
-        plt.plot(pointsTE[:,0], pointsTE[:,1], color='red')
-    # renumbered things
-    for pair in coupling_renum:
-        coupled_points = np.vstack((RVEnodes_renum[pair[0]], RVEnodes_renum[pair[1]]))
-        plt.plot(coupled_points[:,0], coupled_points[:,1], color='black', linestyle=':')
-    for mechElem in mechElemParticles_renum:
-        pointsME = np.vstack((RVEnodes_renum[mechElem[0]], RVEnodes_renum[mechElem[1]]))
-        plt.plot(pointsME[:,0], pointsME[:,1], color='black', linestyle=':')
-    for trspElem in trspElemNodes:
-        pointsTE = np.vstack((vertices_renum[trspElem[0]], vertices_renum[trspElem[1]]))
-        plt.plot(pointsTE[:,0], pointsTE[:,1], color='black', linestyle=':')
-    theta = np.linspace(0, 2*np.pi, 100)
-    xcirc = maxLim/2*np.cos(theta)
-    ycirc = maxLim/2*np.sin(theta)
-    plt.plot(xcirc,ycirc, color='black',  linewidth=1)
-    plt.axis('equal')
-    plt.xlim([-maxLim, maxLim])
-    plt.ylim([-maxLim, maxLim])
-    plt.show()
-    '''
-
-    savePeriodicBlock(master_folder, coupling_renum, maxLim, RVEnodes_renum, dim)
-
-    particles = np.column_stack((RVEnodes_renum, np.zeros(len(sort_idx))))
-    saveNodes(master_folder, particles, 'Particle', dim, nodesFile)     # nodesFile = 'nodes.inp'
-    saveNodes(master_folder, vertices_renum, 'AuxNode', dim, verticesFile)
-
-    inpf = open(os.path.join(master_folder, mechElemsFile), 'w')
-    inpf.write("#ElemType\tnodeAidx\tnodeBidx\tnrOfVertices\tverticesIdxs\tMaterial\n")
-    for k in range(len(mechElemParticles_renum)):
-        inpf.write("LTCBEAM\t%d\t%d\t%d" %(mechElemParticles_renum[k,0], mechElemParticles_renum[k,1], len(trspElemNodes_renum[k]) ))
-        for p in trspElemNodes_renum[k]:
-            inpf.write("\t%d"%(p))
-        inpf.write("\t0\n")
-    inpf.close()
-
-    totalPointCount = len(sort_idx) + len(sort_idc)
-    v_count = len(sort_idc)
-    vertIdxStart = totalPointCount-v_count
-
-    checkSavedModel(master_folder, dim, activeMechanics, activeTransport)
-
-    return node_coords, v_count, [], vertIdxStart, totalPointCount
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def excludeSelectedPts (boundPtA , boundPtB, points):
     '''
