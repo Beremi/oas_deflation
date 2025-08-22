@@ -404,71 +404,71 @@ def mirror_dataDam(data, topsize, dim, sizes, shifts=0, weights=None):
     return dataOut
 
 
-def mirror_dataDogBone(data, dim, D, thickness = None, radii = []):
+import numpy as np
+
+def mirror_dataDogBone(data, dim, D, H=0, thickness=None, radii=[]):
     '''Mirror data dogbone 2D and 3D'''
-    if (dim == 2):
-        dataOut= np.vstack((
-        data,
-        np.array([0,0]) + data * np.array([1,-1]), #nahoru
-        np.array([0,6/4*D*2]) + data * np.array([1,-1]), #dolu
-        np.array([0,0]) + data * np.array([-1,1]), #doleva
-        np.array([D*2,0]) + data * np.array([-1,1]), #doprava
+    H_use = H if H != 0 else 6/4*D  # Use H if provided, otherwise fallback to 6/4*D
 
-        np.array([0,0]) + data * np.array([-1,-1]), #nahoru doleva
-        np.array([2*D,0]) + data * np.array([-1,-1]), #nahoru doprava
-        np.array([0,6/4*2*D]) + data * np.array([-1,-1]), #dolu doleva
-        np.array([2*D,6/4*2*D]) + data * np.array([-1,-1]), #dolu doprava
+    if dim == 2:
+        dataOut = np.vstack((
+            data,
+            np.array([0,0]) + data * np.array([1,-1]),          # nahoru
+            np.array([0,H_use*2]) + data * np.array([1,-1]),    # dolu
+            np.array([0,0]) + data * np.array([-1,1]),          # doleva
+            np.array([D*2,0]) + data * np.array([-1,1]),        # doprava
+            np.array([0,0]) + data * np.array([-1,-1]),         # nahoru doleva
+            np.array([2*D,0]) + data * np.array([-1,-1]),       # nahoru doprava
+            np.array([0,H_use*2]) + data * np.array([-1,-1]),   # dolu doleva
+            np.array([2*D,H_use*2]) + data * np.array([-1,-1]), # dolu doprava
         ))
 
         if len(radii) > 0:
-            radii = np.tile(radii,9) #hstack radii 9x
+            radii = np.tile(radii, 9)
 
-    if(dim==3):
-        dataOut= np.vstack((
-        data,
-        np.array([0,0,0]) + data * np.array([1,-1,1]), #nahoru c
-        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,1]), #dolu c
-        np.array([0,0,0]) + data * np.array([-1,1,1]), #doleva c
-        np.array([D*2,0,0]) + data * np.array([-1,1,1]), #doprava c
+    elif dim == 3:
+        dataOut = np.vstack((
+            data,
+            np.array([0,0,0]) + data * np.array([1,-1,1]),
+            np.array([0,H_use*2,0]) + data * np.array([1,-1,1]),
+            np.array([0,0,0]) + data * np.array([-1,1,1]),
+            np.array([D*2,0,0]) + data * np.array([-1,1,1]),
+            np.array([0,0,0]) + data * np.array([-1,-1,1]),
+            np.array([2*D,0,0]) + data * np.array([-1,-1,1]),
+            np.array([0,H_use*2,0]) + data * np.array([-1,-1,1]),
+            np.array([2*D,H_use*2,0]) + data * np.array([-1,-1,1]),
 
-        np.array([0,0,0]) + data * np.array([-1,-1,1]), #nahoru doleva c
-        np.array([2*D,0,0]) + data * np.array([-1,-1,1]), #nahoru doprava c
-        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doleva c
-        np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,1]), #dolu doprava c
+            np.array([0,0,0]) + data * np.array([1,-1,-1]),
+            np.array([0,H_use*2,0]) + data * np.array([1,-1,-1]),
+            np.array([0,0,0]) + data * np.array([-1,1,-1]),
+            np.array([D*2,0,0]) + data * np.array([-1,1,-1]),
+            np.array([0,0,0]) + data * np.array([1,1,-1]),
 
+            np.array([0,0,0]) + data * np.array([-1,-1,-1]),
+            np.array([2*D,0,0]) + data * np.array([-1,-1,-1]),
+            np.array([0,H_use*2,0]) + data * np.array([-1,-1,-1]),
+            np.array([2*D,H_use*2,0]) + data * np.array([-1,-1,-1]),
 
-        np.array([0,0,0]) + data * np.array([1,-1,-1]),  #nahoru dopredu
-        np.array([0,6/4*D*2,0]) + data * np.array([1,-1,-1]),  #dolu dopredu
-        np.array([0,0,0]) + data * np.array([-1,1,-1]),  #doleva dopredu
-        np.array([D*2,0,0]) + data * np.array([-1,1,-1]),  #doprava dopredu
-        np.array([0, 0, 0]) + data * np.array([1, 1, -1]),  # dopredu dopredu
+            np.array([0,0,2*thickness]) + data * np.array([1,-1,-1]),
+            np.array([0,H_use*2,2*thickness]) + data * np.array([1,-1,-1]),
+            np.array([0,0,2*thickness]) + data * np.array([-1,1,-1]),
+            np.array([D*2,0,2*thickness]) + data * np.array([-1,1,-1]),
+            np.array([0,0,2*thickness]) + data * np.array([1,1,-1]),
 
-        np.array([0,0,0]) + data * np.array([-1,-1,-1]),  #nahoru doleva dopredu
-        np.array([2*D,0,0]) + data * np.array([-1,-1,-1]),  #nahoru doprava dopredu
-        np.array([0,6/4*2*D,0]) + data * np.array([-1,-1,-1]),  #dolu doleva dopredu
-        np.array([2*D,6/4*2*D,0]) + data * np.array([-1,-1,-1]), #dolu doprava dopredu
-
-        np.array([0,0,2*thickness]) + data * np.array([1,-1,-1]), #nahoru dozadu
-        np.array([0,6/4*D*2,2*thickness]) + data * np.array([1,-1,-1]), #dolu dozadu
-        np.array([0,0,2*thickness]) + data * np.array([-1,1,-1]), #doleva dozadu
-        np.array([D*2,0,2*thickness]) + data * np.array([-1,1,-1]), #doprava dozadu
-        np.array([0, 0, 2*thickness]) + data * np.array([1, 1, -1]),  # dozadu dozadu
-
-        np.array([0,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doleva dozadu
-        np.array([2*D,0,2*thickness]) + data * np.array([-1,-1,-1]), #nahoru doprava dozadu
-        np.array([0,6/4*2*D,2*thickness]) + data * np.array([-1,-1,-1]), #dolu doleva dozadu
-        np.array([2*D,6/4*2*D,2*thickness]) + data * np.array([-1,-1,-1]), #dolu doprava dozadu
-
+            np.array([0,0,2*thickness]) + data * np.array([-1,-1,-1]),
+            np.array([2*D,0,2*thickness]) + data * np.array([-1,-1,-1]),
+            np.array([0,H_use*2,2*thickness]) + data * np.array([-1,-1,-1]),
+            np.array([2*D,H_use*2,2*thickness]) + data * np.array([-1,-1,-1]),
         ))
-        if len(radii) > 0:
-            radii = np.tile(radii,27) #hstack radii 9x
 
-    """
+        if len(radii) > 0:
+            radii = np.tile(radii, 27)
+   
     dataOut = np.asarray(dataOut)
     fig, ax = plt.subplots()
     ax.scatter(dataOut[:,0], dataOut[:,1])
     plt.show()
-    """
+   
     return dataOut, radii
 
 

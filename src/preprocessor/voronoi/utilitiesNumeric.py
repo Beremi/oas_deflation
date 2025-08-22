@@ -359,10 +359,10 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = 0.1, rad
     #
     return vor
 
-def runMirroredPowerDogBone_old (node_coords, dim, D, shifts=0, thickness = None, radii = []):
+def runMirroredPowerDogBone_old (node_coords, dim, D, H=0, shifts=0, thickness = None, radii = []):
     #vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
-    print(len(node_coords), len(radii))
-    node_coords, radii = voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness, radii = radii)
+    
+    node_coords, radii = voronoi.mirror_dataDogBone(node_coords, dim, D, H=H,thickness=thickness, radii = radii)
 
     # vor = Voronoi(node_coords) #the last column might be present representing radii
     vor = PowerTesselation(node_coords, weights=radii, limits='auto') #(points.min(axis=0)-.5).tolist()+(points.max(axis=0)+.5).tolist())
