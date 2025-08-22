@@ -463,12 +463,12 @@ def mirror_dataDogBone(data, dim, D, H=0, thickness=None, radii=[]):
 
         if len(radii) > 0:
             radii = np.tile(radii, 27)
-   
+    """
     dataOut = np.asarray(dataOut)
     fig, ax = plt.subplots()
     ax.scatter(dataOut[:,0], dataOut[:,1])
     plt.show()
-   
+    """
     return dataOut, radii
 
 

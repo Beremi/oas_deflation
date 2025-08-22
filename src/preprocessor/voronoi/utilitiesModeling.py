@@ -2596,10 +2596,10 @@ def create2dDogBoneBand(maxLim, minDist,  roughMinDistCoef=1, elasticHeightCoef=
     return node_coords, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions,  govNodes, govNodesMechBC, rigidPlates
 
 
-def create3dDogBone(minDist, trials, D=1.0,D0=None,H=None,H0=None, excentricity_X = 20, excentricity_Z = 0, symmetric=False):
+def create3dDogBone(minDist, trials,thickness, D=1.0,D0=None,H=None,H0=None, excentricity_X = 20, excentricity_Z = 0, symmetric=False):
     print('Creating 3sd dog bone....')
     #
-    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates,radii  = assemble3dDogBone(D, minDist, trials,D0=D0,H=H,H0=H0, excentricity_X= excentricity_X, excentricity_Z= excentricity_Z, symmetric = symmetric)
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates,radii  = assemble3dDogBone(D, minDist, trials,thickness,D0=D0,H=H,H0=H0, excentricity_X= excentricity_X, excentricity_Z= excentricity_Z, symmetric = symmetric)
 
     node_coords_all = np.asarray(node_coords_all)
     """
@@ -2610,7 +2610,7 @@ def create3dDogBone(minDist, trials, D=1.0,D0=None,H=None,H0=None, excentricity_
         plt.show()
     """
     print('Conducting Voronoi tesselation...', end = '')
-    vor = utilitiesNumeric.runMirroredPowerDogBone_old(node_coords_all, 3, D,H=H or 6/4*D, thickness = 0.1,radii=radii)
+    vor = utilitiesNumeric.runMirroredPowerDogBone_old(node_coords_all, 3, D,H=H or 6/4*D, thickness = thickness,radii=radii)
     print('done.')
 
     node_coords_all = node_coords_all[0:node_count]
@@ -2618,13 +2618,9 @@ def create3dDogBone(minDist, trials, D=1.0,D0=None,H=None,H0=None, excentricity_
     for i in range (node_count): areas.append(0)
     areas = np.asarray(areas)
 
-    # if SHOW_PLOT:
-    #     fig = voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',line_width=2, line_alpha=0.6, point_size=2)
-    #     plt.show()
 
     ########################################################################
     functions = []
-    #### Defining functions
     #0 constant zero
     fn = utilitiesNumeric.constantFunc(0)
     functions.append (fn)
@@ -7162,7 +7158,7 @@ def assemble2dDogBoneBand(maxLim, minDist, roughMinDistCoef=1, elasticHeightCoef
 
 
 
-def assemble3dDogBone(D, minDist, trials, D0=None,H=None,H0=None, thickness = 0.1, excentricity_X = 20, excentricity_Z = 0, symmetric=0):
+def assemble3dDogBone(D, minDist, trials, thickness, D0=None,H=None,H0=None,  excentricity_X = 20, excentricity_Z = 0, symmetric=0):
     dim = 3
     #lists for the model
     node_coords = []
