@@ -7543,19 +7543,21 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
 
 
     #generate surface nodes
-    nnodes = int(np.pi*maxLim/(0.8*minDist)/2.+0.5)
+    nnodes = int(np.pi*maxLim/(minDist)/2+0.5)
     step = np.pi/nnodes
-    node_coords_polar = np.zeros( (4*nnodes, dim) )
-    node_coords_polar[:,1] = 0.99*maxLim/2.
+    node_coords_polar = np.zeros( (4*nnodes, dim) )    
+    lim = 0.0001
     for i in range(nnodes):
         node_coords_polar[4*i,0] = i*step
         node_coords_polar[4*i+1,0] = (nnodes+i)*step
         node_coords_polar[4*i+2,0] = i*step
         node_coords_polar[4*i+3,0] = (nnodes+i)*step
-        node_coords_polar[4*i+2,1] = 1.01*maxLim/2.
-        node_coords_polar[4*i+3,1] = 1.01*maxLim/2.
-    node_coords = np.column_stack((np.cos(node_coords_polar[:,0]),np.sin(node_coords_polar[:,0])))*maxLim/2.
-    radii = np.zeros( len(node_coords_polar) )
+        node_coords_polar[4*i+2,1] = (1.+lim)*maxLim/2.
+        node_coords_polar[4*i+3,1] = (1.+lim)*maxLim/2.
+        node_coords_polar[4*i,1] = (1.-lim)*maxLim/2.
+        node_coords_polar[4*i+1,1] = (1.-lim)*maxLim/2.
+    node_coords = np.column_stack((np.cos(node_coords_polar[:,0])*node_coords_polar[:,1],np.sin(node_coords_polar[:,0])*node_coords_polar[:,1]))
+    radii = np.ones( len(node_coords_polar) )*0.4*minDist
 
 
     node_coords, polar_node_coords, radii = pointGenerators.generateParticlesSphere(maxLim, minDist*0.4, minDist, 0.8, dim, trials, node_coords, radii, allow_domain_overlap=False, periodic_distance=False)

@@ -238,11 +238,23 @@ void VonMisesPlasticMaterialStatus :: update() {
 //////////////////////////////////////////////////////////
 bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("plastic_strain") == 0 || code.compare("plasticstrain") == 0 ) {
-        unsigned size = temp_plasticstrain.size();
-        result.resize(size);
-        for ( unsigned p = 0; p < size; p++ ) {
-            result [ p ] = temp_plasticstrain [ p ];
+        unsigned size = temp_plasticstrain.size() ;
+        if (size == 3) {// 2D case
+            size ++;
+            result.resize(size);
+            for ( unsigned p = 0; p < size - 1; p++ ) {
+                result [ p ] = temp_plasticstrain [ p ];
+            }
+            result [ 3 ] = temp_outplane_plasticstrain;
+        } else { // 3D case
+            unsigned size = temp_plasticstrain.size();
+            result.resize(size);
+            for ( unsigned p = 0; p < size - 1; p++ ) {
+                result [ p ] = temp_plasticstrain [ p ];
+            }
         }
+        
+       
         return true;
     } else if ( code.compare("backstress") == 0 || code.compare("back_stress") == 0 ) {
         unsigned size = temp_backstress.size();

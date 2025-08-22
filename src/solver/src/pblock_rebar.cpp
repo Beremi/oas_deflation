@@ -221,22 +221,24 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         for(unsigned i=0; i<primaryParticles.size(); i++){
             if(minmaxt[i].first>0){
                 newt = (minmaxt[i].first+minmaxt[i].second)/2.;
-                Point newloc = a + dirvec*newt;
-                Particle* newp = new Particle(dim, 0, newloc);
-                model->giveNodes()->addNode(newp);
-                if(primaryParticles[i]){
-                    model->giveConstraints()->addRigidArmConstraint(dim,newp,primaryParticles[i],false);
-                }else{
-                    model->giveConstraints()->addHangingNodeConstraint(newp,primaryElements[i]);
-                }
-                newts.push_back(pair(newt,newp));
+                if (newts.size()==0 || abs(newts.back().first-newt)>length/1000.){
+                    Point newloc = a + dirvec*newt;
+                    Particle* newp = new Particle(dim, 0, newloc);
+                    model->giveNodes()->addNode(newp);
+                    if(primaryParticles[i]){
+                        model->giveConstraints()->addRigidArmConstraint(dim,newp,primaryParticles[i],false);
+                    }else{
+                        model->giveConstraints()->addHangingNodeConstraint(newp,primaryElements[i]);
+                    }
+                    newts.push_back(pair(newt,newp));
+                }  
             }                       
         }
         //create rebar beams
         sort(newts.begin(), newts.end(), sortPairsB);
         Node* second = model->giveNodes()->giveNode(nodes[k]);
         Node* first;
-        for(vector<pair<double,Node*>>::const_iterator tt = newts.begin(); tt!=newts.end(); ++tt){            
+        for(vector<pair<double,Node*>>::const_iterator tt = newts.begin(); tt!=newts.end(); ++tt){
             first = tt->second;
             TimoshenkoBeam3D * tb = new TimoshenkoBeam3D(first , second, bm, cs, Point(100,100,100));
             model->giveElements()->addElement(tb);            
