@@ -909,8 +909,6 @@ class Model:
             mZ=self.materialZones, periodicModel=self.periodicModel,
             notches=self.notches, isTube=tube, coupled=self.coupled, minDist=self.minDist, node_indices_dogbone=self.node_indices_dogbone, randomizeMaterial=self.randomizeMaterial, auxmechelements=self.auxmechelements)
 
-        print('NODES NODES after %d' %len(new_node_coords))
-
         self.node_coords = np.copy(new_node_coords)
         self.node_count = len(self.node_coords)
         #if (self.printout == False): enablePrint()
@@ -920,7 +918,6 @@ class Model:
                 for j in range (len(self.interfaceVertexIndices[i])):
                     self.interfaceVertexIndices[i][j] += int(self.vertIdxStart)
 
-        print ('saving dome mdome.')
 
     def saveRest(self, solver, master_file, exporters, generateFineNodes=-1):
         print('saving rest')

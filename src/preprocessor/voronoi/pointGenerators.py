@@ -193,73 +193,132 @@ def generateParticlesOrtoSurface(nodeA, nodeB, minDiam, maxDiam, volumeRatio, di
     return node_coords, radii
     
 
-def generateParticlesDogbonePow(D, minDiam, maxDiam, volumeRatio, dim, trials,
-                             node_coords, radii, allow_domain_overlap = False,
-                             periodic_distance=False,useLowBound=False):
-    gap = .1
-    h = D/5
-    s = D
-    Volume = (1.5 * D**2 - 2 * (1/(64*h**2)*((s**2 + 4*h**2)**2 *
-                                             np.arccos((s**2 - 4*h**2) / (s**2 + 4*h**2)) -
-                                             4 * s * h * (s**2 - 4*h**2))))
-    diam = np.flipud(np.linspace(minDiam/4, maxDiam, 30))
-    if(dim==2):
-        freq = fuller2D(diam, maxDiam)
-    elif(dim==3):
-        freq = fuller3D(diam, maxDiam)
 
-    saturation = 0;
+
+def generateParticlesDogbonePow(D, minDiam, maxDiam, volumeRatio, dim, trials,
+                                node_coords, radii, thickness=None, allow_domain_overlap=False,
+                                periodic_distance=False, useLowBound=False):
+    gap = 0.1
+    h = D / 5
+    s = D
+
+    # Base volume for dogbone in 2D (area)
+    Volume = (1.5 * D**2 - 2 * (1 / (64 * h**2) * ((s**2 + 4 * h**2)**2 *
+                np.arccos((s**2 - 4 * h**2) / (s**2 + 4 * h**2)) -
+                4 * s * h * (s**2 - 4 * h**2))))
+
+    # Adjust for 3D
+    if dim == 3:
+        if thickness is None:
+            raise ValueError("Thickness must be provided for 3D mode.")
+        Volume *= thickness
+
+    # Particle size distribution
+    diam = np.flipud(np.linspace(minDiam / 4, maxDiam, 30))
+    if dim == 2:
+        freq = fuller2D(diam, maxDiam)
+    elif dim == 3:
+        freq = fuller3D(diam, maxDiam)
+    else:
+        raise ValueError("dim must be 2 or 3")
+
+    saturation = 0
     iters = 0
     di = 0
-    radius = maxDiam/2.
+    radius = maxDiam / 2.
 
-    SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
-    SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+    # Define centroids for dogbone circles
+    if dim == 2:
+        SL = np.array([-0.725 * D + D / 5, 0.75 * D])  # left circle centroid
+        SR = np.array([D + 0.725 * D - D / 5, 0.75 * D])  # right circle centroid
+    elif dim == 3:
+        SL = np.array([-0.725 * D + D / 5, 0.75 * D, thickness / 2])
+        SR = np.array([D + 0.725 * D - D / 5, 0.75 * D, thickness / 2])
 
     points = node_coords
 
     while (2 * radius > minDiam) and (iters < trials):
-        px, py = random.random() * D, random.random() * (D + 2 * D/4)
-        point = np.array((px, py))
-        if (py > D/4) and py < (D/4 + D):
-            #kx = ((0.725 * D)**2 - (py - D/2 - D/4)**2)**0.5 - (0.725 * D - D/5)
-            #if (px < kx + radius) or (px > (D - kx-radius)): # simplified version of round boundary limit
-            if ((np.sum((point - SL)**2, )**0.5 - 0.725 * D) < radius) or ((np.sum((point - SR)**2)**0.5 - 0.725 * D) < radius):
-                continue
-        else:
-            #if (px < radius) or (px > (D)) or (py < radius) or (py > (1.5 * D)):
-            if (px < radius) or (px > (D - radius)) or (py < radius) or (py > (1.5 * D - radius)):
-                continue
+        # Generate random point
+        if dim == 2:
+            px = random.random() * D
+            py = random.random() * (D + 2 * D / 4)
+            point = np.array((px, py))
+        elif dim == 3:
+            px = random.random() * D
+            py = random.random() * (D + 2 * D / 4)
+            pz = random.random() * thickness
+            point = np.array((px, py, pz))
+
+        # Boundary checks
+        if dim == 2:
+            if (py > D / 4) and (py < (D / 4 + D)):
+                if ((np.linalg.norm(point - SL) - 0.725 * D) < radius) or ((np.linalg.norm(point - SR) - 0.725 * D) < radius):
+                    continue
+            else:
+                if (px < radius) or (px > (D - radius)) or (py < radius) or (py > (1.5 * D - radius)):
+                    continue
+        elif dim == 3:
+            if (py > D / 4) and (py < (D / 4 + D)):
+                if ((np.linalg.norm(point - SL) - 0.725 * D) < radius) or ((np.linalg.norm(point - SR) - 0.725 * D) < radius):
+                    continue
+            else:
+                if (px < radius) or (px > (D - radius)) or (py < radius) or (py > (1.5 * D - radius)) or (pz < radius) or (pz > (thickness - radius)):
+                    continue
+
+        # Check against existing points
         approved = False
-        if ( len(points)==0): approved = True
+        if len(points) == 0:
+            approved = True
         else:
             delta = np.abs(np.asarray(points) - point)
-            if (periodic_distance):
-                dist2 = np.sum(np.square(np.minimum(delta, maxLim-delta)), axis=1) # TODO: not working for dogbone
-            else:
-                dist2 = np.sum(np.square(delta), axis=1)
-            #if (np.min(dist2 - np.square((1. + gap) * (np.asarray(radii) + radius))) > 0): approved = True
-            if (np.min(dist2 - ((1. + gap) * (np.asarray(radii) + radius))**2) > 0): approved = True
-        if ( approved) :
-            points.append((px, py))
+            if periodic_distance:
+                raise NotImplementedError("Periodic distance not supported for dogbone geometry.")
+            dist2 = np.sum(np.square(delta), axis=1)
+            if (np.min(dist2 - ((1. + gap) * (np.asarray(radii) + radius))**2) > 0):
+                approved = True
+
+        # If approved, add the particle
+        if approved:
+            points.append(tuple(point))
             radii.append(radius)
 
-            saturation += np.pi * radius**2 / Volume
-            while ((1. - saturation / volumeRatio ) < freq[di]):
-                di+=1
-            radius = (diam[di] +(diam[di - 1] - diam[di]) / (freq[di - 1] - freq[di])*(1. - saturation / volumeRatio - freq[di])) / 2.
+            # Update saturation
+            if dim == 2:
+                saturation += np.pi * radius**2 / Volume
+            elif dim == 3:
+                saturation += (4 / 3) * np.pi * radius**3 / Volume
+
+            # Update radius
+            while (di < len(freq) - 1) and ((1. - saturation / volumeRatio) < freq[di]):
+                di += 1
+            if di > 0:
+                radius = (diam[di] + (diam[di - 1] - diam[di]) /
+                          (freq[di - 1] - freq[di]) *
+                          (1. - saturation / volumeRatio - freq[di])) / 2.
             iters = 0
         else:
             iters += 1
+    """
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
 
+    ax.scatter(np.asarray(points)[:, 0], np.asarray(points)[:, 1], np.asarray(points)[:, 2], s=10, c='blue', alpha=0.6)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('3D Particle Distribution')
+
+    plt.show()
+    """
     return points, radii
 
-try:
-    from point_generators_cython import generateParticlesDogbonePow_cython as generateParticlesDogbonePow
-    print('Using Cython version of point generator - generateParticlesDogbonePow.')
-except:
-    print('''Using Python version of generator. To use the Cython version the
-          the code has to be build using: python setup.py build_ext --inplace.''')
+#try:
+#    from point_generators_cython import generateParticlesDogbonePow_cython as generateParticlesDogbonePow
+#    print('Using Cython version of point generator - generateParticlesDogbonePow.')
+#except:
+#    print('''Using Python version of generator. To use the Cython version the
+#          the code has to be build using: python setup.py build_ext --inplace.''')
 
 def generateParticlesDogbone(D, minDiam, maxDiam, volumeRatio, dim, trials,
                              node_coords, radii, allow_domain_overlap = False,
@@ -1563,7 +1622,7 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
     print ('Generating a 3d cylinder surf segment. Ctr [%f, %f, %f], Rad: %f' %(center[0],center[1],center[2], radius))
 
     mirroredPoints = []
-    if equiAngNodes >0:
+    if False:
         nodeNr = equiAngNodes
         #indntAng = (2*np.pi-(nodeNr-1)*mD) / 2
         stepAng =  2*np.pi / nodeNr
@@ -1588,7 +1647,7 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
     else:
         tr=0
         while (tr<trials):
-            tr = 0;
+            tr = 0
             #
             distIsGood = False
             while (distIsGood == False):
@@ -1613,12 +1672,12 @@ def generateNodesOrtoCilinderSurf3dRand(center, radius, height, directionDim, mi
         if (mirrorIndent != None):
             return mirroredPoints
 
-try:
-    from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand
-    print('Using Cython version of point generator - generateNodesOrtoCilinderSurf3dRand.')
-except:
-    print('''Using Python version of generator. To use the Cython version the
-          the code has to be build using: python setup.py build_ext --inplace.''')
+#try:
+#    from point_generators_cython import generateNodesOrtoCylinderSurf3dRand_cython as generateNodesOrtoCilinderSurf3dRand
+#    print('Using Cython version of point generator - generateNodesOrtoCilinderSurf3dRand.')
+#except:
+#    print('''Using Python version of generator. To use the Cython version the
+#          the code has to be build using: python setup.py build_ext --inplace.''')
 
 
 ###############################################################################

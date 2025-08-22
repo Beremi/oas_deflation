@@ -9,6 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import utilitiesMech
 import Preprocessor as prepro
 from scipy.spatial import voronoi_plot_2d
+from tqdm import tqdm
 
 masterFile                  = "master.inp"
 nodesFile                   = "nodes.inp"
@@ -268,9 +269,7 @@ def output2D(master_folder, node_count,  maxLim, vor, node_coords, areas, active
     vertices_out_set = set()
     #fig, ax = plt.subplots()
     for i in range (validRidgeIdxs.size):
-        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
-        sys.stdout.flush()
-
+        
         #array for two vertices A and B
         vrtxA = np.zeros ( (dim  +1 +1 ) )
         vrtxB = np.zeros ( (dim  +1 +1 ) )
@@ -554,10 +553,16 @@ def ridgeWithinCenterBox(vertices, maxLim):
 def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeTransport, activeMechanics, mZ=None, notches=None, isTube=False, coupled=False, node_indices_dogbone=[], randomizeMaterial=False, auxmechelements=False):
     start_time = time.time()
     dim = 3
-
+    node_count=len(node_coords)
     print('Extracting the geometry...',  end ='')
     sys.stdout.flush()
 
+    if len(node_indices_dogbone)>0:
+        node_coords=node_coords[node_indices_dogbone]
+        node_count=len(node_coords)
+
+    
+    
     nodes_out = np.zeros((node_count, (dim + 1 + 1)))
     nodes_out[:, 0:dim] = vor.points[0:node_count, 0:dim]
     nodes_out[:, dim] = 0
@@ -586,24 +591,19 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     #adding ridges with at least one node in sample
     #validRidgeIdxs = np.where(np.any(vor.ridge_points < node_count, axis=1))[0].tolist()
 
-
     if len(node_indices_dogbone) > 0:
-        #cond = np.any((vor.ridge_points[:,:,None] == node_indices_dogbone), axis=2)
-        #cond = np.all(cond, axis=1)
-        #validRidgeIdxs = np.where(cond)[0]
-        validRidgeIdxs = []
-        node_indices_dogbone = set(node_indices_dogbone)
-        for i in range (vor.ridge_points.shape[0]):
-            pr = False
-            for p in range (2):
-                if (vor.ridge_points[i][p] in node_indices_dogbone):
-                    pr=True
-            if (pr):
-               validRidgeIdxs.append(i)
-        validRidgeIdxs = np.asarray(validRidgeIdxs)
+        ridge_points = vor.ridge_points
+        # Create a boolean mask where either point of the ridge is in node_indices_dogbone
+        mask = np.any(np.isin(ridge_points, list(node_indices_dogbone)), axis=1)
+        # Get valid ridge indices
+        validRidgeIdxs = np.where(mask)[0]
     else:
         cond = np.any((vor.ridge_points < node_count) & (vor.ridge_points >= 0), axis=1)
         validRidgeIdxs = np.where(cond)[0]
+
+
+    validRidgeIdxs = np.asarray(validRidgeIdxs)
+
 
 
     validRidgeIdxs = np.asarray(validRidgeIdxs)
@@ -621,10 +621,8 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     allCoplanar = True
 
 
-    for i in range (validRidgeIdxs.size):
-        sys.stdout.write('\r'+'Ridge nr. ' + str(i) + '/' +  str(validRidgeIdxs.size)+'  '+          str(int(i/validRidgeIdxs.size*100))+'%')
-
-        sys.stdout.flush()
+    for i in tqdm(range(validRidgeIdxs.size), desc="Processing ridges"):
+        
 
         rdge = vor.ridge_vertices[validRidgeIdxs[i]]
         #indices of all vertices that form the planar ridge
@@ -805,8 +803,6 @@ def output3D(master_folder, node_count, maxLim, vor, node_coords, areas, activeT
     if (activeTransport):
         newAuxNodes = saveTransportElements(master_folder, ridges_out,dim, node_count, v_count, aux_nodes, maxLim, nodes_out, vertices_out, isTube=isTube, coupled=coupled)
     vertIdxStart += newAuxNodes
-
-
 
     for i in range (len(ridges_out)):
         ln = len(np.asarray(ridges_out[i]) )
@@ -3238,13 +3234,16 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
     test_nodeCoords = np.genfromtxt(os.path.join(master_folder,nodesFile),  dtype= None, encoding='ascii', usecols=cols)
     print('\t\t %d nodes loaded.' %len(test_nodeCoords))
 
-
+    
+    
+    
     #"""
 
     if (os.path.exists(os.path.join(master_folder,auxNodesFile))):
         print('Loading back aux node coords...', end='')
         try:
             test_auxNodeCoords = np.genfromtxt(os.path.join(master_folder,auxNodesFile),  dtype= None, encoding='ascii', usecols=cols)
+            
             print('\t\t %d nodes loaded.' %len(test_auxNodeCoords))
         except:
             print('\t\t %d nodes NOT loaded.' %len(test_auxNodeCoords))
@@ -3257,6 +3256,12 @@ def checkSavedModel(master_folder, dim, activeMechanics, activeTransport,fem_out
     print('\t\t %d vertices loaded.' %len(test_verticesCoords))
 
     test_solverNodeArray = np.vstack((test_nodeCoords, test_auxNodeCoords, test_verticesCoords))
+
+    #plt.scatter(test_nodeCoords[:,0],test_nodeCoords[:,1])
+    #plt.scatter(test_auxNodeCoords[:,0],test_auxNodeCoords[:,1])
+    #plt.scatter(test_verticesCoords[:,0],test_verticesCoords[:,1])
+    
+    #plt.show()
     print('total point count %s' %len(test_solverNodeArray))
     if (activeMechanics):
         print('Loading back mechanical elements...', end='')

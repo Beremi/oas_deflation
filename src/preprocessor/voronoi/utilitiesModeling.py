@@ -2599,7 +2599,7 @@ def create2dDogBoneBand(maxLim, minDist,  roughMinDistCoef=1, elasticHeightCoef=
 def create3dDogBone(minDist, trials, D=1.0, excentricity_X = 20, excentricity_Z = 0, symmetric=False):
     print('Creating 3sd dog bone....')
     #
-    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates  = assemble3dDogBone(D, minDist, trials, excentricity_X= excentricity_X, excentricity_Z= excentricity_Z, symmetric = symmetric);
+    node_coords_all, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates,radii  = assemble3dDogBone(D, minDist, trials, excentricity_X= excentricity_X, excentricity_Z= excentricity_Z, symmetric = symmetric);
 
     node_coords_all = np.asarray(node_coords_all)
     """
@@ -2610,7 +2610,7 @@ def create3dDogBone(minDist, trials, D=1.0, excentricity_X = 20, excentricity_Z 
         plt.show()
     """
     print('Conducting Voronoi tesselation...', end = '')
-    vor = utilitiesNumeric.runMirroredVoronoiDogBone(node_coords_all, 3, D, thickness = 0.1)
+    vor = utilitiesNumeric.runMirroredPowerDogBone_old(node_coords_all, 3, D, thickness = 0.1,radii=radii)
     print('done.')
 
     node_coords_all = node_coords_all[0:node_count]
@@ -2632,7 +2632,7 @@ def create3dDogBone(minDist, trials, D=1.0, excentricity_X = 20, excentricity_Z 
     #1 loading function
     func1 = []
     func1.append( np.array([0,0]) )
-    func1.append( np.array([1, -1e-3]) )
+    func1.append( np.array([1, -1e-4]) )
     fn1 = utilitiesNumeric.generalFunc(func1)
     functions.append (fn1)
 
@@ -2643,6 +2643,9 @@ def create3dDogBone(minDist, trials, D=1.0, excentricity_X = 20, excentricity_Z 
 
 
     return node_coords_all, mechBC_merged, mechInitC_merged, transportBC_merged, transportIC_merged, vor, areas, functions, govNodes, govNodesMechBC, rigidPlates, node_indices_dogbone
+
+
+
 
 
 
@@ -2700,7 +2703,7 @@ def create3dSSBeamUnifLoad(maxLim, minDist, trials, notch = -1, loadWidth = 1, f
     else:
         node_coords, mechBC_merged, mechInitC_merged, notches, govNodes, govNodesMechBC, rigidPlates,radii  = assemble3DSSBeamBendingBlank(maxLim, minDist, trials, notch, loadWidth, fracZoneWidth=fracZoneWidth, orthogonalFracZone=orthogonalFracZone, notchWidth = notchWidth, coupled=coupled, node_coords_init=node_coords_init, specifiedNodes=specifiedNodes, roughMinDistCoef=roughMinDistCoef, supportDivision=supportDivision,gapWidth=gapWidth,blank=blank,powerTes=powerTes,supportWidth=supportWidth,span=span,gradientZoneWidth=gradientZoneWidth);
         node_coords = np.asarray(node_coords)
-        np.savetxt('radii.txt', np.asarray(radii), fmt='%f') 
+        
     for i in node_coords:
         if i[1]<0:
             print(i)
@@ -6610,9 +6613,12 @@ def assemble2dDogBone(D, minDist, trials, excentricity = 50, symmetric=0, edgeMi
             circle = plt.Circle((x, y), r, fill = False )
             ax.add_artist(circle)
 
+    print("asdasd")
     ax.set_aspect('equal')
     #plt.show()
-
+    node_coords=np.asarray(node_coords)
+    plt.scatter(node_coords[:,0],node_coords[:,1])
+    plt.show()
 
     node_count = len (node_coords)
     return (node_coords, list(range(len(node_coords))), mechBC_merged, mechInitC_merged,
@@ -7155,6 +7161,7 @@ def assemble2dDogBoneBand(maxLim, minDist, roughMinDistCoef=1, elasticHeightCoef
     return node_coords, mechBC_merged, mechInitC_merged, node_count, govNodes, govNodesMechBC, rigidPlates
 
 
+
 def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, excentricity_Z = 0, symmetric=0):
     dim = 3
     #lists for the model
@@ -7247,10 +7254,10 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
     # block
     oldLen = len(node_coords)
     maxLim = np.array([D,  6/4*D, thickness])
-
+    radii = np.zeros(len(node_coords))+minDist/2
     #pointGenerators.generateNodesRect(maxLim, minDist, 3, trials, node_coords)
-    pointGenerators.generateNodesRect_KDtree(maxLim, minDist, 3, trials, node_coords, setsize = 10)
-
+    node_coords, radii = pointGenerators.generateParticlesRect(maxLim, minDist*0.5, minDist, 0.9, dim, trials, np.asarray(node_coords), radii, periodic_distance=False)
+    
     nrOfPoints =  (len(node_coords)) - oldLen
 
     #dumping points outside bone
@@ -7258,17 +7265,19 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
     centreB = np.array( [ 1.525 * D, 3/4 * D, indent] )
 
     radius = np.linalg.norm( centreB[0:2] - np.array([D, 1/4*D]))
-    print('Dumping points within boundaries...',end='')
+    print('Dumping points within boundaries...')
     node_coords_out = []
+    radii_out = []
     node_indices_dogbone = []
     i = 0
 
-    for node in node_coords:
+    for ni, node in enumerate(node_coords):
         distA = np.linalg.norm( node[0:2] - centreA[0:2])
         distB = np.linalg.norm( node[0:2] - centreB[0:2])
         in_dogboneBLock =  0 < node[0] < D and 0 < node[2] < thickness
         if in_dogboneBLock and (distA > radius and distB > radius):
             node_coords_out.append(node)
+            radii_out.append(radii[ni])
             node_indices_dogbone.append(i)
             i += 1
 
@@ -7278,10 +7287,11 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
 
     # mirroring rough edge dogbone circular borders
     mirrored_coords = []
+    mirrored_radii = []
     dogboneRadius = 0.725 * D
     leftCenter = np.array([-0.525 * D, 3 / 4 * D])
     rightCenter = np.array([1.525 * D, 3 / 4 * D])
-    for node in node_coords_out:
+    for ni,node in enumerate(node_coords_out):
         if node[0] < D / 2:
             # left half, mirroring to left center
             nodeRad = np.linalg.norm(leftCenter - node[0:2])
@@ -7295,7 +7305,9 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
             #
             if (mirroredNodeAbsoluteCoords[0] >= 0):
                 mirrored_coords.append(mirroredNodeAbsoluteCoords)
+                mirrored_radii.append(radii[ni])
                 """
+                node_coords_dogbone=np.asarray(node_coords_out)
                 print()
                 print ('dist from edge %s' %distFromEdge)
                 print ('mirroredNodeRad %s' %mirroredNodeRad)
@@ -7307,6 +7319,7 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
                 plt.plot(node[0], node[1], 'o', color='blue');
                 plt.show()
                 """
+                
         else:
             # right half, mirroring to left center
             nodeRad = np.linalg.norm(rightCenter - node[0:2])
@@ -7320,11 +7333,24 @@ def assemble3dDogBone(D, minDist, trials, thickness = 0.1, excentricity_X = 20, 
             #
             if (mirroredNodeAbsoluteCoords[0] <= D):
                 mirrored_coords.append(mirroredNodeAbsoluteCoords)
+                mirrored_radii.append(radii[ni])
 
     mirrored_coords = np.asarray(mirrored_coords)
+    mirrored_radii = np.asarray(mirrored_radii)
     node_coords_out = np.vstack((node_coords_out, mirrored_coords))
+    radii_out = np.hstack((radii_out, mirrored_radii))
+    
+    #plt.scatter(np.asarray(node_coords_out)[node_indices_dogbone,0],np.asarray(node_coords_out)[node_indices_dogbone,1])
+    #plt.show()
+    return node_coords_out, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates, radii_out
 
-    return node_coords_out, node_indices_dogbone, mechBC_merged, mechInitC_merged, node_count,govNodes, govNodesMechBC, rigidPlates
+
+
+
+
+
+
+
 
 
 
@@ -8276,11 +8302,42 @@ def assemble3DSSBeamBendingBlank (maxLim, minDist, trials, notch, loadWidth,  fr
         #node_coords, radii = pointGenerators.generateParticlesRect(maxLimF, 0.004, 0.010, 0.8, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=True)
         #node_coords[:,0]+=maxLim[0]/4*1.5
 
-
+        maxLimF= np.zeros((6))
+        maxLimF[0] = maxLim[0]/3*2
+        maxLimF[1] = maxLim[1]
+        maxLimF[2] = maxLim[2]
+        maxLimF[3] = maxLim[0]/3
+        maxLimF[4] = 0
+        maxLimF[5] = 0
         #TPB
-        node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.0010, 0.03, 0.999, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLimF, 0.012, 0.016, 0.9, dim, trials, 
+                                                                   node_coords, radii, allow_domain_overlap = True, 
+                                                                   periodic_distance=False,useLowBound=True)
+        maxLimF= np.zeros((6))
+        maxLimF[0] = maxLim[0]/3
+        maxLimF[1] = maxLim[1]
+        maxLimF[2] = maxLim[2]
+        maxLimF[3] = 0
+        maxLimF[4] = 0
+        maxLimF[5] = 0
+        #TPB
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLimF, 0.014, 0.016, 0.9, dim, trials, 
+                                                                   node_coords, radii, allow_domain_overlap = True, 
+                                                                   periodic_distance=False,useLowBound=True)
+        maxLimF= np.zeros((6))
+        maxLimF[0] = maxLim[0]
+        maxLimF[1] = maxLim[1]
+        maxLimF[2] = maxLim[2]
+        maxLimF[3] = maxLim[0]/3*2
+        maxLimF[4] = 0
+        maxLimF[5] = 0
+        #TPB
+        node_coords, radii = pointGenerators.generateParticlesRect(maxLimF, 0.014, 0.016, 0.9, dim, trials, 
+                                                                   node_coords, radii, allow_domain_overlap = True, 
+                                                                   periodic_distance=False,useLowBound=True)
         #CYLINDER
         #node_coords, radii = pointGenerators.generateParticlesRect(maxLim, 0.012, 0.024, 0.95, dim, trials, node_coords, radii, allow_domain_overlap = True, periodic_distance=False)
+        np.savetxt('radii.txt', np.asarray(radii), fmt='%f') 
     else:
         pointGenerators.generateNodesRect(maxLim, minDist, dim, trials, node_coords)
 

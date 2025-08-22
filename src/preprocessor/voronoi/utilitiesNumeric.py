@@ -80,6 +80,9 @@ def is_inside_dogbone(points, radii, D, SL, SR):
     ''' return boolean array (True == inside) and
     indices array of positions of points inside of dogbone
     '''
+    print(points)
+    print(radii)
+    print(D, SL, SR)
     mask = (((points[:, 0] > radii) &
             (points[:, 0] < (D - radii))) &
             ((points[:, 1] > radii) &
@@ -93,11 +96,23 @@ def is_inside_dogbone(points, radii, D, SL, SR):
     mask[mask_tmp] = mask_circ
     return mask
 
-def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
+def runMirroredVoronoiDogBoneBackup (node_coords, dim, D, shifts=0, thickness = None):
+    vor = Voronoi(voronoi.mirror_dataDogBoneBack(node_coords, dim, D, thickness=thickness)[:,:dim]) #the last column might be present representing radii
+    #fig, ax = plt.subplots()
+    #voronoi_plot_2d(vor, ax=ax)
+    #plt.show()
+    return vor
+
+
+
+def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = 0.1):
     points = node_coords
     bound_lim = D/2
     SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
     SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+    if dim==3:
+        SL = np.array([-0.725*D+D/5, 0.75*D,thickness/2]) # left circle centeroid
+        SR = np.array([D+0.725*D-D/5, 0.75*D,thickness/2]) # right circle centeroid
     # Find vertices outside of dogbone and find its ridge_point
     pt = PowerTesselation(points, None, limits='auto')#Voronoi(points)#PowerTesselation(points, radii, limits='auto')
     mask_outside = ~is_inside_dogbone(pt.vertices, np.zeros(pt.vertices.shape[0]), D, SL, SR)
@@ -175,14 +190,71 @@ def runMirroredVoronoiDogBone (node_coords, dim, D, shifts=0, thickness = None):
         ax.set_aspect('equal')
         plt.show()
     return vor
+import numpy as np
+from itertools import product
+
+def mirror_points_3d(data, radii=None, D=None, thickness=None):
+    """
+    Mirrors a set of 3D points across all axes to create a 3x3x3 tiling (27 blocks).
+    Returns mirrored points and optionally mirrored radii in correct order.
+
+    Parameters:
+        data (ndarray): Original points, shape (N, 3).
+        radii (ndarray): Optional, radii for original points, shape (N,).
+        D (float): Main dimension for shifts in x and y directions.
+        thickness (float): Thickness for z-direction shift.
+
+    Returns:
+        points_all (ndarray): Mirrored points of shape (27*N, 3).
+        radii_all (ndarray): Mirrored radii of shape (27*N,) if radii provided, else None.
+    """
+
+    if D is None or thickness is None:
+        raise ValueError("D and thickness must be provided for correct mirroring.")
+
+    # Precompute shifts
+    shift_x = [0, 2 * D]
+    shift_y = [0, 6/4 * 2 * D]
+    shift_z = [0, 2 * thickness]
+
+    points_all = []
+    radii_all = []
+
+    for sx, sy, sz in product([0, 1, 2], repeat=3):  # 3x3x3
+        # Determine signs: 0 → original, 1 → flip sign
+        sign_x = 1 if sx == 0 else -1
+        sign_y = 1 if sy == 0 else -1
+        sign_z = 1 if sz == 0 else -1
+
+        # Compute actual shifts (only positive tiling in this version)
+        shift = [
+            0 if sx == 0 else shift_x[1],
+            0 if sy == 0 else shift_y[1],
+            0 if sz == 0 else shift_z[1]
+        ]
+
+        mirrored_points = data * [sign_x, sign_y, sign_z] + shift
+        points_all.append(mirrored_points)
+
+        if radii is not None:
+            radii_all.append(radii)
+
+    points_all = np.vstack(points_all)
+    radii_all = np.hstack(radii_all) if radii is not None else None
+
+    return points_all, radii_all
 
 
 ##run power, mirrored data
-def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, radii = []):
+def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = 0.1, radii = []):
     points = node_coords
+    radii=np.asarray(radii)
     bound_lim = D/4
     SL = np.array([-0.725*D+D/5, 0.75*D]) # left circle centeroid
     SR = np.array([D+0.725*D-D/5, 0.75*D]) # right circle centeroid
+    if dim==3:
+        SL = np.array([-0.725*D+D/5, 0.75*D,thickness/2]) # left circle centeroid
+        SR = np.array([D+0.725*D-D/5, 0.75*D,thickness/2]) # right circle centeroid
     # Find vertices outside of dogbone and find its ridge_point
     pt = PowerTesselation(points, radii, limits='auto')
     mask_outside = ~is_inside_dogbone(pt.vertices, np.zeros(pt.vertices.shape[0]), D, SL, SR)
@@ -193,6 +265,7 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
     points_to_mirror_idx = (pt.point_region[out_region]-1).tolist()
     points_to_mirror = points[points_to_mirror_idx]
     #points_to_mirror = points
+
     radii_to_mirror = radii[points_to_mirror_idx]
     #radii_to_mirror = radii
 
@@ -200,6 +273,11 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
     CLT = np.array([0, 2* D/4 + D]) # np.array([0, D/4 + D])
     CRB = np.array([D, 0]) # np.array([D, D/4])
     CRT = np.array([D, 2 * D/4 + D]) # np.array([D, D/4 + D])
+    if dim==3:
+        CLB = np.array([0, 0,thickness/2]) # np.array([0, D/4])
+        CLT = np.array([0, 2* D/4 + D,thickness/2]) # np.array([0, D/4 + D])
+        CRB = np.array([D, 0,thickness/2]) # np.array([D, D/4])
+        CRT = np.array([D, 2 * D/4 + D,thickness/2]) # np.array([D, D/4 + D])
     vLB = SL - CLB
     vLT = CLT - SL
     mask1 = ~(np.cross(points_to_mirror-CLB, vLB) < 0)
@@ -211,7 +289,12 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
     mask_circle = mask1 & mask2 & mask3 & mask4
     # print(mask_circle.shape, points_to_mirror.shape)
     points_to_mirror_circle = points_to_mirror[mask_circle]
-    radii_to_mirror_circle = radii_to_mirror[mask_circle]
+    mask_circle = np.asarray(mask_circle)
+    mask_circle_1d = mask_circle.any(axis=1)  # or .all(axis=1)
+    points_to_mirror = np.asarray(points_to_mirror)
+    points_to_mirror_circle = points_to_mirror[mask_circle_1d, :]  # keep 2D shape
+
+    radii_to_mirror_circle = radii_to_mirror[mask_circle_1d]
 
 
     mask_top = points_to_mirror[:, 1] > (1.5 * D - bound_lim)
@@ -235,21 +318,12 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
     #                    ((points_to_mirror_circle[:, 1] > (D/4)) &
     #                     (points_to_mirror_circle[:, 1] < (D/4 + D))))
 
-
-    pointsOut= np.vstack((
-    points,
-    np.array([0,3*D]) + points_to_mirror[mask_top, :] * np.array([1,-1]), #nahoru
-    np.array([0,0]) + points_to_mirror[mask_bottom, :] * np.array([1,-1]), #dolu
-    np.array([0,0]) + points_to_mirror[mask_left] * np.array([-1,1]), #doleva
-    np.array([D*2,0]) + points_to_mirror[mask_right] * np.array([-1,1]), #doprava
-    mirror_circ(points_to_mirror_circle[mask_left_circ], dist_L[mask_left_circ], SL, D),
-    mirror_circ(points_to_mirror_circle[mask_right_circ], dist_R[mask_right_circ], SR, D),
-
-    # np.array([0,0]) + points * np.array([-1,-1]), #nahoru doleva
-    # np.array([2*D,0]) + points * np.array([-1,-1]), #nahoru doprava
-    # np.array([0,6/4*2*D]) + points * np.array([-1,-1]), #dolu doleva
-    # np.array([2*D,6/4*2*D]) + points * np.array([-1,-1]), #dolu doprava
-    ))
+    pointsOut, radiiOut = mirror_points_3d(points, radii, D, thickness)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(pointsOut[:,0], pointsOut[:,1], pointsOut[:,2], c = 'b', marker='o')
+    plt.show()
 
     if len(radii) > 0:
         #radii = np.tile(radii, 9) #hstack radii 9x
@@ -264,9 +338,9 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
 
     points = pointsOut
 
-    vor = PowerTesselation(points, radii, limits='auto')
-    #
-    # # PLOT
+    vor = PowerTesselation(pointsOut, radiiOut, limits='auto')
+    
+    # PLOT
     # fig, ax = plt.subplots()
     #
     # for i, p in enumerate(points):
@@ -286,8 +360,8 @@ def runMirroredPowerDogBone (node_coords, dim, D, shifts=0, thickness = None, ra
     return vor
 
 def runMirroredPowerDogBone_old (node_coords, dim, D, shifts=0, thickness = None, radii = []):
-    # vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
-
+    #vor = Voronoi(voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness)[0])
+    print(len(node_coords), len(radii))
     node_coords, radii = voronoi.mirror_dataDogBone(node_coords, dim, D, thickness=thickness, radii = radii)
 
     # vor = Voronoi(node_coords) #the last column might be present representing radii
