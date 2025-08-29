@@ -1213,7 +1213,7 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
     # voronoi points inside the RVE (maxLim = circ diameter)
 
     inside_idcs = np.where(np.sum(np.square(node_coords),axis=1)<maxLim*maxLim/4.)[0]
-    is_positive = np.where(vor.points[:,1]>=0)[0]
+    is_positive = np.where(vor.points[:,1]>0)[0]  
 
     mechElemParticles_orig = np.zeros((0,2)).astype(int)
     mechElemVerts = []
