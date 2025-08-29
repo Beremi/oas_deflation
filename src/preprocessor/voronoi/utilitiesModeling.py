@@ -4965,11 +4965,11 @@ def assemble2d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter, 
                 centre = np.array([ maxLim[0]/2+0.011, maxLim[1]/2])
                 if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
                     app = False
-            if r == 2and app==True:
+            if r == 2 and app==True:
                 centre = np.array([ maxLim[0]/2, maxLim[1]/2-0.011 ])
                 if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
                     app = False
-            if r == 3and app==True:
+            if r == 3 and app==True:
                 centre = np.array([ maxLim[0]/2, maxLim[1]/2+0.011 ])
                 if not (np.linalg.norm(centre - node_coords[i]) > holeDiameter/2*0.999):
                     app = False
@@ -5101,11 +5101,11 @@ def assemble3d_CFRAC_Clover(maxLim, minDist, trials, holeMinDist, holeDiameter):
                 centre = np.array([ maxLim[0]/2+0.011, maxLim[1]/2])
                 if not (np.linalg.norm(centre[0:2] - node_coords[i][0:2]) > holeDiameter/2*0.999):
                     app = False
-            if r == 2and app==True:
+            if r == 2 and app==True:
                 centre = np.array([ maxLim[0]/2, maxLim[1]/2-0.011 ])
                 if not (np.linalg.norm(centre[0:2] - node_coords[i][0:2]) > holeDiameter/2*0.999):
                     app = False
-            if r == 3and app==True:
+            if r == 3 and app==True:
                 centre = np.array([ maxLim[0]/2, maxLim[1]/2+0.011 ])
                 if not (np.linalg.norm(centre[0:2] - node_coords[i][0:2]) > holeDiameter/2*0.999):
                     app = False
