@@ -7528,7 +7528,7 @@ def asssemble2dCircRVE(maxLim, minDist, trials, powerTes):
 
     #generate surface nodes
     nnodes = int(np.pi*maxLim/(minDist)/2+0.5)
-    step = np.pi/nnodes
+    step = np.pi/(nnodes+1)
     node_coords_polar = np.zeros( (4*nnodes, dim) )    
     lim = 0.0001
     for i in range(nnodes):
