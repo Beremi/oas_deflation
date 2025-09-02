@@ -1254,8 +1254,9 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         elif (all(inode in is_positive for inode in ridge) and ridge[0] in inside_idcs and ridge [1] not in inside_idcs):
             if ridge[0] not in masters_orig and ridge[0] + nnodes not in slaves_orig:
                 islave = ridge[0] +1; imaster = ridge[0]
-                coupling_orig.append([imaster, islave]); RVEnodes_orig.add(islave)
-                slaves_orig.append(islave); masters_orig.append(imaster)
+                coupling_orig.append([imaster, islave]); #RVEnodes_orig.add(islave)
+                slaves_orig.append(islave); 
+                masters_orig.append(imaster)
         if ridge[1] in inside_idcs:  # one node inside RVE 
             mechElemParticles_orig = np.vstack((mechElemParticles_orig, ridge))
             mechElemVerts.append(vor.ridge_vertices[int(ir)])
@@ -1292,10 +1293,10 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         voronoi_plot_2d(vor, show_vertices=False, line_colors='orange',  linewidth=1, line_alpha=0.6, point_size=2)
         ## plot points
         # original numbering
-        for ipoint, sla in enumerate(slaves_orig):
-            mas = masters_orig[ipoint]
-            points = np.vstack((vor.points[sla], vor.points[mas]))
-            plt.plot(points[:,0], points[:,1], color='blue')
+        #for ipoint, sla in enumerate(slaves_orig):
+        #    mas = masters_orig[ipoint]
+        #    points = np.vstack((vor.points[sla], vor.points[mas]))
+        #    plt.plot(points[:,0], points[:,1], color='blue')
         #for mechElem_orig in mechElemParticles_orig:
         #    pointsME = np.vstack((vor.points[mechElem_orig[0]], vor.points[mechElem_orig[1]]))
         #    plt.plot(pointsME[:,0], pointsME[:,1], color='red', linestyle='-')
@@ -1323,8 +1324,8 @@ def output2DCircPeriodic(master_folder, node_count, maxLim, vor, node_coords, no
         #'''
 
 
-    pairs = np.column_stack((masters_orig,slaves_orig))
-    savePeriodicBlock(master_folder, np.array(pairs), maxLim, RVEnodes_renum, dim)
+    #pairs = np.column_stack((masters_orig,slaves_orig))
+    savePeriodicBlock(master_folder, coupling_renum, maxLim, RVEnodes_renum, dim)
 
     particles = np.column_stack((RVEnodes_renum, np.zeros(len(sort_idx))))
     saveNodes(master_folder, particles, 'Particle', dim, nodesFile)     # nodesFile = 'nodes.inp'
