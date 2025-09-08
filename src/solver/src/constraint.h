@@ -22,7 +22,7 @@ protected:
     std :: vector< unsigned >directions;
     std :: vector< double >multipliers;
     std :: vector< Function * >time_fns;
-    std :: vector< double >additional_term;
+    std :: vector< double >time_mults;
 public:
     JointDoF() {};
     virtual ~JointDoF() {};
@@ -41,11 +41,10 @@ public:
     std :: vector< unsigned >giveMasterDirs() { return directions; };
     unsigned giveMasterDir(unsigned k) const { return directions [ k ]; };
     std :: vector< double >giveMasterMultipliers() { return multipliers; };
-    double giveMasterMultiplier(unsigned k, const double time_now = 0.0) const { ( void ) time_now; return multipliers [ k ]; };
-    double giveFnDepPart(unsigned k, const double time_now = 0.0) const {
-        return ( time_fns [ k ] == nullptr ) ? 0.0 : additional_term [ k ] * time_fns [ k ]->giveY(time_now);
-    };
-    std :: vector< Function * >giveTimeFns() { return time_fns; };
+    double giveMasterMultiplier(unsigned k) const { return multipliers [ k ]; };
+    double giveFnDepPart(const double time_now = 0.0) const;
+    std :: vector< Function * >giveTimeFns() const { return time_fns; };
+    std :: vector< double > giveTimeMults() const { return time_mults; };
     Function *giveTimeFn(unsigned k) const { return time_fns [ k ]; };
     bool isTimeDependent() { return !time_fns.empty(); };
     bool replaceDependentMasters(std :: vector<unsigned> &depms, std :: vector<JointDoF*> &depmsJDs);
@@ -136,6 +135,7 @@ public:
     void addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations);
     void addHangingNodeConstraint(Node* dependent, Element* primary);
     void checkInternalDependencies();
+    std::vector<unsigned> giveConstraintsOfSpecificNode(const Node *n)const;
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }

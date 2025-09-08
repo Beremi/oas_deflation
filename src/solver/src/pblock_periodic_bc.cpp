@@ -17,6 +17,12 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     initalNodeNum = nodes->giveSize();
     mn = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(mn);
+    
+    
+    if (crack_active){
+        Node* cr = new MechDoF( dim, dim );
+        nodes->addNode(cr);
+    }      
 }
 
 //////////////////////////////////////////////////////////
@@ -470,15 +476,6 @@ void MechanicalPeriodicBC :: calculateVolume(ElementContainer *elems) {
     for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
         volume += elems->giveElement(i)->giveVolume();
     }
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// Mechanical Periodic BC with CRACK
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-MechanicalPeriodicBCwithCrack :: MechanicalPeriodicBCwithCrack() {
-    name = "MechanicalPeriodicBCwithCrack";
 }
 
 //////////////////////////////////////////////////////////

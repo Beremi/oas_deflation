@@ -198,8 +198,7 @@ double derivBridgingForceUnloading(double deltaX, double deltaY) {
 //////////////////////////////////////////////////////////
 Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
-    unsigned ss = mat->giveStrainSize();
-
+    
     Matrix stiffness = Matrix :: Zero(3, 3);
 
     if ( temp_fiberForce > 1e-12 ) {

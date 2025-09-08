@@ -16,7 +16,7 @@ class LDPMTetra : public Element
 {
 protected:
     std :: vector< Node * >vert; //cent, 0-1, 0-2, 0-3, 1-2, 1-3, 2-3, 0-1-2, 0-1-3, 0-2-3, 1-2-3
-    Vector lengths, areas, volumes;
+    Vector lengths, areas;//, volumes;
     std :: vector< Point >normals, t1s, t2s;
     std :: vector< Matrix >R;
 
@@ -65,6 +65,7 @@ public:
     std :: vector< unsigned >giveOppositeFacetsToNode(unsigned k) const;
 
     double giveVolumetricStrain() const { return volumetricStrain; };
+    bool isPointInside(Point *xn, const Point *x) const;    
 
     virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;

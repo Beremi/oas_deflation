@@ -21,7 +21,7 @@ private:
     std :: vector< unsigned >bodyForceDoFs;
     std :: vector< unsigned >blockedDoFid;
     unsigned totalDoFs, freeDoFs, constrDoFs;
-    BCContainer *BC;
+    BCContainer *BC = nullptr;
 
     std :: vector< unsigned >physicalFieldsDoF;  //tells which physical field is involved
     std :: vector< unsigned >constrainedDoFid;  //mapping from particle order to DoF order for constrained DoFs

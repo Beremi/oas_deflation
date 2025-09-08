@@ -80,7 +80,9 @@ void CSLMaterialStatus :: init() {
     LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
-    } else if ( tet ) {    } else {
+    } else if ( tet ) {
+        L = tet->giveLength(idx);
+    } else {
         cerr << "Material " << name << " can be used only for RigidBodyContact or LDPMTetra elements" << endl;
         exit(EXIT_FAILURE);
     }

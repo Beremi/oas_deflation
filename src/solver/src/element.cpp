@@ -549,10 +549,11 @@ Point Element :: findNaturalCoords(const Point *x) const {
         errcoords = glocoords - ( * x );
         double err = errcoords.norm();
         Point grad, prevgrad;
-        double step = 1e-5;
+        double step = 1e-8;
         unsigned maxit = 1000;
         unsigned it = 0;
-        while ( err > 1e-6 && it < maxit ) {
+        double xnorm = x->norm();
+        while ( err/xnorm > 1e-3 && it < maxit ) {
             testnatcoords = natcoords;
             for ( unsigned dim = 0; dim < ndim; dim++ ) {
                 testnatcoords [ dim ] += step;
@@ -561,7 +562,7 @@ Point Element :: findNaturalCoords(const Point *x) const {
                 grad [ dim ] = ( errcoords.norm() - err ) / step;
                 testnatcoords [ dim ] -= step;
             }
-            natcoords -= grad * ( err / pow(grad.norm(), 2) );
+            natcoords -= grad * ( err / grad.norm() ); //maybe grad.norm square
             giveGlobalCoords(& glocoords, & natcoords);
             errcoords = glocoords - ( * x );
             err = errcoords.norm();
@@ -590,7 +591,7 @@ vector<vector<unsigned>> Element :: giveTraingulatedFaces()const{
         tf = {{0,1},{1,2},{2,0}};
     }else if (vtk_cell_type==9){//quad
         tf = {{0,1},{1,2},{2,3},{3,0}};
-    }else if (vtk_cell_type==9){//tetra
+    }else if (vtk_cell_type==10){//tetra
         tf = {{0,1,2},{0,2,3},{0,1,3},{1,2,3}};
     }else if (vtk_cell_type==12){//brick
         tf = {{1,0,2},{3,2,0},{4,5,6},{7,6,5},{5,0,1},{4,1,0},{2,1,6},{5,6,1},{3,2,7},{6,7,2},{0,3,4},{7,4,3}};

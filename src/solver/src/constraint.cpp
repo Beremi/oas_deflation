@@ -18,12 +18,8 @@ JointDoF :: JointDoF(Node *s, const unsigned &dir, const std :: vector< Node * >
     masters = m;
     directions = dirs;
     multipliers = mult;
-    if ( fns.empty() ) {
-        this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
-    } else {
-        this->time_fns = fns;
-        this->additional_term = time_mult;
-    }
+    time_fns = fns;
+    time_mults = time_mult;
 }
 
 //////////////////////////////////////////////////////////
@@ -39,7 +35,6 @@ void JointDoF :: readFromLine(std :: istringstream &iss, NodeContainer *nodes) {
         iss >> intmas >> dir >> mult;
         masters.push_back( nodes->giveNode(intmas) );
         directions.push_back(dir);
-        time_fns.push_back(nullptr);
         multipliers.push_back(mult);
     }
 }
@@ -58,10 +53,10 @@ void JointDoF :: print() {
     std :: cout << "slave DoF = " << giveSlaveDoF() << '\n';
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         std :: cout << "master DoF[ " << i << " ] = " << masters [ i ]->giveStartingDoF() + directions [ i ] << " with multiplier = " << multipliers [ i ];
-        if ( this->time_fns [ i ] != nullptr ) {
-            std :: cout << " and time_dep_mult = " << additional_term [ i ];
-        }
         std :: cout << '\n';
+    }
+    for( unsigned i=0; i<time_fns.size(); i++){
+        cout << " and time_dep_mult = " << time_mults [ i ];
     }
 }
 
@@ -81,6 +76,15 @@ void JointDoF :: init(Solver *solver) {
         }
     }
 }
+
+//////////////////////////////////////////////////////////
+double JointDoF :: giveFnDepPart(const double time_now) const {
+    double value = 0;
+    for(unsigned i=0; i<time_fns.size(); i++){
+        value += time_mults [ i ] * time_fns [ i ]->giveY(time_now);
+    }
+    return value;
+};
 
 //////////////////////////////////////////////////////////
 bool JointDoF :: replaceDependentMasters(vector<unsigned> &depms, vector<JointDoF*> &depmsJDs){
@@ -109,8 +113,14 @@ bool JointDoF :: replaceDependentMasters(vector<unsigned> &depms, vector<JointDo
             for(vector<double>::const_iterator m=mul.begin(); m!=mul.end(); ++m){
                 multipliers.push_back( (*m) * multipliers[k-1]);
             }
+            vector< Function * > fns = depmsJDs[pos]->giveTimeFns();
+            time_fns.insert(time_fns.end(), fns.begin(), fns.end());
+            vector< double > tmults = depmsJDs[pos]->giveTimeMults();
+            for(vector<double>::const_iterator m=tmults.begin(); m!=tmults.end(); ++m){
+                time_mults.push_back( (*m) * multipliers[k-1]);
+            }               
+            
             multipliers.erase(multipliers.begin() + k-1);
-
             replaced = true;
         }
     }
@@ -127,12 +137,8 @@ LagrangeMultiplier :: LagrangeMultiplier(const std :: vector< Node * > &m, const
     masters = m;
     directions = dirs;
     multipliers = mult;
-    if ( fns.empty() ) {
-        this->time_fns = std :: vector< Function * >(multipliers.size(), nullptr);
-    } else {
-        this->time_fns = fns;
-        this->additional_term = time_mult;
-    }
+    time_fns = fns;
+    time_mults = time_mult;
 }
 
 //////////////////////////////////////////////////////////
@@ -445,7 +451,6 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
     // fill the matrix with corresponding multipliers for slaveDoFs
     unsigned i; // row index =  slave DoF
     unsigned j, numM; // column index = master DoF
-    bool update;
     for ( auto const &jD : constraints ) {
         // jD->print();
         i = nodes->giveDoFid( jD->giveSlaveDoF() );
@@ -456,7 +461,7 @@ void ConstraintContainer :: init(NodeContainer *nodecont, BCContainer *bccont, S
         // std::cout << "DoF num = " << jD->giveSlaveDoF() << '\n';
 
         if ( i < numFreeDoFs - constraints.size() ) {
-            std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying bondary conditions on constrained DoF) " << std :: endl;
+            std :: cerr << "CONSTRAINT error: should never come here, constraint application unsuccesfull (hint: you are applying boundary conditions on constrained DoF) " << std :: endl;
             std :: cout << i << " " << jD->giveSlaveDoF() << " " <<  numFreeDoFs << " " << numFreeDoFs - constraints.size() << std :: endl;
             exit(1);
         } else if ( i >= numFreeDoFs ) {
@@ -618,8 +623,9 @@ void ConstraintContainer :: calculateDependentDoFs(Vector &fullDoFs, const doubl
             fullDoFs [ jD->giveSlaveDoF() ] = 0; // to be sure that there is zero value
             //standard constraint, imposed relations between dofs
             for ( unsigned i = 0; i < jD->giveNumOfDoFMasters(); i++ ) {
-                fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i) + ( all ? jD->giveFnDepPart(i, time_now) : 0.0 );
-            }
+                fullDoFs [ jD->giveSlaveDoF() ] += fullDoFs [ jD->giveMasterDoF(i) ] * jD->giveMasterMultiplier(i);
+            }            
+            if (all) fullDoFs [ jD->giveSlaveDoF() ] += jD->giveFnDepPart(time_now);            
         }
     }
 }
@@ -680,6 +686,7 @@ void ConstraintContainer :: addHangingNodeConstraint(Node* dependent, Element* p
         mults [ k ] = weights [ k ];
     }
     unsigned i = 0;
+    if (masters.size()>4) cout << "XXXXXXXXXXX " << masters.size() << endl;
     for ( ; i < ndim; i++ ) {
         for ( unsigned k = 0; k < masters.size(); k++ ) {
             dirs [ k ] = i;
@@ -783,4 +790,17 @@ void ConstraintContainer :: addRigidArmConstraint(unsigned dim, Node* dependent,
             addConstraint(jd);
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+vector<unsigned>  ConstraintContainer :: giveConstraintsOfSpecificNode(const Node *n)const{
+    vector <unsigned> c;
+    if ( this->isActive() ) {
+        for ( auto const &jD : constraints ) {
+            if (jD->giveSlaveNode()==n){
+              c.push_back(jD->giveSlaveDir());
+            }
+        }
+    }
+    return c;        
 }

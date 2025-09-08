@@ -672,6 +672,14 @@ double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, 
             return -1.;
         }
     }
+    
+    //test intersection exists
+    if (tetraVolumeSigned(A,a,b,c) * tetraVolumeSigned(B,a,b,c)>0) return -1;
+    double v1 = tetraVolumeSigned(A,B,a,b);
+    double v2 = tetraVolumeSigned(A,B,b,c);
+    if (v1*v2<0) return -1;
+    double v3 = tetraVolumeSigned(A,B,c,a);
+    if (v1*v3<0 || v2*v3<0 ) return -1;
 
     //compute intersection with facet plane
     Point dirvec = (*B)-(*A);

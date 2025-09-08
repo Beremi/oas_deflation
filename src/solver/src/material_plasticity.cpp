@@ -28,6 +28,8 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
 
 //////////////////////////////////////////////////////////
 Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    (void) timeStep;
+    
     temp_strain = addEigenStrain(strain);
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
@@ -237,8 +239,9 @@ void VonMisesPlasticMaterialStatus :: update() {
 
 //////////////////////////////////////////////////////////
 bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) const {
+    unsigned size;
     if ( code.compare("plastic_strain") == 0 || code.compare("plasticstrain") == 0 ) {
-        unsigned size = temp_plasticstrain.size() ;
+        size = temp_plasticstrain.size() ;
         if (size == 3) {// 2D case
             size ++;
             result.resize(size);
@@ -247,7 +250,7 @@ bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) co
             }
             result [ 3 ] = temp_outplane_plasticstrain;
         } else { // 3D case
-            unsigned size = temp_plasticstrain.size();
+            size = temp_plasticstrain.size();
             result.resize(size);
             for ( unsigned p = 0; p < size - 1; p++ ) {
                 result [ p ] = temp_plasticstrain [ p ];
@@ -257,7 +260,7 @@ bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) co
        
         return true;
     } else if ( code.compare("backstress") == 0 || code.compare("back_stress") == 0 ) {
-        unsigned size = temp_backstress.size();
+        size = temp_backstress.size();
         result.resize(size);
         for ( unsigned p = 0; p < size; p++ ) {
             result [ p ] = temp_backstress [ p ];

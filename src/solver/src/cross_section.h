@@ -37,6 +37,7 @@ public:
     virtual ~CircularCrossSection() { };  
     virtual void readFromLine(std :: istringstream &iss, const  unsigned ndim);
     virtual void init();
+    double giveDiameter()const{return 2*radius;};
 };
 
 //////////////////////////////////////////////////////////

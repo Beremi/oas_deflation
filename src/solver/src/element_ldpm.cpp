@@ -8,22 +8,25 @@ using namespace std;
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// LDPM COUPLED TETRA
+// LDPM TETRA
 LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     if ( ndim != 3 ) {
         cerr << "LDPMTetra implemented only in 3D" << endl;
         exit(1);
     }
+    
+    physicalFields [ 0 ] = true; //mechanics
+    
     numOfNodes = 4;
     nodes.resize(4);
     name = "LDPMTetra";
     vtk_cell_type = 10;
-    shafunc = new NullShapeF(3);
+    shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrLDPM12();
 
     vert.resize(12);
     lengths.resize(12);
-    volumes.resize(12);
+    //volumes.resize(12);
     areas.resize(12);
     normals.resize(12);
     t1s.resize(12);
@@ -148,7 +151,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         R [ i ](2, 1) = t2s [ i ].y();
         R [ i ](2, 2) = t2s [ i ].z();
 
-        volumes [ i ] = areas [ i ] * lengths [ i ] / ndim;
+        //volumes [ i ] = areas [ i ] * lengths [ i ] / ndim;
         inttype->setIPWeight(i, lengths [ i ] * areas [ i ] / ndim);
         stats [ i ] = mat->giveNewMaterialStatus(this, i);
     }
@@ -193,6 +196,7 @@ void LDPMTetra :: init() {
         exit(1);
     }
 
+    /*
     double faceVolume = 0;
     for ( unsigned i = 0; i < 12; i++ ) {
         faceVolume += volumes [ i ];
@@ -202,6 +206,7 @@ void LDPMTetra :: init() {
         //for(unsigned i=0; i<12; i++) cout << areas[i]*lengths[i]/ndim << endl;
         //exit(1);
     }
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -368,6 +373,24 @@ void LDPMTetra :: giveValues(string code, Vector &result) const {
         Element :: giveValues(code, result);
     }
 };
+
+bool isOnSameSide(Point A, Point B, Point C, Point D, Point X){
+    Point normal = ((B)-(A)).cross((C)-(A));
+    return (normal.dot((D)-(A)))*(normal.dot((X)-(A)))>=0.;
+}
+
+bool LDPMTetra :: isPointInside(Point *xn, const Point *x) const{
+    Point A=nodes[0]->givePoint();
+    Point B=nodes[1]->givePoint();
+    Point C=nodes[2]->givePoint();
+    Point D=nodes[3]->givePoint();
+    Point X=*x;
+    if (isOnSameSide(A,B,C,D,X) && isOnSameSide(A,B,D,C,X) && isOnSameSide(A,D,C,B,X) && isOnSameSide(D,B,C,A,X)) {
+        vector<double> dist {(A-X).squaredNorm(),(B-X).squaredNorm(), (C-X).squaredNorm(), (D-X).squaredNorm()};        
+        (*xn)[0] = (double) std::distance(std::begin(dist), std::min_element(std::begin(dist), std::end(dist)));
+        return true;
+    } else return false;
+}
 
 /*
  * //////////////////////////////////////////////////////////

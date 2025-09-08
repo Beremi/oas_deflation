@@ -18,6 +18,9 @@ protected:
     bool nonsymmetric_shear;
     unsigned initalNodeNum;
 
+    Vector crack_normal;
+    bool crack_active;
+    
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
 
     virtual void generateNewDoFs(NodeContainer *nodes);
@@ -36,20 +39,6 @@ public:
     std :: vector< unsigned >giveMasters() const { return masters; };
     std :: vector< unsigned >giveSlaves() const { return slaves; };
 };
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-// Mechanical Periodic Boundary Condition on prism with Voigt's constraint
-class MechanicalPeriodicBCwithCrack : public MechanicalPeriodicBC
-{
-protected:
-    Vector crack_normal;
-    double crackplane_d;
-public:
-    MechanicalPeriodicBCwithCrack();
-    virtual ~MechanicalPeriodicBCwithCrack() {};
-};
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

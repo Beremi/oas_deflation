@@ -249,8 +249,12 @@ void TimoshenkoBeam3D::giveValues(std :: string code, Vector &result) const{
         for(unsigned i=0; i<IF.size(); i++){
             result[i] = IF[i]/length;
         }
-    } else {
-        result.resize(0);
+    } else if ( code.compare("diameter") == 0 ) {
+        CircularCrossSection* circ = dynamic_cast<CircularCrossSection*>(CS);
+        if (circ){
+          result.resize(1);
+          result[0] = circ->giveDiameter();
+        }
     }
     
 }
