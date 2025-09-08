@@ -30,7 +30,7 @@ protected:
     Vector f_int_old, f_ext_old, f_dam, f_acc, trial_r;
     Vector v;
     unsigned freeDoFnum, totalDoFnum;
-    int step=0;
+    int step = 0;
     unsigned init_step = 0;  ///> when starting from previously calculated results
     bool isTimeReal;
     bool terminated, fully_converged;
@@ -60,7 +60,7 @@ public:
     bool isTerminated() { return terminated; }
     bool convergedToTolerance() const { return fully_converged; };
     Vector giveDoFValues() const { return r; }
-    double giveDoFValue(unsigned i) const { return r[i]; }
+    double giveDoFValue(unsigned i) const { return r [ i ]; }
     Vector giveTrialDoFValues() const { return trial_r; }
     Vector giveExternalForces() const {  return f_ext; }
     double giveTrialDoFValue(unsigned k) const { return trial_r [ k ]; }
@@ -85,7 +85,7 @@ public:
     virtual void rebuild();
     Vector giveResiduals() const { return residuals; };
     bool showStepTime() const { return showTime; };
-    bool isSilent() const {return silent;};
+    bool isSilent() const { return silent; };
 };
 
 //////////////////////////////////////////////////////////

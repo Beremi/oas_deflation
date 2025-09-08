@@ -35,7 +35,7 @@ public:
     void giveJacobiMInverse(const Point *x, Matrix &JacobiMInverse) const;
     double giveJacobian(const Point *x) const;
     bool isInNaturalCoords()const { return is_natural; };
-    std::string giveName()const{return name;};
+    std :: string giveName()const { return name; };
 };
 
 //////////////////////////////////////////////////////////

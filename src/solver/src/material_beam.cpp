@@ -12,35 +12,35 @@ BeamMaterialStatus :: BeamMaterialStatus(BeamMaterial *m, Element *e, unsigned i
 }
 
 //////////////////////////////////////////////////////////
-void BeamMaterialStatus :: setCrossSection(CrossSection* X){
+void BeamMaterialStatus :: setCrossSection(CrossSection *X) {
     CS = X;
 }
 
 //////////////////////////////////////////////////////////
 bool BeamMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("normalforce") == 0) {
+    if ( code.compare("normalforce") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[0];
+        result [ 0 ] = temp_stress [ 0 ];
         return true;
     } else if ( code.compare("shearforceY") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[1];
+        result [ 0 ] = temp_stress [ 1 ];
         return true;
     } else if ( code.compare("shearforceZ") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[2];
+        result [ 0 ] = temp_stress [ 2 ];
         return true;
     } else if ( code.compare("torque") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[3];
+        result [ 0 ] = temp_stress [ 3 ];
         return true;
     } else if ( code.compare("bendingmomentY") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[4];
+        result [ 0 ] = temp_stress [ 4 ];
         return true;
     } else if ( code.compare("bendingmomentZ") == 0 ) {
         result.resize(1);
-        result [ 0 ] = temp_stress[5];
+        result [ 0 ] = temp_stress [ 5 ];
         return true;
     } else {
         return TensMechMaterialStatus :: giveValues(code, result);
@@ -64,15 +64,15 @@ void BeamMaterialStatus :: resetTemporaryVariables() {
 
 //////////////////////////////////////////////////////////
 Matrix BeamMaterialStatus :: giveStiffnessTensor(string type) const {
-    (void) type;
+    ( void ) type;
     Matrix D = Matrix :: Zero(6, 6);
-    BeamMaterial* tm = static_cast<BeamMaterial*>(mat);
-    D(0,0) = tm->giveElasticModulus() * CS->giveArea();        
-    D(1,1) = CS->giveKappaY() * CS->giveArea() * tm->giveShearModulus();
-    D(2,2) = CS->giveKappaZ() * CS->giveArea() * tm->giveShearModulus();
-    D(3,3) = tm->giveShearModulus() * CS->giveJ();
-    D(4,4) = tm->giveElasticModulus() * CS->giveIy();
-    D(5,5) = tm->giveElasticModulus() * CS->giveIz();
+    BeamMaterial *tm = static_cast< BeamMaterial * >( mat );
+    D(0, 0) = tm->giveElasticModulus() * CS->giveArea();
+    D(1, 1) = CS->giveKappaY() * CS->giveArea() * tm->giveShearModulus();
+    D(2, 2) = CS->giveKappaZ() * CS->giveArea() * tm->giveShearModulus();
+    D(3, 3) = tm->giveShearModulus() * CS->giveJ();
+    D(4, 4) = tm->giveElasticModulus() * CS->giveIy();
+    D(5, 5) = tm->giveElasticModulus() * CS->giveIz();
     return D;
 }
 
@@ -85,8 +85,8 @@ Vector BeamMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 //////////////////////////////////////////////////////////
 Vector BeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
-    (void) timeStep;
-    temp_stress = giveStiffnessTensor("elastic")*strain;
+    ( void ) timeStep;
+    temp_stress = giveStiffnessTensor("elastic") * strain;
     return temp_stress;
 }
 
@@ -96,14 +96,14 @@ void BeamMaterialStatus :: readFromLine(istringstream &iss) {
 }
 
 /////////////////////////////////////////////////////////
-Matrix BeamMaterialStatus:: giveMassTensor() const {
+Matrix BeamMaterialStatus :: giveMassTensor() const {
     //possible issue with rotational inertia, should it be disregarded?
-    TensMechMaterial* tm = static_cast<TensMechMaterial*>(mat);
+    TensMechMaterial *tm = static_cast< TensMechMaterial * >( mat );
     Matrix c = Matrix :: Zero(6, 6);
-    c(0,0) = c(1,1) = c(2,2) = CS->giveArea();
-    c(3,3) = CS->giveJ();
-    c(4,4) = CS->giveIy();
-    c(5,5) = CS->giveIz();
+    c(0, 0) = c(1, 1) = c(2, 2) = CS->giveArea();
+    c(3, 3) = CS->giveJ();
+    c(4, 4) = CS->giveIy();
+    c(5, 5) = CS->giveIz();
     c *= tm->giveDensity();
     return c;
 }
@@ -127,4 +127,3 @@ MaterialStatus *BeamMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum
 void BeamMaterial :: init(MaterialContainer *matcont) {
     TensMechMaterial :: init(matcont);
 };
-

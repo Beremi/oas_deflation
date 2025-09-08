@@ -20,7 +20,7 @@ class Rebar : public PBlock
 {
 private:
 protected:
-    vector<unsigned> nodes;
+    vector< unsigned >nodes;
     double radius;
     unsigned material_id;
 public:

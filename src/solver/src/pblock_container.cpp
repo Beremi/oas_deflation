@@ -46,7 +46,7 @@ void PBlockContainer :: init() {
 void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
     unsigned origsize = blocks.size(); //todo: warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of dat
     string line, ftype;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -144,6 +144,3 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
         exit(EXIT_FAILURE);
     }
 }
-
-
-

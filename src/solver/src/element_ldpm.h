@@ -65,7 +65,7 @@ public:
     std :: vector< unsigned >giveOppositeFacetsToNode(unsigned k) const;
 
     double giveVolumetricStrain() const { return volumetricStrain; };
-    bool isPointInside(Point *xn, const Point *x) const;    
+    bool isPointInside(Point *xn, const Point *x) const;
 
     virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;

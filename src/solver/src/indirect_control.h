@@ -10,7 +10,7 @@
 #include "node_container.h"
 #include "function.h"
 
-//forward declaration 
+//forward declaration
 class Model;
 
 //////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////
-class IndirectControlSumOfSquares: public IndirectControl
+class IndirectControlSumOfSquares : public IndirectControl
 {
 protected:
 

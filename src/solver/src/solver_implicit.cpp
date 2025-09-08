@@ -91,7 +91,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -191,7 +191,9 @@ bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool en
 void SteadyStateLinearSolver :: runBeforeEachStep() {
     Solver :: runBeforeEachStep();
     trial_r = r;
-    if (not silent) cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
+    if ( not silent ) {
+        cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -202,7 +204,9 @@ void SteadyStateLinearSolver :: runAfterEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: factorizeLinearSystem() {
-    if (not silent) cout << "factorizing system matrix" << endl;
+    if ( not silent ) {
+        cout << "factorizing system matrix" << endl;
+    }
 
     if ( linalgsolver == nullptr ) {
         if ( symsolver_type == "EigenConj" ) {
@@ -361,13 +365,13 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 } else {
                     critical_step_decrease = valueIN;
                 }
-            } else if ( param.compare("indirect_displacement_control") == 0 || param.compare("indirect_control") == 0) {
+            } else if ( param.compare("indirect_displacement_control") == 0 || param.compare("indirect_control") == 0 ) {
                 iss >> helpuint;
                 if ( !idc ) {
                     idc = new IndirectControl();
                 }
                 idc->readFromStream(helpuint, inputfile);
-            } else if ( param.compare("indirect_control_square_sum") == 0) {
+            } else if ( param.compare("indirect_control_square_sum") == 0 ) {
                 iss >> helpuint;
                 if ( !idc ) {
                     idc = new IndirectControlSumOfSquares();
@@ -483,9 +487,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
@@ -539,13 +543,21 @@ void SteadyStateNonLinearSolver :: reset() {
             if ( it == 0 ) {
                 disErr = 0;                        //error in displacement change, only from second iteration
             }
-            if (not silent) cout << setw(6) << it << setw(15) << resErr;
-            if ( it == 0 ) {
-                if (not silent) cout << setw(15) << "---";
-            } else {
-                if (not silent) cout << setw(15) << disErr;
+            if ( not silent ) {
+                cout << setw(6) << it << setw(15) << resErr;
             }
-            if (not silent) cout << setw(15) << eneErr << endl;
+            if ( it == 0 ) {
+                if ( not silent ) {
+                    cout << setw(15) << "---";
+                }
+            } else {
+                if ( not silent ) {
+                    cout << setw(15) << disErr;
+                }
+            }
+            if ( not silent ) {
+                cout << setw(15) << eneErr << endl;
+            }
 
             if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
                 std :: cerr << "calculating with NaN in ";
@@ -576,7 +588,9 @@ void SteadyStateNonLinearSolver :: reset() {
             this->fully_converged = true;
         } else if ( !converged ) {
             if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
-                if (not silent) std :: cout << "tolerance increased in this step" << '\n';
+                if ( not silent ) {
+                    std :: cout << "tolerance increased in this step" << '\n';
+                }
                 converged = true;
                 this->fully_converged = false;
                 computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
@@ -619,7 +633,7 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( updateSystemMatrices(it, false) ) {
                 computeKeff();                                    //only if required
             }
-            nodes->giveReducedForceArray(residuals, f);  
+            nodes->giveReducedForceArray(residuals, f);
 
             if ( idc ) {      //indirect displacement control
                 Vector trial_r_last_iter = trial_r;
@@ -639,24 +653,24 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->giveFullDoFArray(ddr, full_ddr);
 
                     //compute B
-                    Vector trial_r_B = trial_r_last_iter +full_ddf + full_ddr;
-                    nodes->updateDirrichletBC(trial_r_B, idc_time+idc_dt); //give prescribed DoFs
+                    Vector trial_r_B = trial_r_last_iter + full_ddf + full_ddr;
+                    nodes->updateDirrichletBC(trial_r_B, idc_time + idc_dt); //give prescribed DoFs
                     Vector fext_B;
-                    if(idc->requireForces()){
+                    if ( idc->requireForces() ) {
                         load.setZero();
                         nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
-                        computeInternalExternalForces( trial_r_B, load, false, idc_time + idc_dt );
+                        computeInternalExternalForces(trial_r_B, load, false, idc_time + idc_dt);
                         fext_B = f_ext;
                     }
 
                     //compute A
                     Vector trial_r_A = trial_r_last_iter + full_ddr;
                     Vector fext_A;
-                    if(idc->requireForces()){
+                    if ( idc->requireForces() ) {
                         load.setZero();
                         nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
-                        computeInternalExternalForces( trial_r_A, load, false, idc_time );
-                        fext_A = f_ext;    
+                        computeInternalExternalForces(trial_r_A, load, false, idc_time);
+                        fext_A = f_ext;
                     }
 
                     //differences and load multiplier
@@ -694,13 +708,21 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( it == 0 ) {
                 disErr = 0;                        //error in displacement change, only from second iteration
             }
-            if (not silent) cout << setw(6) << it << setw(15) << resErr;
-            if ( it == 0 ) {
-                if (not silent) cout << setw(15) << "---";
-            } else {
-                if (not silent) cout << setw(15) << disErr;
+            if ( not silent ) {
+                cout << setw(6) << it << setw(15) << resErr;
             }
-            if (not silent) cout << setw(15) << eneErr << endl;
+            if ( it == 0 ) {
+                if ( not silent ) {
+                    cout << setw(15) << "---";
+                }
+            } else {
+                if ( not silent ) {
+                    cout << setw(15) << disErr;
+                }
+            }
+            if ( not silent ) {
+                cout << setw(15) << eneErr << endl;
+            }
 
             //if (not silent) checkAllVectorsForNaNs();
 
@@ -728,7 +750,7 @@ void SteadyStateNonLinearSolver :: solve() {
             } else {
                 converged = false;
             }
-        
+
             exporters->exportData(step, it, time, 0); //to export data during iterations
         }
 
@@ -755,13 +777,17 @@ void SteadyStateNonLinearSolver :: solve() {
             }
 
             time += dt;
-            if (not silent) std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            if ( not silent ) {
+                std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
+            }
             restarts++;
             restarted = true;
             restart_now = false;
         } else if ( !converged ) {
             if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
-                if (not silent) std :: cout << "tolerance increased in this step" << '\n';
+                if ( not silent ) {
+                    std :: cout << "tolerance increased in this step" << '\n';
+                }
                 converged = true;
                 this->fully_converged = false;
                 computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
@@ -772,18 +798,26 @@ void SteadyStateNonLinearSolver :: solve() {
             }
         } else if ( ( !restarted ) && converged && it < enlargeIt ) {
             dt = fmin(dt * step_increase, dtmax);
-            if (not silent) std :: cout << "enlarging step, timestep = " << dt << '\n';
+            if ( not silent ) {
+                std :: cout << "enlarging step, timestep = " << dt << '\n';
+            }
         } else if ( converged && it > shortenIt && dt > dtmin ) {
             dt = fmax(dt * step_decrease, dtmin);
-            if (not silent) std :: cout << "shortening step, timestep = " << dt << '\n';
+            if ( not silent ) {
+                std :: cout << "shortening step, timestep = " << dt << '\n';
+            }
         }
         if  ( dt > dtmax ) {
             dt = dtmax;
-            if (not silent) std :: cout << "shortening step to the maximum one: " << dt << '\n';
+            if ( not silent ) {
+                std :: cout << "shortening step to the maximum one: " << dt << '\n';
+            }
         }
         if  ( dt < dtmin ) {
             dt = dtmin;
-            if (not silent) std :: cout << "enlarging step to the minimum one: " << dt << '\n';
+            if ( not silent ) {
+                std :: cout << "enlarging step to the minimum one: " << dt << '\n';
+            }
         }
     }
 }
@@ -800,7 +834,7 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
 
     SteadyStateLinearSolver :: runBeforeEachStep();
 
-    if (not silent) {
+    if ( not silent ) {
         cout <<  scientific; //cout << setprecision(8);
         cout << "----------------------------------------------------" << endl;
         cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
@@ -871,7 +905,7 @@ void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
             }
         }
     }
-    std :: cout << "trial_r_nan " << trial_r_nan << " r_nan " << r_nan << " full_ddr_nan " << full_ddr_nan << " ddr_nan " << ddr_nan << " f_int_nan " << f_int_nan << " f_ext_nan " << f_ext_nan << " load_nan " << load_nan << " f_nan " << f_nan << " residuals_nan "<<  residuals_nan << '\n';
+    std :: cout << "trial_r_nan " << trial_r_nan << " r_nan " << r_nan << " full_ddr_nan " << full_ddr_nan << " ddr_nan " << ddr_nan << " f_int_nan " << f_int_nan << " f_ext_nan " << f_ext_nan << " load_nan " << load_nan << " f_nan " << f_nan << " residuals_nan " <<  residuals_nan << '\n';
 }
 
 //////////////////////////////////////////////////////////
@@ -879,7 +913,9 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
         SteadyStateLinearSolver :: runAfterEachStep();
 
-        if (not silent) cout << "----------------------------------------------------" << endl;
+        if ( not silent ) {
+            cout << "----------------------------------------------------" << endl;
+        }
 
         if ( idc ) {
             idc_time_converged = idc_time;
@@ -1012,7 +1048,7 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1069,7 +1105,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     double num;
     int valueIN;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1184,7 +1220,7 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
 
     int valueIN;
     string param, line;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1370,7 +1406,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 

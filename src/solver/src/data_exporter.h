@@ -20,7 +20,7 @@ class DataExporter
 {
 private:
 public:
-    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier = 1.; save_iterations = false;};
+    DataExporter(unsigned dimension) { dim = dimension; precision = 6; multiplier = 1.; save_iterations = false; };
     virtual ~DataExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool doExportNow(const double &time, const int &iteration, const unsigned &step);

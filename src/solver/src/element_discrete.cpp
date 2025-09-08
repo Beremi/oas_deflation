@@ -144,7 +144,7 @@ void RigidBodyContact :: checkNodeType() const {
 Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     ( void ) x;
     //MyMatrix B
-    Matrix B = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero(ndim, 6 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
     Matrix Aa = a->giveRigidBodyMotionMatrix(x) * ( -1. );
     a = static_cast< Particle * >( nodes [ 1 ] );
@@ -152,7 +152,7 @@ Matrix RigidBodyContact :: giveBMatrix(const Point *x) const {
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
-            B( i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
+            B(i, j + 3 * ( ndim - 1 ) ) = Ab(i, j);
         }
     }
     return ( R * B ) / length;
@@ -180,7 +180,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             faceNormal = Point(-t1 [ 1 ] / area, t1 [ 0 ] / area, 0);
         }
         if ( projectArea ) {
-            area = abs(faceNormal.dot(normal) ) * area;
+            area = abs( faceNormal.dot(normal) ) * area;
             t1 += normal * t1.dot(normal);
             t1 /= max(t1.norm(), 1e-14);
         }
@@ -208,8 +208,8 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             }
         } else {  //equidistant
             for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-                inttype->setIPLocation(i, centroid + t1 * area * ( ( i + 0.5 ) / n - 0.5 ) );
-                inttype->setIPWeight(i, length * area / ( ndim * n ) );
+                inttype->setIPLocation( i, centroid + t1 * area * ( ( i + 0.5 ) / n - 0.5 ) );
+                inttype->setIPWeight( i, length * area / ( ndim * n ) );
             }
         }
     } else {
@@ -257,7 +257,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             centroid = userCentroid;
         }
 
-        Vector ais(vert.size() );     //projected areas of individual triangles
+        Vector ais( vert.size() );     //projected areas of individual triangles
         Point ni;
         area = 0.0;
         perimeter = 0;
@@ -291,7 +291,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             inttype->setIPLocation(0, centroid);
             inttype->setIPWeight(0, length * area / ndim);
         } else if ( intPoints.compare("triangles") == 0 ) {
-            it->setNumIP(vert.size() );
+            it->setNumIP( vert.size() );
             j = 0;
             for ( unsigned int i = 0; i < vert.size(); i++ ) {
                 j = i + 1;
@@ -316,12 +316,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
                 if ( i == vert.size() - 1 ) {
                     j = 0;
                 }
-                inttype->setIPWeight(3 * i, length * ais [ i ] / ( 3 * ndim ) );
-                inttype->setIPWeight(3 * i + 1, length * ais [ i ] / ( 3 * ndim ) );
-                inttype->setIPWeight(3 * i + 2, length * ais [ i ] / ( 3 * ndim ) );
-                inttype->setIPLocation(3 * i, centroid * natcoords [ 0 ].x() + vert [ i ]->givePoint() * natcoords [ 0 ].y() + vert [ j ]->givePoint() * natcoords [ 0 ].z() );
-                inttype->setIPLocation(3 * i + 1, centroid * natcoords [ 1 ].x() + vert [ i ]->givePoint() * natcoords [ 1 ].y() + vert [ j ]->givePoint() * natcoords [ 1 ].z() );
-                inttype->setIPLocation(3 * i + 2, centroid * natcoords [ 2 ].x() + vert [ i ]->givePoint() * natcoords [ 2 ].y() + vert [ j ]->givePoint() * natcoords [ 2 ].z() );
+                inttype->setIPWeight( 3 * i, length * ais [ i ] / ( 3 * ndim ) );
+                inttype->setIPWeight( 3 * i + 1, length * ais [ i ] / ( 3 * ndim ) );
+                inttype->setIPWeight( 3 * i + 2, length * ais [ i ] / ( 3 * ndim ) );
+                inttype->setIPLocation( 3 * i, centroid * natcoords [ 0 ].x() + vert [ i ]->givePoint() * natcoords [ 0 ].y() + vert [ j ]->givePoint() * natcoords [ 0 ].z() );
+                inttype->setIPLocation( 3 * i + 1, centroid * natcoords [ 1 ].x() + vert [ i ]->givePoint() * natcoords [ 1 ].y() + vert [ j ]->givePoint() * natcoords [ 1 ].z() );
+                inttype->setIPLocation( 3 * i + 2, centroid * natcoords [ 2 ].x() + vert [ i ]->givePoint() * natcoords [ 2 ].y() + vert [ j ]->givePoint() * natcoords [ 2 ].z() );
             }
         } else {
             cerr << "RigidBodyContact Error: unknown value of intPoints parameter: " << intPoints << endl;
@@ -345,12 +345,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             t1 = arbit.cross(normal);
         } else {
             // the following results in zeros in stiffness matrix in case of normal in direction of any of global base axes
-            if ( abs( normal.x() ) > 1e-3 ) {
+            if ( abs(normal.x() ) > 1e-3 ) {
                 t1 = Point(-normal.y() / normal.x(), 1, 0);
-            } else if ( abs( normal.y() ) > 1e-3 ) {
+            } else if ( abs(normal.y() ) > 1e-3 ) {
                 t1 = Point(0, -normal.z() / normal.y(), 1);
             } else {
-                t1 = Point( 1, 0, -normal.x() / normal.z() );
+                t1 = Point(1, 0, -normal.x() / normal.z() );
             }
         }
         t1.normalize();
@@ -371,7 +371,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         exit(EXIT_FAILURE);
     }
 
-    stats.resize(inttype->giveNumIP() );
+    stats.resize( inttype->giveNumIP() );
 
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
         stats [ i ] = mat->giveNewMaterialStatus(this, i);
@@ -387,7 +387,7 @@ void RigidBodyContact :: init() {
 
     //create simplices
     for ( auto &v: vert ) {
-        simplices.push_back( v->addElementToSimplex(this) );
+        simplices.push_back(v->addElementToSimplex(this) );
     }
 }
 
@@ -399,7 +399,7 @@ Matrix RigidBodyContact :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 void RigidBodyContact :: computeMassMatrix() {
-    massM = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    massM = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
     VectMechMaterialStatus *mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
     double density = mechstat->giveDensity();
     double m0 = giveVolumeAssociatedWithNode(0) * density; ///mass
@@ -442,7 +442,7 @@ void RigidBodyContact :: computeMassMatrix() {
             for ( unsigned k = 0; k < 2; k++ ) {
                 A = nodes [ k ]->givePointPointer();
                 cg = ( ( * A ) + ( * C ) + ( * D ) + centroid ) / 4.;
-                tetraVolume = abs(tetraVolumeSigned(A, C, D, & centroid) );
+                tetraVolume = abs( tetraVolumeSigned(A, C, D, & centroid) );
 
                 // Inertia matrix relative to the centroid [0,0,0]
                 A_ = ( * A ) - cg;
@@ -452,9 +452,9 @@ void RigidBodyContact :: computeMassMatrix() {
                 Matrix I = tetraInertia3D(& A_, & C_, & D_, & centroid_);
 
                 // MassMatrix
-                massM(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
-                massM(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.z() - A->z() ), 2) ) );
-                massM(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2) + pow( ( cg.y() - A->y() ), 2) ) );
+                massM(6 * k + 3, 6 * k + 3) += density * ( I(0, 0) + tetraVolume * ( pow( ( cg.y() - A->y() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+                massM(6 * k + 4, 6 * k + 4) += density * ( I(1, 1) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.z() - A->z() ), 2 ) ) );
+                massM(6 * k + 5, 6 * k + 5) += density * ( I(2, 2) + tetraVolume * ( pow( ( cg.x() - A->x() ), 2 ) + pow( ( cg.y() - A->y() ), 2 ) ) );
                 massM(6 * k + 3, 6 * k + 4) += density * ( I(0, 1) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.y() - A->y() ) ) );
                 massM(6 * k + 3, 6 * k + 5) += density * ( I(0, 2) - tetraVolume * ( ( cg.x() - A->x() ) * ( cg.z() - A->z() ) ) );
                 massM(6 * k + 4, 6 * k + 5) += density * ( I(1, 2) - tetraVolume * ( ( cg.y() - A->y() ) * ( cg.z() - A->z() ) ) );
@@ -469,7 +469,7 @@ void RigidBodyContact :: computeMassMatrix() {
         }
         //symmetric
         for ( unsigned k = 0; k < 6; k++ ) {
-            for ( unsigned l = max(k + 1, unsigned( 3 ) ); l < 6; l++ ) {
+            for ( unsigned l = max( k + 1, unsigned( 3 ) ); l < 6; l++ ) {
                 massM(l, k) = massM(k, l);
                 massM(l + 6, k + 6) = massM(k + 6, l + 6);
             }
@@ -628,28 +628,33 @@ Vector RigidBodyContact :: integrateInternalSources() {
 
 
 //////////////////////////////////////////////////////////
-bool RigidBodyContact :: isPointInside(Point *xn, const Point *x) const{
-    
-    if (ndim==3){
+bool RigidBodyContact :: isPointInside(Point *xn, const Point *x) const {
+    if ( ndim == 3 ) {
         //https://stackoverflow.com/questions/25179693/how-to-check-whether-the-point-is-in-the-tetrahedron-or-not
-        Matrix M = Matrix::Zero(3,3);
+        Matrix M = Matrix :: Zero(3, 3);
         Point X, Y, A;
-        for(unsigned j=0; j<2; j++){
-            Point C = vert[vert.size()-1]->givePoint();
-            A = nodes[j]->givePoint();
+        for (unsigned j = 0; j < 2; j++) {
+            Point C = vert [ vert.size() - 1 ]->givePoint();
+            A = nodes [ j ]->givePoint();
             X = centroid - A;
-            M(0,0) = X[0]; M(1,0) = X[1]; M(2,0) = X[2];
-            for(unsigned i=0; i<vert.size(); i++){
+            M(0, 0) = X [ 0 ];
+            M(1, 0) = X [ 1 ];
+            M(2, 0) = X [ 2 ];
+            for (unsigned i = 0; i < vert.size(); i++) {
                 X = C - A;
-                M(0,1) = X[0]; M(1,1) = X[1]; M(2,1) = X[2];
-                X = vert[i]->givePoint() - A;
-                M(0,2) = X[0]; M(1,2) = X[1]; M(2,2) = X[2];
-                Y = M.colPivHouseholderQr().solve( (*x) - A ); 
-                if (Y[0]>=0. && Y[1]>=0. && Y[2]>=0. && Y[0]+Y[1]+Y[2]<=1.){
-                    *xn = Point(j,0,0);                    
+                M(0, 1) = X [ 0 ];
+                M(1, 1) = X [ 1 ];
+                M(2, 1) = X [ 2 ];
+                X = vert [ i ]->givePoint() - A;
+                M(0, 2) = X [ 0 ];
+                M(1, 2) = X [ 1 ];
+                M(2, 2) = X [ 2 ];
+                Y = M.colPivHouseholderQr().solve( ( * x ) - A);
+                if ( Y [ 0 ] >= 0. && Y [ 1 ] >= 0. && Y [ 2 ] >= 0. && Y [ 0 ] + Y [ 1 ] + Y [ 2 ] <= 1. ) {
+                    * xn = Point(j, 0, 0);
                     return true;
                 }
-                C = vert[i]->givePoint();
+                C = vert [ i ]->givePoint();
             }
         }
     }
@@ -678,13 +683,13 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
             result [ d ] [ 1 ] =  area * ipres [ 0 ] * abs(B [ d ]);
         }
     } else if ( ipres.size() >= A.size() ) { //vector times vector of same length, symmetrization
-        ipres.resize(A.size() );
+        ipres.resize( A.size() );
         //transform result to xyz
         Vector ipresglobal = transformVectorToXYZ(ipres);
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(2);
         }
@@ -727,18 +732,18 @@ Matrix RigidBodyContactWithRotationalStiffness :: giveBMatrix(const Point *x) co
     Matrix B0 = RigidBodyContact :: giveBMatrix(x);
     Matrix C0;
     if ( ndim == 2 ) {
-        C0 = Matrix :: Zero( 1, 6 * ( ndim - 1 ) );
+        C0 = Matrix :: Zero(1, 6 * ( ndim - 1 ) );
         C0(0, 2) = -1 / length;
         C0(0, 5) =  1. / length;
     } else if ( ndim == 3 ) {
-        C0 = Matrix :: Zero( ndim, 6 * ( ndim - 1 ) );
+        C0 = Matrix :: Zero(ndim, 6 * ( ndim - 1 ) );
         for ( unsigned i = 0; i < 3; i++ ) {
             C0(i, 3 + i) = -1 / length;
             C0(i, 9 + i) =  1 / length;
         }
         C0 = R * C0;
     }
-    Matrix B = Matrix :: Zero(B0.rows() + C0.rows(), B0.cols() );
+    Matrix B = Matrix :: Zero( B0.rows() + C0.rows(), B0.cols() );
     B << B0, C0;
     return B;
 }
@@ -839,8 +844,8 @@ void RigidBodyBoundary :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse(this->nodes.begin(), this->nodes.end() );
-        std :: reverse(this->vert.begin(), this->vert.end() );
+        std :: reverse( this->nodes.begin(), this->nodes.end() );
+        std :: reverse( this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -880,7 +885,7 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -921,23 +926,23 @@ Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
         }
         return RigidBodyContact :: giveStrain(i, DoFs);
     } else {
-        return Vector :: Zero( ( this->ndim - 1 ) * 3);
+        return Vector :: Zero( ( this->ndim - 1 ) * 3 );
     }
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundary :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -973,8 +978,8 @@ void RigidBodyBoundaryCoupled :: init() {
     if ( dynamic_cast< Particle * >( nodes [ 0 ] ) && dynamic_cast< AuxNode * >( nodes [ 1 ] ) ) {
         // this is fine, do nothing, just use it to check if particle and auxnode is there
     } else if ( dynamic_cast< Particle * >( nodes [ 1 ] ) && dynamic_cast< AuxNode * >( nodes [ 0 ] ) ) {
-        std :: reverse(this->nodes.begin(), this->nodes.end() );
-        std :: reverse(this->vert.begin(), this->vert.end() );
+        std :: reverse( this->nodes.begin(), this->nodes.end() );
+        std :: reverse( this->vert.begin(), this->vert.end() );
     } else {
         cerr << "Error in " << name << ": nodes must be inherited from Particle and AuxNode, " << nodes [ 0 ]->giveName() << "and " << nodes [ 1 ]->giveName() << " provided" << endl;
     }
@@ -1007,7 +1012,7 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
 
         //dyadic product
         unsigned k = A.size();
-        result.resize( ( k * ( k - 1 ) ) / 2 + k );
+        result.resize( ( k * ( k - 1 ) ) / 2 + k);
         for ( d = 0; d < ( k * ( k - 1 ) ) / 2 + k; d++ ) {
             result [ d ].resize(1);
         }
@@ -1054,22 +1059,22 @@ Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
     ( void ) DoFs;
     this->extractPressureFromSimplices();
     // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector :: Zero( ( this->ndim - 1 ) * 3);
+    return Vector :: Zero( ( this->ndim - 1 ) * 3 );
 };
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
     ( void ) x;
-    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3);
+    return Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 );
 }
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveBMatrix(const Point *x) const {
     ( void ) x;
     // MyMatrix B = MyMatrix( ndim, 6 * ( ndim - 1 ) );
-    Matrix B = Matrix :: Zero( ndim, 3 * ( ndim - 1 ) );
+    Matrix B = Matrix :: Zero(ndim, 3 * ( ndim - 1 ) );
     Particle *a = static_cast< Particle * >( nodes [ 0 ] );
-    Matrix Aa = a->giveRigidBodyMotionMatrix(inttype->giveIPLocationPointer(0) ) * ( -1. );
+    Matrix Aa = a->giveRigidBodyMotionMatrix( inttype->giveIPLocationPointer(0) ) * ( -1. );
     for ( unsigned i = 0; i < ndim; i++ ) {
         for ( unsigned j = 0; j < 3 * ( ndim - 1 ); j++ ) {
             B(i, j) = Aa(i, j);
@@ -1195,7 +1200,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
 
         //project area
         Point faceNormal = Point(-t.y(), t.x(), 0);
-        area = abs(faceNormal.dot(normal) ) * area;
+        area = abs( faceNormal.dot(normal) ) * area;
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -1211,7 +1216,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         if ( vert.size() > 3 ) {
             for ( unsigned int i = 0; i < vert.size() - 3; i++ ) {
                 // JM Zakomentoval cout << i <<  " " << endl;
-                currErr = checkCoplanarity( vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
+                currErr = checkCoplanarity(vert [ i ]->givePoint(), vert [ i + 1 ]->givePoint(), vert [ i + 2 ]->givePoint(), vert [ i + 3 ]->givePoint() );
                 if ( abs(currErr) > maxErr ) {
                     maxErr = abs(currErr);
                 }
@@ -1225,13 +1230,13 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
 
         //JM: face normal vector made from first 3 vertices
         //JM: coordinate swap for tangential vector according to https://orbit.dtu.dk/files/126824972/onb_frisvad_jgt2012_v2.pdf
-        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross( vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
+        Point n = ( vert [ 1 ]->givePoint() - vert [ 0 ]->givePoint() ).cross(vert [ 2 ]->givePoint() - vert [ 0 ]->givePoint() );
         n /= n.norm();
         Point t2;
-        if ( fabs( n.x() ) > fabs( n.z() ) ) {
+        if ( fabs(n.x() ) > fabs(n.z() ) ) {
             t2 = Point(-n.y(), n.x(), 0.0f);
         } else {
-            t2 = Point( 0.0f, -n.z(), n.y() );
+            t2 = Point(0.0f, -n.z(), n.y() );
         }
         t = t2.cross(n);
         t /= t.norm();
@@ -1287,7 +1292,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(0, centroid);
 
         //JM: Check if integration point is coplanar with face
-        currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
+        currErr = checkCoplanarity(vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
             cerr << "TRSPRT: Integration point is not coplanar with the face!!! Coplanarity error: " << currErr << endl;
             exit(1);
@@ -1725,7 +1730,7 @@ Matrix RigidBodyContactWithHeatConduction :: giveHMatrix(const Point *x) const {
 
 //////////////////////////////////////////////////////////
 void RigidBodyContactWithHeatConduction :: computeMassMatrix() {
-    massM = Matrix :: Zero(6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
+    massM = Matrix :: Zero( 6 * ( ndim - 1 ), 6 * ( ndim - 1 ) );
 }
 
 //////////////////////////////////////////////////////////

@@ -130,7 +130,7 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     double giveElasticModulus() const { return E; }
-    double giveShearModulus() const { return E/(2.+2.*nu); }
+    double giveShearModulus() const { return E / ( 2. + 2. * nu ); }
     double givePoissonsRatio() const { return nu; }
     double giveDensity() const { return density; };
     bool isPlaneStress() { return planeStress; };

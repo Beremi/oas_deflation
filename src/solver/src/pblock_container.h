@@ -27,7 +27,7 @@ class PBlockContainer
 {
 private:
     std :: vector< PBlock * >blocks;
-    Model *model=nullptr;
+    Model *model = nullptr;
 public:
     PBlockContainer() {};
     virtual ~PBlockContainer();

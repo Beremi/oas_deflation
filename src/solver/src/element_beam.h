@@ -25,7 +25,7 @@ protected:
 
 public:
     TimoshenkoBeam3D(unsigned dim);
-    TimoshenkoBeam3D(Node* a, Node* b, Material * m, CrossSection *cs, Point zrefpoint);
+    TimoshenkoBeam3D(Node *a, Node *b, Material *m, CrossSection *cs, Point zrefpoint);
     virtual ~TimoshenkoBeam3D() { };
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs, CrossSectionContainer *csc);
     void init();
@@ -36,9 +36,9 @@ public:
     //virtual Vector transformToGlobal(const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
-    virtual Vector integrateInternalSources();    
-    Point giveNormal() const {return normal;}
-    virtual bool isPointInside(Point *xn, const Point *x) const { (void) xn; (void) x; return false;};
+    virtual Vector integrateInternalSources();
+    Point giveNormal() const { return normal; }
+    virtual bool isPointInside(Point *xn, const Point *x) const { ( void ) xn; ( void ) x; return false; };
 };
 
 #endif  /* _ELEMENT_BEAM_H */

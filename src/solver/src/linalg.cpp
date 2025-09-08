@@ -32,10 +32,10 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
     if ( A.rows() > 0 ) {
-        cgK.setMaxIterations( relMaxIT * A.cols() );
+        cgK.setMaxIterations(relMaxIT * A.cols() );
         cgK.setTolerance(precision);
         cgK.compute(A);
-        initialGuess = Vector :: Zero( A.cols() );
+        initialGuess = Vector :: Zero(A.cols() );
         maxIT = relMaxIT * A.cols();
     }
 
@@ -522,7 +522,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot( AC.cross(AD) );
+    double coplanarityError = AB.dot(AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -636,15 +636,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];
@@ -658,37 +658,46 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
 }
 
 
-double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, const Point *a, const Point *b, const Point *c){
+double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, const Point *a, const Point *b, const Point *c) {
     //test bounding box
     double maxp, minp;
-    for(unsigned i=0; i<3; i++){
-        maxp = (*a)[i];
-        maxp = max(maxp,(*b)[i]);
-        maxp = max(maxp,(*c)[i]);
-        minp = (*a)[i];
-        minp = min(minp,(*b)[i]);
-        minp = min(minp,(*c)[i]);
-        if (min((*A)[i],(*B)[i])>maxp || max((*A)[i],(*B)[i])<minp){
+    for (unsigned i = 0; i < 3; i++) {
+        maxp = ( * a ) [ i ];
+        maxp = max(maxp, ( * b ) [ i ]);
+        maxp = max(maxp, ( * c ) [ i ]);
+        minp = ( * a ) [ i ];
+        minp = min(minp, ( * b ) [ i ]);
+        minp = min(minp, ( * c ) [ i ]);
+        if ( min( ( * A ) [ i ], ( * B ) [ i ] ) > maxp || max( ( * A ) [ i ], ( * B ) [ i ] ) < minp ) {
             return -1.;
         }
     }
-    
+
     //test intersection exists
-    if (tetraVolumeSigned(A,a,b,c) * tetraVolumeSigned(B,a,b,c)>0) return -1;
-    double v1 = tetraVolumeSigned(A,B,a,b);
-    double v2 = tetraVolumeSigned(A,B,b,c);
-    if (v1*v2<0) return -1;
-    double v3 = tetraVolumeSigned(A,B,c,a);
-    if (v1*v3<0 || v2*v3<0 ) return -1;
+    if ( tetraVolumeSigned(A, a, b, c) * tetraVolumeSigned(B, a, b, c) > 0 ) {
+        return -1;
+    }
+    double v1 = tetraVolumeSigned(A, B, a, b);
+    double v2 = tetraVolumeSigned(A, B, b, c);
+    if ( v1 * v2 < 0 ) {
+        return -1;
+    }
+    double v3 = tetraVolumeSigned(A, B, c, a);
+    if ( v1 * v3 < 0 || v2 * v3 < 0 ) {
+        return -1;
+    }
 
     //compute intersection with facet plane
-    Point dirvec = (*B)-(*A);
+    Point dirvec = ( * B ) - ( * A );
     double length = dirvec.norm();
     dirvec.normalize();
-    Point normal = Point( ((*b)[1]-(*a)[1])*((*c)[2]-(*a)[2]) - ((*c)[1]-(*a)[1])*((*b)[2]-(*a)[2]), ((*b)[2]-(*a)[2])*((*c)[0]-(*a)[0]) - ((*c)[2]-(*a)[2])*((*b)[0]-(*a)[0])   , ((*b)[0]-(*a)[0])*((*c)[1]-(*a)[1]) - ((*c)[0]-(*a)[0]) *((*b)[1]-(*a)[1]) );
+    Point normal = Point( ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) - ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ), ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) - ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ), ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) - ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) );
     normal.normalize();
-    double d = -( (*a) [ 0 ] * normal [ 0 ] + (*a) [ 1 ] * normal [ 1 ] + (*a) [ 2 ] * normal [ 2 ] );
-    double t = -( normal [ 0 ] * (*A) [ 0 ] + normal [ 1 ] * (*A)[ 1 ] + normal [ 2 ] * (*A) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] );
-    if (t>=0 && t<=length) return t;
-    else return -1.;
+    double d = -( ( * a ) [ 0 ] * normal [ 0 ] + ( * a ) [ 1 ] * normal [ 1 ] + ( * a ) [ 2 ] * normal [ 2 ] );
+    double t = -( normal [ 0 ] * ( * A ) [ 0 ] + normal [ 1 ] * ( * A ) [ 1 ] + normal [ 2 ] * ( * A ) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] );
+    if ( t >= 0 && t <= length ) {
+        return t;
+    } else {
+        return -1.;
+    }
 }

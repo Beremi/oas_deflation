@@ -28,8 +28,8 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
 
 //////////////////////////////////////////////////////////
 Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    (void) timeStep;
-    
+    ( void ) timeStep;
+
     temp_strain = addEigenStrain(strain);
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
@@ -88,7 +88,7 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
     sigmaIso [ 0 ] = sigmaIso [ 1 ] = sigmaIso [ 2 ] = 1. / 3. * ( sigmaEff [ 0 ] + sigmaEff [ 1 ] + sigmaEff [ 2 ] );
     Vector n = sigmaEff - sigmaIso; // Deviatoric part
 
-    f = sqrt( 3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2 ) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2 ) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2 ) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
+    f = sqrt(3. * ( 1. / 6. * ( pow( ( sigmaEff [ 0 ] - sigmaEff [ 1 ] ), 2) + pow( ( sigmaEff [ 0 ] - sigmaEff [ 2 ] ), 2) + pow( ( sigmaEff [ 1 ] - sigmaEff [ 2 ] ), 2) ) + pow(sigmaEff [ 3 ], 2) + pow(sigmaEff [ 4 ], 2) + pow(sigmaEff [ 5 ], 2) ) ) - temp_sigmay;
 
     if ( f <= 0.000001 ) {  // Elastic regime
         if ( dimension == 2 ) {
@@ -186,8 +186,8 @@ Matrix VonMisesPlasticMaterialStatus :: giveStiffnessTensor(string type) const {
         VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
         Matrix elastic_tensor = TensMechMaterialStatus :: giveStiffnessTensor(type);
         Matrix elastoplastic_tensor = elastic_tensor;
-        Vector N_dim = Vector :: Zero( vmpm->giveStrainSize() );
-        Matrix I_min_13 = Matrix :: Zero( vmpm->giveStrainSize(), vmpm->giveStrainSize() );
+        Vector N_dim = Vector :: Zero(vmpm->giveStrainSize() );
+        Matrix I_min_13 = Matrix :: Zero(vmpm->giveStrainSize(), vmpm->giveStrainSize() );
 
         if ( f <= 0.000001 ) {  // Elastic regime
             elastoplastic_tensor = elastic_tensor;
@@ -241,9 +241,9 @@ void VonMisesPlasticMaterialStatus :: update() {
 bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) const {
     unsigned size;
     if ( code.compare("plastic_strain") == 0 || code.compare("plasticstrain") == 0 ) {
-        size = temp_plasticstrain.size() ;
-        if (size == 3) {// 2D case
-            size ++;
+        size = temp_plasticstrain.size();
+        if ( size == 3 ) {// 2D case
+            size++;
             result.resize(size);
             for ( unsigned p = 0; p < size - 1; p++ ) {
                 result [ p ] = temp_plasticstrain [ p ];
@@ -256,8 +256,8 @@ bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) co
                 result [ p ] = temp_plasticstrain [ p ];
             }
         }
-        
-       
+
+
         return true;
     } else if ( code.compare("backstress") == 0 || code.compare("back_stress") == 0 ) {
         size = temp_backstress.size();

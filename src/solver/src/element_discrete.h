@@ -63,7 +63,7 @@ public:
     double givePerimeter()const { return perimeter; };
     virtual Vector giveBoundingBox()const;
     virtual Vector giveFacetBoundingBox()const;
-    Point giveCentroid() const {return centroid;};
+    Point giveCentroid() const { return centroid; };
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const;
@@ -119,7 +119,7 @@ class RigidBodyBoundary : public RigidBodyContact
 protected:
     virtual void checkNodeType() const;
     bool active;
-    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
 public:
     RigidBodyBoundary(const unsigned dim);
     ~RigidBodyBoundary() {};
@@ -143,8 +143,8 @@ class RigidBodyBoundaryCoupled : public RigidBodyContactCoupled
 {
 protected:
     virtual void checkNodeType() const;
-    virtual void computeMassMatrix() { massM = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
-    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual void computeMassMatrix() { massM = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
 public:
     RigidBodyBoundaryCoupled(const unsigned dim);
     ~RigidBodyBoundaryCoupled() {};

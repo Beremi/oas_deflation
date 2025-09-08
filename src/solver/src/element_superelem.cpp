@@ -28,7 +28,7 @@ Matrix MLMechElement :: readDataNormalizationMatrix(int size, fs :: path matrix_
     while ( getline(matrixDataFile, matrixRowString) ) {
         stringstream matrixRowStringStream(matrixRowString);
         while ( matrixRowStringStream >> matrixEntry ) {
-            matrixEntries.push_back(stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
+            matrixEntries.push_back( stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
         }
         matrixRowNumber++; //update the row numbers
     }
@@ -61,7 +61,7 @@ Matrix MLMechElement :: readStiffMatrixFromFile() const {
     while ( getline(matrixDataFile, matrixRowString) ) {
         stringstream matrixRowStringStream(matrixRowString);
         while ( matrixRowStringStream >> matrixEntry ) {
-            matrixEntries.push_back( stod(matrixEntry) );    //here we convert the string to double and fill in the row vector storing all the matrix entries
+            matrixEntries.push_back(stod(matrixEntry) );     //here we convert the string to double and fill in the row vector storing all the matrix entries
         }
         matrixRowNumber++; //update the column numbers
     }
@@ -167,7 +167,7 @@ void MLMechElement :: init() {
     }
 
     // load pytorch libtorch model
-    module = torch :: jit :: load(ml_path.string() );
+    module = torch :: jit :: load( ml_path.string() );
 
     // load normalization matrix
     int size  = keep_ind.size() - 3;
@@ -289,7 +289,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
             // std::cout << "\nCheckpoint 03\n" << std::flush;
 
             // Convert forces_norm Tensor to vector and to Eigen Vector and to double type
-            std :: vector< float >outVec(forces_norm_tensor.data_ptr< float >(), forces_norm_tensor.data_ptr< float >() + forces_norm_tensor.numel() );
+            std :: vector< float >outVec( forces_norm_tensor.data_ptr< float >(), forces_norm_tensor.data_ptr< float >() + forces_norm_tensor.numel() );
             Eigen :: VectorXf outFloat = Eigen :: VectorXf :: Map(& outVec [ 0 ], size);
             Eigen :: VectorXd forces_norm = outFloat.cast< double > ();
             // std::cout << "\nForces Norm\n" << forces_norm << "\n" << std::flush;
@@ -307,7 +307,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
                 vecm1.fill(-1);
                 Eigen :: VectorXd pow10(size_x);
                 for (int i = 0; i < size_x; i++) {
-                    pow10 [ i ] = pow( 10, fabs(forces [ i ]) );
+                    pow10 [ i ] = pow(10, fabs(forces [ i ]) );
                 }
                 forces = ( forces.array().sign().matrix().array() * Cy.array() ).array() * ( vecm1 + pow10 ).array();
             }
@@ -328,7 +328,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
                 torch :: Tensor L_flat_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
 
                 // Convert L_norm Tensor to vector and to Eigen Vector and to double type
-                std :: vector< float >outVec1(L_flat_norm_tensor.data_ptr< float >(), L_flat_norm_tensor.data_ptr< float >() + L_flat_norm_tensor.numel() );
+                std :: vector< float >outVec1( L_flat_norm_tensor.data_ptr< float >(), L_flat_norm_tensor.data_ptr< float >() + L_flat_norm_tensor.numel() );
                 Eigen :: VectorXf outFloat1 = Eigen :: VectorXf :: Map(& outVec1 [ 0 ], size_x * ( size_x + 1 ) / 2); // n(n+1)/2 len of L_flat
                 Eigen :: VectorXd L_flat_norm = outFloat1.cast< double > ();
 
@@ -353,7 +353,7 @@ Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, doub
                 torch :: Tensor K_flat_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
 
                 // Convert K_norm Tensor to vector and to Eigen Vector and to double type
-                std :: vector< float >outVec2(K_flat_norm_tensor.data_ptr< float >(), K_flat_norm_tensor.data_ptr< float >() + K_flat_norm_tensor.numel() );
+                std :: vector< float >outVec2( K_flat_norm_tensor.data_ptr< float >(), K_flat_norm_tensor.data_ptr< float >() + K_flat_norm_tensor.numel() );
                 Eigen :: VectorXf outFloat2 = Eigen :: VectorXf :: Map(& outVec2 [ 0 ], size_x * size_x); // n(n+1)/2 len of L_flat
                 Eigen :: VectorXd K_flat_norm = outFloat2.cast< double > ();
 

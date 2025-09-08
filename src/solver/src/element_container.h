@@ -22,7 +22,7 @@ private:
     MaterialContainer *materials = nullptr;
     Model *model = nullptr;
     ConstraintContainer *constcont = nullptr;
-    CrossSectionContainer * crosssects = nullptr;
+    CrossSectionContainer *crosssects = nullptr;
     ;
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied = true) const;

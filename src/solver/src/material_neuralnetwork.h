@@ -9,7 +9,7 @@
 #include <torch/script.h>
 
 struct Layer {
-    std::string name = "Dense";
+    std :: string name = "Dense";
     int num_layers = 0;
     int hidden_size = 0;
 };
@@ -24,8 +24,8 @@ class NeuralNetworkMaterialStatus : public MaterialStatus
 protected:
     Matrix giveElasticStiffnessTensor3D() const;
 
-    std::vector<std::vector<torch::Tensor>> hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
-    std::vector<std::vector<torch::Tensor>> temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
+    std :: vector< std :: vector< torch :: Tensor > >hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
+    std :: vector< std :: vector< torch :: Tensor > >temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
 
 
 public:
@@ -41,7 +41,7 @@ public:
     virtual Matrix giveDampingTensor() const;
 
     // virtual torch :: Tensor giveHiddenState() const;
-    virtual std :: vector<std :: vector <torch::Tensor> > giveHiddenState() const;
+    virtual std :: vector< std :: vector< torch :: Tensor > >giveHiddenState() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -62,8 +62,8 @@ protected:
 
     fs :: path ml_path;
     torch :: jit :: script :: Module network;
-    std::vector<Layer> layers; // layer info
-    
+    std :: vector< Layer >layers; // layer info
+
 
 public:
     NeuralNetworkMaterial(unsigned dimension) : Material(dimension) { name = "Neural network mechanical material"; planeStress = true; strainsize = ( dim - 1 ) * 3; };
@@ -83,8 +83,8 @@ public:
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont);  };
 
     Matrix giveNormMatrix() const { return norm; };
-    std::vector<Layer> giveNetworkProps() const { return layers; };
-    
+    std :: vector< Layer >giveNetworkProps() const { return layers; };
+
     // std::vector<torch::jit::IValue> predictNetwork(std::vector<torch::jit::IValue> inputs); // I am not doing this because it requires type definition, but "auto" is more versatile
     torch :: jit :: script :: Module giveNetwork() const { return network; };
 };

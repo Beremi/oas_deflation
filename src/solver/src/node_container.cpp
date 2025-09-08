@@ -25,10 +25,10 @@ void NodeContainer :: clear() {
 //////////////////////////////////////////////////////////
 void NodeContainer :: addNode(Node *n) {
     n->init();
-    n->setID(nodes.size() );
+    n->setID( nodes.size() );
     n->setStartingDoF(totalDoFs);
     nodes.push_back(n);
-    totalDoFs += n->giveNumberOfDoFs();    
+    totalDoFs += n->giveNumberOfDoFs();
 }
 
 //////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ void NodeContainer :: readFromFile(const string filename, const int dim) {
     cout << "Input file '" <<  filename;
     size_t origsize = nodes.size();
     string line, nodeType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -165,14 +165,13 @@ void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: establishDoFArray() {
-
     BC->calculateDoFfields();
     DoFid.resize(totalDoFs);
     DoF2nodes.resize(totalDoFs);
     vector< unsigned >blocked = BC->giveArrayOfBlockedDoFs();
     loadedDoFs = BC->giveArrayOfLoadedDoFs();
     bodyForceDoFs = BC->giveArrayOfBodyForceDoFs();
-    blockedDoFid.resize( blocked.size() );
+    blockedDoFid.resize(blocked.size() );
 
     /////////////////////////////////////////////////////////////////
     // #constraint
@@ -180,12 +179,12 @@ void NodeContainer :: establishDoFArray() {
     constrainedDoFid.resize(constrDoFs);
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >cstr;
-    cstr.resize( constr->giveConstraintsSize() );
+    cstr.resize(constr->giveConstraintsSize() );
     for ( unsigned j = 0; j < constr->giveConstraintsSize(); j++ ) {
         cstr [ j ].first = constr->giveConstraint(j)->giveSlaveDoF();
         cstr [ j ].second = j;
     }
-    sort( cstr.begin(), cstr.end() );
+    sort(cstr.begin(), cstr.end() );
 
     /////////////////////////////////////////////////////////////////
     freeDoFs = totalDoFs - constrDoFs - blocked.size();
@@ -194,12 +193,12 @@ void NodeContainer :: establishDoFArray() {
 
     //sort DoFs, keep track of indices
     vector< pair< unsigned, unsigned > >a;
-    a.resize( blocked.size() );
+    a.resize(blocked.size() );
     for ( unsigned i = 0; i < blocked.size(); i++ ) {
         a [ i ].first = blocked [ i ];
         a [ i ].second = i;
     }
-    sort( a.begin(), a.end() );
+    sort(a.begin(), a.end() );
 
     //check that there are no two Dirichlet BC assigned to one DoF
     if ( a.size() > 0 ) {
@@ -238,7 +237,7 @@ void NodeContainer :: establishDoFArray() {
         }
     }
 
-    //identify physical fields of DoFs    
+    //identify physical fields of DoFs
     physicalFieldsDoF.resize(totalDoFs);
     unsigned i = 0;
     vector< unsigned >nodePhysFields;
@@ -332,7 +331,7 @@ void NodeContainer :: updateExternalForcesByReactions(Vector &f_int, Vector &loa
             f_ext [ lm->giveMasterDoF(j) ] -= lag * lm->giveMasterMultiplier(j);
         }
     }
-    
+
     //update reactions
     for ( unsigned k = 0; k < totalDoFs; k++ ) {
         if ( DoFid [ k ] >= freeDoFs + constrDoFs ) {
@@ -417,7 +416,7 @@ Vector NodeContainer :: readInitialConditions(string initfile) const {
     unsigned numi, startDoF;
     double numd;
     Vector initvalues = Vector :: Zero(totalDoFs);
-    ifstream inputfile( initfile.c_str() );
+    ifstream inputfile(initfile.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             istringstream iss(line);

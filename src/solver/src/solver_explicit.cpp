@@ -69,7 +69,7 @@ Solver *TransientCentralDifferenceMechanicalSolver :: readFromFile(const string 
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {

@@ -197,7 +197,7 @@ protected:
     double r;  // radius in case of power tessellation
 public:
     Particle(unsigned dimension) : MechNode(dimension) { name = "Particle";  physicalFieldsDoFNum [ 0 ] = 3 * ( dim - 1 ); };
-    Particle(unsigned dimension, double radius, Point x) : Particle(dimension) { r = radius; point = x;};
+    Particle(unsigned dimension, double radius, Point x) : Particle(dimension) { r = radius; point = x; };
     virtual ~Particle() {};
     virtual void readFromLine(std :: istringstream &iss);
     double giveRadius() const { return r; };

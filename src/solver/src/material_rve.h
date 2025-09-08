@@ -206,7 +206,7 @@ public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
     virtual ~DiscreteMechanicalRVEMaterial() {};
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
-    void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; storedPrecomputeTensors = true;};
+    void setPrecomputedElasticTensor(Matrix ela) { precompElastic = ela; storedPrecomputeTensors = true; };
     void setPrecomputedDampingTensor(Matrix dam) { precompDamping = dam; };
     void setPrecomputedInertiaTensor(Matrix ine) { precompInertia = ine; };
     void setCentroidAndProjectors(Point c, std :: vector< std :: vector< Matrix > >p);
@@ -225,7 +225,7 @@ public:
     Matrix matrixToCauchy(Matrix matrix);
     bool isConvertingFromCauchy() const { return convert_from_cauchy; };
     void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
-    bool hasPrecomputedTensorsStored() const {return storedPrecomputeTensors;};
+    bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };
 };
 
 //////////////////////////////////////////////////////////

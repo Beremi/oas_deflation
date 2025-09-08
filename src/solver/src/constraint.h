@@ -44,10 +44,10 @@ public:
     double giveMasterMultiplier(unsigned k) const { return multipliers [ k ]; };
     double giveFnDepPart(const double time_now = 0.0) const;
     std :: vector< Function * >giveTimeFns() const { return time_fns; };
-    std :: vector< double > giveTimeMults() const { return time_mults; };
+    std :: vector< double >giveTimeMults() const { return time_mults; };
     Function *giveTimeFn(unsigned k) const { return time_fns [ k ]; };
     bool isTimeDependent() { return !time_fns.empty(); };
-    bool replaceDependentMasters(std :: vector<unsigned> &depms, std :: vector<JointDoF*> &depmsJDs);
+    bool replaceDependentMasters(std :: vector< unsigned > &depms, std :: vector< JointDoF * > &depmsJDs);
 };
 
 //////////////////////////////////////////////////////////
@@ -132,10 +132,10 @@ public:
     size_t giveLagrangeMultsSize() { return lagmults.size(); };
     bool isActive() const { return !constraints.empty(); }
     void removeConstraint(unsigned i);
-    void addRigidArmConstraint(unsigned dim, Node* dependent, Node* primary, bool includeRotations);
-    void addHangingNodeConstraint(Node* dependent, Element* primary);
+    void addRigidArmConstraint(unsigned dim, Node *dependent, Node *primary, bool includeRotations);
+    void addHangingNodeConstraint(Node *dependent, Element *primary);
     void checkInternalDependencies();
-    std::vector<unsigned> giveConstraintsOfSpecificNode(const Node *n)const;
+    std :: vector< unsigned >giveConstraintsOfSpecificNode(const Node *n)const;
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }

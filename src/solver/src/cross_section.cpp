@@ -8,12 +8,11 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // CROSS SECTION OF BEAM
 //////////////////////////////////////////////////////////
-CrossSection::CrossSection(){
-}
+CrossSection :: CrossSection() {}
 
 /////////////////////////////////////////////////////////
-void CrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim){
-    (void) ndim;
+void CrossSection :: readFromLine(std :: istringstream &iss, const unsigned ndim) {
+    ( void ) ndim;
     string param;
     bool barea, bIz, bIy, bJ, bkappaY, bkappaZ;
     barea = bIz = bIy = bJ = bkappaY = bkappaZ = false;
@@ -38,35 +37,34 @@ void CrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim)
             bkappaZ = true;
         }
     }
-    if (! barea){ 
+    if ( !barea ) {
         cerr << "Error: Cross section parameter 'area' was not specified" << endl;
         exit(1);
     }
-    if (! bIz){ 
+    if ( !bIz ) {
         cerr << "Error: Cross section parameter 'Iz' was not specified" << endl;
         exit(1);
     }
-    if (! bIy){ 
+    if ( !bIy ) {
         cerr << "Error: Cross section parameter 'Iy' was not specified" << endl;
         exit(1);
     }
-    if (! bJ){ 
+    if ( !bJ ) {
         cerr << "Error: Cross section parameter 'J' was not specified" << endl;
         exit(1);
     }
-    if (! bkappaY){ 
+    if ( !bkappaY ) {
         cerr << "Error: Cross section parameter 'kappaY' was not specified" << endl;
         exit(1);
     }
-    if (! bkappaZ){ 
+    if ( !bkappaZ ) {
         cerr << "Error: Cross section parameter 'kappaZ' was not specified" << endl;
         exit(1);
     }
-
 }
 
 /////////////////////////////////////////////////////////
-void CrossSection::init(){
+void CrossSection :: init() {
 }
 
 
@@ -74,18 +72,17 @@ void CrossSection::init(){
 //////////////////////////////////////////////////////////
 // CIRCULAR CROSS SECTION
 //////////////////////////////////////////////////////////
-CircularCrossSection::CircularCrossSection(){
-}
+CircularCrossSection :: CircularCrossSection() {}
 
 //////////////////////////////////////////////////////////
-CircularCrossSection::CircularCrossSection(double r, double n){
+CircularCrossSection :: CircularCrossSection(double r, double n) {
     radius = r;
     nu = n;
 }
 
 /////////////////////////////////////////////////////////
-void CircularCrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim){
-    (void) ndim;
+void CircularCrossSection :: readFromLine(std :: istringstream &iss, const unsigned ndim) {
+    ( void ) ndim;
     string param;
     bool bradius = false;
     bool bnu = false;
@@ -98,35 +95,34 @@ void CircularCrossSection::readFromLine(std :: istringstream &iss, const  unsign
             bnu = true;
         }
     }
-    if (! bradius){ 
+    if ( !bradius ) {
         cerr << "Error: Cross section parameter 'radius' was not specified" << endl;
         exit(1);
     }
-    if (! bnu){ 
+    if ( !bnu ) {
         cerr << "Error: Cross section parameter 'nu' (Poisson's ratio to compute shear reduction parameter) was not specified" << endl;
         exit(1);
     }
 }
 
 /////////////////////////////////////////////////////////
-void CircularCrossSection::init(){
-    area = M_PI*pow(radius,2);
-    Iz = M_PI*pow(radius,4)/4;
+void CircularCrossSection :: init() {
+    area = M_PI * pow(radius, 2);
+    Iz = M_PI * pow(radius, 4) / 4;
     Iy = Iz;
-    J = Iy+Iz;
-    kappaY = 6*(1+nu)/(7+6*nu); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
+    J = Iy + Iz;
+    kappaY = 6 * ( 1 + nu ) / ( 7 + 6 * nu ); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
     kappaZ = kappaY;
 }
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // SQUARE CROSS SECTION
 //////////////////////////////////////////////////////////
-SquareCrossSection::SquareCrossSection(){
-}
+SquareCrossSection :: SquareCrossSection() {}
 
 /////////////////////////////////////////////////////////
-void SquareCrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim){
-    (void) ndim;
+void SquareCrossSection :: readFromLine(std :: istringstream &iss, const unsigned ndim) {
+    ( void ) ndim;
     string param;
     bool ba = false;
     bool bnu = false;
@@ -139,23 +135,23 @@ void SquareCrossSection::readFromLine(std :: istringstream &iss, const  unsigned
             bnu = true;
         }
     }
-    if (! ba){ 
+    if ( !ba ) {
         cerr << "Error: Cross section parameter 'a' was not specified" << endl;
         exit(1);
     }
-    if (! bnu){ 
+    if ( !bnu ) {
         cerr << "Error: Cross section parameter 'nu' (Poisson's ratio to compute shear reduction parameter) was not specified" << endl;
         exit(1);
     }
 }
 
 /////////////////////////////////////////////////////////
-void SquareCrossSection::init(){
-    area = a*a;
-    Iz = pow(a,4)/12;
+void SquareCrossSection :: init() {
+    area = a * a;
+    Iz = pow(a, 4) / 12;
     Iy = Iz;
-    J = Iz+Iy;
-    kappaY = 10*(1+nu)/(12+11*nu); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
+    J = Iz + Iy;
+    kappaY = 10 * ( 1 + nu ) / ( 12 + 11 * nu ); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
     kappaZ = kappaY;
 }
 
@@ -163,12 +159,11 @@ void SquareCrossSection::init(){
 //////////////////////////////////////////////////////////
 // RECTANGULAR CROSS SECTION
 //////////////////////////////////////////////////////////
-RectangularCrossSection::RectangularCrossSection(){
-}
+RectangularCrossSection :: RectangularCrossSection() {}
 
 /////////////////////////////////////////////////////////
-void RectangularCrossSection::readFromLine(std :: istringstream &iss, const  unsigned ndim){
-    (void) ndim;
+void RectangularCrossSection :: readFromLine(std :: istringstream &iss, const unsigned ndim) {
+    ( void ) ndim;
     string param;
     bool bb = false;
     bool bh = false;
@@ -185,47 +180,46 @@ void RectangularCrossSection::readFromLine(std :: istringstream &iss, const  uns
             bnu = true;
         }
     }
-    if (! bb){ 
+    if ( !bb ) {
         cerr << "Error: Cross section parameter 'b' was not specified" << endl;
         exit(1);
     }
-    if (! bh){ 
+    if ( !bh ) {
         cerr << "Error: Cross section parameter 'h' was not specified" << endl;
         exit(1);
     }
-    if (! bnu){ 
+    if ( !bnu ) {
         cerr << "Error: Cross section parameter 'nu' (Poisson's ratio to compute shear reduction parameter) was not specified" << endl;
         exit(1);
     }
 }
 
 /////////////////////////////////////////////////////////
-void RectangularCrossSection::init(){
-    area = b*h;
-    Iz = b*pow(h,3)/12;
-    Iy = h*pow(b,3)/12;
+void RectangularCrossSection :: init() {
+    area = b * h;
+    Iz = b * pow(h, 3) / 12;
+    Iy = h * pow(b, 3) / 12;
     J = Iz + Iy;
-    kappaY = 10*(1+nu)/(12+11*nu); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
+    kappaY = 10 * ( 1 + nu ) / ( 12 + 11 * nu ); // COWPER, G R. The Shear Coefficient in Timoshenko's Beam Theory
     kappaZ = kappaY;
 }
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CROSS SECTION CONTAINER
-CrossSectionContainer:: CrossSectionContainer() {
-};
+CrossSectionContainer :: CrossSectionContainer() {};
 
 /////////////////////////////////////////////////////////
-CrossSectionContainer::~CrossSectionContainer(){
+CrossSectionContainer :: ~CrossSectionContainer() {
     this->clear();
 }
 
 /////////////////////////////////////////////////////////
-void CrossSectionContainer::readFromFile(const std :: string filename, const unsigned ndim){
+void CrossSectionContainer :: readFromFile(const std :: string filename, const unsigned ndim) {
     cout << "Input file '" <<  filename;
     size_t origsize = css.size();
     string line, csType;
-    ifstream inputfile( filename.c_str() );
+    ifstream inputfile(filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -234,7 +228,7 @@ void CrossSectionContainer::readFromFile(const std :: string filename, const uns
             istringstream iss(line);
             iss >> csType;
             if ( !( csType.rfind("#", 0) == 0 ) ) {
-                if ( csType.compare("CrossSection") == 0) {
+                if ( csType.compare("CrossSection") == 0 ) {
                     CrossSection *newcs = new CrossSection();
                     newcs->readFromLine(iss, ndim);
                     css.push_back(newcs);
@@ -253,20 +247,17 @@ void CrossSectionContainer::readFromFile(const std :: string filename, const uns
 }
 
 /////////////////////////////////////////////////////////
-void CrossSectionContainer::init(){
+void CrossSectionContainer :: init() {
     for ( vector< CrossSection * > :: iterator c = css.begin(); c != css.end(); ++c ) {
-        (*c)->init();
+        ( * c )->init();
     }
 }
 
 /////////////////////////////////////////////////////////
-void CrossSectionContainer::clear(){
+void CrossSectionContainer :: clear() {
     for ( vector< CrossSection * > :: iterator c = css.begin(); c != css.end(); ++c ) {
         if ( * c != nullptr ) {
             delete * c;
         }
     }
 }
-
-
-

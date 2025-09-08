@@ -20,7 +20,7 @@ protected:
 
     Vector crack_normal;
     bool crack_active;
-    
+
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
 
     virtual void generateNewDoFs(NodeContainer *nodes);

@@ -71,7 +71,7 @@ void IndirectControl :: readFromStream(unsigned num, ifstream &inputfile) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> zcoords [ nummaxunit - 1 ] [ j ];
             }
-        } else if ( param.compare("ic_directions") == 0 || param.compare("idc_directions") == 0) {
+        } else if ( param.compare("ic_directions") == 0 || param.compare("idc_directions") == 0 ) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> dirs [ nummaxunit - 1 ] [ j ];
             }
@@ -115,7 +115,9 @@ void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bo
             exit(1);
         }
         for ( unsigned i = 0; i < clength; i++ ) {
-            if (f_weights [ c ] [ i ] != 0) requiref = true;
+            if ( f_weights [ c ] [ i ] != 0 ) {
+                requiref = true;
+            }
         }
         if ( DoFs [ c ].size() < clength || !initial ) {
             // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
@@ -149,15 +151,15 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
         dd = 0;
         df = 0;
         for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];            
+            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
             df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
         }
-        if (requireForces()){
+        if ( requireForces() ) {
             for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-                dd += prev_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];            
+                dd += prev_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
                 df += diff_force [ DoFs [ c ] [ i ] ] * f_weights [ c ] [ i ];
-            }        
-        }      
+            }
+        }
         lambda_temp = ( pdispl - dd ) / df;
         if ( lambda_temp < lambda ) {
             lambda = lambda_temp;
@@ -198,13 +200,14 @@ double IndirectControlSumOfSquares :: giveMultiplierCorrection(Vector &prev_disp
         for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
             dd += pow(prev_displ [ DoFs [ c ] [ i ] ], 2) * r_weights [ c ] [ i ] + pow(prev_force [ DoFs [ c ] [ i ] ], 2) * f_weights [ c ] [ i ];
             df += pow(diff_displ [ DoFs [ c ] [ i ] ], 2) * r_weights [ c ] [ i ] + pow(diff_force [ DoFs [ c ] [ i ] ], 2) * f_weights [ c ] [ i ];
-        }        
+        }
         lambda_temp = abs( ( pdispl - sqrt(dd) ) / sqrt(df) );
-        if (pdispl > sqrt(dd)) lambda_temp *= -1.;
+        if ( pdispl > sqrt(dd) ) {
+            lambda_temp *= -1.;
+        }
         if ( lambda_temp < lambda ) {
             lambda = lambda_temp;
         }
     }
     return lambda;
 }
-
