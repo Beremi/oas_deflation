@@ -35,7 +35,7 @@ void Rebar :: readFromLine(istringstream &iss, unsigned d) {
             }
         } else if ( param.compare("diameter") == 0 ) {
             iss >> radius;
-            radius = radius / 2;
+            radius = radius / 2.;
         } else if ( param.compare("material") == 0 ) {
             iss >> material_id;
         } else {

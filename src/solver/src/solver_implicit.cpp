@@ -174,7 +174,7 @@ void SteadyStateLinearSolver :: solve() {
 
 //////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
-    if ( enforce || stiffnessMatrixUpdate == 0 || ( stiffnessMatrixUpdate > 0 && iteration % abs(stiffnessMatrixUpdate) == 0 ) ) {
+    if ( enforce || (iteration==0 && (stiffnessMatrixStepUpdate == 0 || (stiffnessMatrixStepUpdate > 0 && step % abs(stiffnessMatrixStepUpdate) == 0) )) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % abs(stiffnessMatrixIterUpdate) == 0 ) ) {
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
             elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
         } else {
@@ -249,7 +249,8 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     step_increase = 1.25;
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
-    stiffnessMatrixUpdate = 1e3;
+    stiffnessMatrixIterUpdate = 1e3;
+    stiffnessMatrixStepUpdate = -1;
 
     it = 0;
     restarts = 0;
@@ -321,9 +322,12 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 iss >> maxEneErr;
             } else if ( param.compare("tolerance_increments") == 0 ) {
                 iss >> maxDisErr;
-            } else if ( param.compare("stiffness_matrix_update") == 0 ) {
+            } else if ( param.compare("stiffness_matrix_update") == 0 || param.compare("stiffness_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
-                stiffnessMatrixUpdate = int( valueIN );
+                stiffnessMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("stiffness_matrix_step_update") == 0  ) {
+                iss >> valueIN;
+                stiffnessMatrixStepUpdate = int( valueIN );                
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
@@ -630,7 +634,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices(it, false) ) {
+            if ( (step>0 || it>0) && updateSystemMatrices(it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);
@@ -940,7 +944,8 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     isTimeReal = true;
     setDefaultIntegrationParams();
     check_time_integr_params = true;
-    dampingMatrixUpdate = -1;
+    dampingMatrixIterUpdate = -1;
+    dampingMatrixStepUpdate = -1;
     stiffMatType = "elastic";
 }
 
@@ -1141,9 +1146,12 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
                 iss >> alpha_f;
             } else if ( param.compare("do_not_check_time_integration_params") == 0 ) {
                 check_time_integr_params = false;
-            } else if ( param.compare("damping_matrix_update") == 0 ) {
+            } else if ( param.compare("damping_matrix_update") == 0 || param.compare("damping_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
-                dampingMatrixUpdate = int( valueIN );
+                dampingMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("damping_matrix_step_update") == 0  ) {
+                iss >> valueIN;
+                dampingMatrixStepUpdate = int( valueIN );                
             }
         }
         inputfile.close();
@@ -1155,7 +1163,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 bool TransientLinearTransportSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
     bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(iteration, enforce);
     bool updated1 = false;
-    if ( enforce || dampingMatrixUpdate == 0 || ( dampingMatrixUpdate > 0 && iteration % abs(dampingMatrixUpdate) == 0 ) ) {
+    if ( enforce || (iteration==0 && (dampingMatrixStepUpdate == 0 || (dampingMatrixStepUpdate > 0 && step % abs(dampingMatrixStepUpdate) == 0) )) || dampingMatrixIterUpdate == 0 || ( dampingMatrixIterUpdate > 0 && iteration % abs(dampingMatrixIterUpdate) == 0 ) ) {
         elems->updateDampingMatrix(C);
         updated1 = true;
     }
@@ -1202,7 +1210,8 @@ TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
     name = "TransientLinearMechanicalSolver";
     setDefaultIntegrationParams(); //this always call method from TransientLinearMechanicalSolver
     lumpMassM = false;
-    massMatrixUpdate = -1;
+    massMatrixIterUpdate = -1;
+    massMatrixStepUpdate = -1;
     stiffMatType = "elastic";
 }
 
@@ -1230,9 +1239,12 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
             iss >> param;
             if ( param.compare("use_lumped_mass_matrix") == 0 ) {
                 lumpMassM = true;
-            } else if ( param.compare("mass_matrix_update") == 0 ) {
+            } else if ( param.compare("mass_matrix_update") == 0 || param.compare("mass_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
-                massMatrixUpdate = int( valueIN );
+                massMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("mass_matrix_step_update") == 0  ) {
+                iss >> valueIN;
+                massMatrixStepUpdate = int( valueIN );  
             }
         }
         inputfile.close();
@@ -1434,7 +1446,7 @@ void TransientLinearMechanicalSolver :: runAfterEachStep() {
 bool TransientLinearMechanicalSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
     bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(iteration, enforce);
     bool updated1 = false;
-    if ( enforce || massMatrixUpdate == 0 || ( massMatrixUpdate > 0 && iteration % abs(massMatrixUpdate) == 0 ) ) {
+    if ( enforce || (iteration==0 && (massMatrixStepUpdate == 0 || (massMatrixStepUpdate > 0 && step % abs(massMatrixStepUpdate) == 0) ))  || massMatrixIterUpdate == 0 || ( massMatrixIterUpdate > 0 && iteration % abs(massMatrixIterUpdate) == 0 ) ) {
         elems->updateMassMatrix(M, lumpMassM);
         if ( lumpMassM ) {
             elems->replaceTrueMassMatricesByLumpedOnes();

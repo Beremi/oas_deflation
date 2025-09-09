@@ -13,7 +13,8 @@ protected:
     std :: unique_ptr< LinAlgSolver >linalgsolver;
     std :: string symsolver_type = "EigenConj";
 
-    int stiffnessMatrixUpdate; //update matrices every X iteration
+    int stiffnessMatrixIterUpdate; //update matrices every X iteration
+    int stiffnessMatrixStepUpdate; //update matrices every X step
     std :: string stiffMatType, stiffMatTypeFirstIT;
 
     virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
@@ -85,7 +86,8 @@ protected:
     Vector v_old;
     unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark
     bool check_time_integr_params;
-    int dampingMatrixUpdate; //update matrices every X iteration
+    int dampingMatrixIterUpdate; //update matrices every X iteration
+    int dampingMatrixStepUpdate; //update matrices every X step    
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void checkIntegrationParams();
@@ -138,7 +140,8 @@ protected:
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
-    int massMatrixUpdate; //update matrices every X iteration
+    int massMatrixIterUpdate; //update matrices every X iteration
+    int massMatrixStepUpdate; //update matrices every X step
     bool lumpMassM;
 public:
     TransientLinearMechanicalSolver();
