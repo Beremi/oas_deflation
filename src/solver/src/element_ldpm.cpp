@@ -236,6 +236,19 @@ Matrix LDPMTetra :: giveHMatrix(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+Vector  LDPMTetra :: giveMasterVariables(const Point *x, const Vector &DoFs) const {
+    Vector phi = Vector :: Zero(nodes.size() );
+    shafunc->giveShapeF(x, phi);
+    Matrix H = Matrix :: Zero(ndim, DoFids.size() );
+    for ( unsigned i = 0; i < ndim; i++ ) {
+        for ( unsigned j = 0; j < numOfNodes; j++ ) {
+            H(i, ndim * j + i) = phi(j);
+        }
+    }
+    return H * DoFs;
+}
+
+//////////////////////////////////////////////////////////
 Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
     //compute volumetric strain
 
@@ -387,7 +400,8 @@ bool LDPMTetra :: isPointInside(Point *xn, const Point *x) const {
     Point X = * x;
     if ( isOnSameSide(A, B, C, D, X) && isOnSameSide(A, B, D, C, X) && isOnSameSide(A, D, C, B, X) && isOnSameSide(D, B, C, A, X) ) {
         vector< double >dist { ( A - X ).squaredNorm(), ( B - X ).squaredNorm(), ( C - X ).squaredNorm(), ( D - X ).squaredNorm() };
-        ( * xn ) [ 0 ] = ( double ) std :: distance( std :: begin(dist), std :: min_element( std :: begin(dist), std :: end(dist) ) );
+        
+        ( * xn ) = findNaturalCoords(x);
         return true;
     } else {
         return false;

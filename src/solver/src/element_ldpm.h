@@ -67,6 +67,7 @@ public:
     double giveVolumetricStrain() const { return volumetricStrain; };
     bool isPointInside(Point *xn, const Point *x) const;
 
+    virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
     //Vector giveVectorToNode(const unsigned &node_i, const unsigned &ip_id) const;
     //double giveVolumeAssociatedWithNode(unsigned nodenum) const;
