@@ -118,8 +118,13 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 found = true;
                 rbc = dynamic_cast< RigidBodyContact * >( * ee );
                 tet = dynamic_cast< LDPMTetra * >( * ee );
-                if ( rbc || tet ) {
+                if ( rbc ) {
                     model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode( unsigned( coord [ 0 ] + 0.2 ) ), false);
+                } else if (tet) {
+                    Point X = model->giveNodes()->giveNode(* nn)->givePoint();                
+                    vector< double >dist { ( tet->giveNode(0)->givePoint() - X ).squaredNorm(), ( tet->giveNode(1)->givePoint() - X ).squaredNorm(), ( tet->giveNode(2)->givePoint() - X ).squaredNorm(), ( tet->giveNode(3)->givePoint() - X ).squaredNorm() };
+                    unsigned closest = distance( std :: begin(dist), std :: min_element( std :: begin(dist), std :: end(dist) ) );
+                    model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode( closest ) , false);
                 } else  {
                     model->giveConstraints()->addHangingNodeConstraint(model->giveNodes()->giveNode(* nn), * ee);
                 }

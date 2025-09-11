@@ -398,9 +398,7 @@ bool LDPMTetra :: isPointInside(Point *xn, const Point *x) const {
     Point C = nodes [ 2 ]->givePoint();
     Point D = nodes [ 3 ]->givePoint();
     Point X = * x;
-    if ( isOnSameSide(A, B, C, D, X) && isOnSameSide(A, B, D, C, X) && isOnSameSide(A, D, C, B, X) && isOnSameSide(D, B, C, A, X) ) {
-        vector< double >dist { ( A - X ).squaredNorm(), ( B - X ).squaredNorm(), ( C - X ).squaredNorm(), ( D - X ).squaredNorm() };
-        
+    if ( isOnSameSide(A, B, C, D, X) && isOnSameSide(A, B, D, C, X) && isOnSameSide(A, D, C, B, X) && isOnSameSide(D, B, C, A, X) ) {        
         ( * xn ) = findNaturalCoords(x);
         return true;
     } else {
