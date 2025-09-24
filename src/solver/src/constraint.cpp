@@ -687,9 +687,6 @@ void ConstraintContainer :: addHangingNodeConstraint(Node *dependent, Element *p
         mults [ k ] = weights [ k ];
     }
     unsigned i = 0;
-    if ( masters.size() > 4 ) {
-        cout << "XXXXXXXXXXX " << masters.size() << endl;
-    }
     for ( ; i < ndim; i++ ) {
         for ( unsigned k = 0; k < masters.size(); k++ ) {
             dirs [ k ] = i;

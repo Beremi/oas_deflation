@@ -77,15 +77,31 @@ protected:
 public:
     BodyLoad() { beginTime = -INFINITY, endTime = INFINITY; };
     virtual ~BodyLoad() {};
-    void readFromLine(std :: istringstream &iss, ElementContainer *elems);
-    void init(FunctionContainer *funcs, double time);
-    double giveValue(const Point *xyz, double time);
-    std :: vector< double >giveBodyForceDoFValues(double t);
+    virtual void readFromLine(std :: istringstream &iss, ElementContainer *elems);
+    virtual void init(FunctionContainer *funcs, double time);
+    virtual double giveValue(const Point *xyz, double time);
+    virtual std :: vector< double >giveBodyForceDoFValues(double t);
     std :: vector< unsigned >giveArrayOfBodyForceDoFs() const;
     unsigned giveDirection() const { return dir; };
     bool isActive() const { return active; };
     double giveBeginTime() const { return beginTime; };
     double giveEndTime() const { return endTime; };
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SELF WEIGHT
+class SelfWeight : public BodyLoad
+{
+protected:
+    double g;
+public:
+    SelfWeight() { };
+    virtual ~SelfWeight() {};
+    virtual void readFromLine(std :: istringstream &iss, ElementContainer *elems);
+    virtual void init(FunctionContainer *funcs, double time);
+    virtual double giveValue(const Point *xyz, double time);    
+    virtual std :: vector< double >giveBodyForceDoFValues(double t);
 };
 
 

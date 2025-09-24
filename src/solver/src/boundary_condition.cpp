@@ -174,7 +174,8 @@ void BoundaryCondition :: readFromLine(istringstream &iss, NodeContainer *nodes)
 //////////////////////////////////////////////////////////
 // BODY LOAD
 void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
-    unsigned numelems, k;
+    unsigned k;
+    int numelems = -1;
     string code;
 
     while ( iss >> code ) {
@@ -183,13 +184,13 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
             if ( code.compare("all") == 0 ) {
                 numelems = elems->giveSize();
                 els.resize(numelems);
-                for ( unsigned i = 0; i < numelems; i++ ) {
+                for ( int i = 0; i < numelems; i++ ) {
                     els [ i ] = elems->giveElement(i);
                 }
             } else {
                 numelems = stoi(code);
                 els.resize(numelems);
-                for ( unsigned i = 0; i < numelems; i++ ) {
+                for ( int i = 0; i < numelems; i++ ) {
                     iss >> k;
                     els [ i ] = elems->giveElement(k);
                 }
@@ -205,6 +206,13 @@ void BodyLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
         } else if ( code.compare("valid_until") == 0 ) {
             iss >> endTime;
         }
+    }
+    if (numelems==-1){
+        numelems = elems->giveSize();
+        els.resize(numelems);
+        for ( int i = 0; i < numelems; i++ ) {
+          els [ i ] = elems->giveElement(i);
+        }      
     }
 }
 
@@ -264,6 +272,59 @@ vector< unsigned >BodyLoad :: giveArrayOfBodyForceDoFs() const {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// SELF WEIGHT
+void SelfWeight :: readFromLine(istringstream &iss, ElementContainer *elems) {
+    BodyLoad :: readFromLine(iss, elems);
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    
+    string code;
+    while ( iss >> code ) {
+        if ( code.compare("g") == 0 ) {
+            iss >> g;
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+double SelfWeight :: giveValue(const Point *xyz, double t) {
+    (void) xyz; (void) t;
+    if (active) return g;
+    else return 0;
+}
+
+//////////////////////////////////////////////////////////
+void SelfWeight :: init(FunctionContainer *funcs, double time) {
+    if ( time < beginTime || time >= endTime ) {
+        active = false;
+    } else {
+        active = true;
+    }
+}
+
+//////////////////////////////////////////////////////////
+vector< double >SelfWeight :: giveBodyForceDoFValues(double t) {
+    vector< double >load;
+    if ( !active ) {
+        return load;
+    }
+    Vector elemLoad;
+    unsigned s = 0;
+    double density;
+    for ( auto &e: els ) {
+        if (! e->doesMechanics()) continue;       
+        s = load.size();
+        elemLoad = e->integrateLoad(this, t);// * e->giveMaterial->giveDensity();
+        load.resize(s + elemLoad.size() );
+        for ( unsigned i = 0; i < elemLoad.size(); i++ ) {
+            load [ s + i ] = elemLoad [ i ];
+        }
+    }
+    return load;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // CONTAINER FOR BOUNDARY CONDITIONS
 BCContainer :: ~BCContainer() {
     for ( auto &bc: BC ) {
@@ -314,6 +375,10 @@ void BCContainer :: readFromFile(const string filename, NodeContainer *nodes, El
                 BodyLoad *newBodyLoad = new BodyLoad();
                 newBodyLoad->readFromLine(iss, elems);
                 loads.push_back(newBodyLoad);
+            } else if ( aux.compare("SelfWeight") == 0 ) {
+                SelfWeight *newSelfWeight = new SelfWeight();
+                newSelfWeight->readFromLine(iss, elems);
+                loads.push_back(newSelfWeight);
             } else {
                 cerr << "Error: boundary condition '" <<  aux <<  "' in not implemented" << endl;
                 cerr << "Did you forget keyword 'NodalBC'?" << endl;

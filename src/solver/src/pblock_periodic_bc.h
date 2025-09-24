@@ -19,7 +19,7 @@ protected:
     unsigned initalNodeNum;
 
     Vector crack_normal;
-    bool crack_active;
+    bool crack_active = false;
 
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
 

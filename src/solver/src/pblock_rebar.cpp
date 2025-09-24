@@ -70,7 +70,7 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
     vector< Node * >verts;
     vector< pair< double, Node * > >intersections;
 
-
+    cout << "AAAA" << endl;
     BeamMaterial *bm = dynamic_cast< BeamMaterial * >( model->giveMaterials()->giveMaterial(material_id) );
     CircularCrossSection *cs = new CircularCrossSection( radius, bm->givePoissonsRatio() );
     cs->init();
