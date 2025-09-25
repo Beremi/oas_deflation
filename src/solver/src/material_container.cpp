@@ -13,6 +13,7 @@
 #include "material_thermomechanical.h"
 #include "material_plasticity.h"
 #include "material_beam.h"
+#include "model.h"
 
 #ifdef ML_TORCH_FOUND
  #include "material_neuralnetwork.h"
@@ -21,6 +22,10 @@
 
 using namespace std;
 
+
+Model* MaterialContainer :: giveModel() const {return masterModel;};
+void MaterialContainer :: setModel(Model *m){masterModel = m;};   
+    
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
@@ -200,6 +205,10 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                     matrs.push_back(newmat);
                 } else if ( matType.compare("BeamMaterial") == 0 ) {
                     BeamMaterial *newmat = new BeamMaterial();
+                    newmat->readFromLine(iss);
+                    matrs.push_back(newmat);
+                } else if ( matType.compare("NormalPlasticBeamMaterial") == 0 ) {
+                    NormalPlasticBeamMaterial *newmat = new NormalPlasticBeamMaterial();
                     newmat->readFromLine(iss);
                     matrs.push_back(newmat);
                 } else {

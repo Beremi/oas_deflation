@@ -25,6 +25,7 @@ Model :: Model(bool pT) {
     printTime = pT;
     nodes.setContainers(& bconds, & constr);
     bconds.setContainers(& funcs);
+    matrs.setModel(this);
     elems.setModel(this);
     elems.setContainers(& constr);
     solver = nullptr;

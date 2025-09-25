@@ -8,12 +8,14 @@
 
 
 class ElementContainer; //forward declaration
+class Model; //forward declaration
 
 //////////////////////////////////////////////////////////
 class MaterialContainer
 {
 private:
     std :: vector< Material * >matrs;
+    Model * masterModel;
 public:
     MaterialContainer() {};
     ~MaterialContainer();
@@ -22,6 +24,8 @@ public:
     void init();
     Material *giveMaterial(unsigned const mat);
     void runPreparationForStressEvaluation(ElementContainer *elems);
+    Model* giveModel() const;
+    void setModel(Model *m);
 protected:
 };
 

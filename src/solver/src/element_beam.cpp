@@ -250,6 +250,18 @@ void TimoshenkoBeam3D :: giveValues(std :: string code, Vector &result) const {
         for (unsigned i = 0; i < IF.size(); i++) {
             result [ i ] = IF [ i ] / length;
         }
+    } else if ( code.compare("normal_stress") == 0 ) {
+        result.resize(1);
+        for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+            result[0] += stats [ k ]->giveTempStress()[0] * inttype->giveIPWeight(k);
+        }        
+        result[0] /= CS->giveArea()*length; 
+    } else if ( code.compare("normal_strain") == 0 ) {
+        result.resize(1);
+        for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
+            result[0] += stats [ k ]->giveTempStrain()[0] * inttype->giveIPWeight(k);
+        }        
+        result[0] /= length; 
     } else if ( code.compare("diameter") == 0 ) {
         CircularCrossSection *circ = dynamic_cast< CircularCrossSection * >( CS );
         if ( circ ) {

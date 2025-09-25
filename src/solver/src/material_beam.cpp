@@ -1,11 +1,15 @@
 #include "material_beam.h"
 #include "element_container.h"
 #include "cross_section.h"
+#include "function.h"
+#include "model.h"
 
 using namespace std;
 
 //////////////////////////////////////////////////////////
 // BEAM MATERIAL STATUS
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 BeamMaterialStatus :: BeamMaterialStatus(BeamMaterial *m, Element *e, unsigned ipnum) : TensMechMaterialStatus(m, e, ipnum) {
     name = "Beam mat. status";
@@ -21,7 +25,7 @@ bool BeamMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("normalforce") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
-        return true;
+        return true;        
     } else if ( code.compare("shearforceY") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 1 ];
@@ -87,6 +91,7 @@ Vector BeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;
     temp_stress = giveStiffnessTensor("elastic") * strain;
+    temp_strain = strain;
     return temp_stress;
 }
 
@@ -110,6 +115,8 @@ Matrix BeamMaterialStatus :: giveMassTensor() const {
 
 //////////////////////////////////////////////////////////
 // BEAM MATERIAL
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////
 void BeamMaterial :: readFromLine(istringstream &iss) {
@@ -127,3 +134,125 @@ MaterialStatus *BeamMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum
 void BeamMaterial :: init(MaterialContainer *matcont) {
     TensMechMaterial :: init(matcont);
 };
+
+//////////////////////////////////////////////////////////
+// BEAM MATERIAL WITH PLASTICITY IN NORMAL DIRECTION STATUS
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+
+NormalPlasticBeamMaterialStatus :: NormalPlasticBeamMaterialStatus(NormalPlasticBeamMaterial *m, Element *e, unsigned ipnum) : BeamMaterialStatus(m, e, ipnum) {
+    name = "Beam mat. w. normal plasticity status";
+}
+
+//////////////////////////////////////////////////////////
+bool NormalPlasticBeamMaterialStatus :: giveValues(string code, Vector &result) const {
+    if ( code.compare("normal_plastic_strain") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = normalPlasticStrain;
+        return true;
+    } else {
+        return BeamMaterialStatus :: giveValues(code, result);
+    }
+}
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterialStatus :: update() {
+     normalPlasticStrain = temp_normalPlasticStrain;
+     cumulPlasticStrain = temp_cumulPlasticStrain;
+     BeamMaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterialStatus :: resetTemporaryVariables() {
+    temp_normalPlasticStrain = normalPlasticStrain;
+    temp_cumulPlasticStrain = cumulPlasticStrain;     
+    TensMechMaterialStatus :: resetTemporaryVariables();
+}
+
+//////////////////////////////////////////////////////////
+Matrix NormalPlasticBeamMaterialStatus :: giveStiffnessTensor(string type) const {
+    ( void ) type;
+    return BeamMaterialStatus :: giveStiffnessTensor(type);
+}
+
+//////////////////////////////////////////////////////////
+Vector NormalPlasticBeamMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)    
+    giveStressWithFrozenIntVars(strain, timeStep);
+    NormalPlasticBeamMaterial *tm = static_cast< NormalPlasticBeamMaterial * >( mat );         
+    double E = tm->giveElasticModulus();
+    double normstress = temp_stress[0]/CS->giveArea();
+    temp_cumulPlasticStrain = cumulPlasticStrain;
+    temp_normalPlasticStrain = normalPlasticStrain; 
+    double limitValue = tm->givePlasticLimit(temp_cumulPlasticStrain);
+    double plstrdiff = (abs(normstress)-limitValue)/E;
+    while(plstrdiff>1e-6){
+        temp_cumulPlasticStrain += plstrdiff;         
+        temp_normalPlasticStrain += copysign(plstrdiff,normstress);        
+        normstress = copysign(limitValue,normstress);
+        limitValue = tm->givePlasticLimit(temp_cumulPlasticStrain);
+        plstrdiff = (abs(normstress)-limitValue)/E;
+        
+    }
+    temp_stress[0] = normstress*CS->giveArea();
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+Vector NormalPlasticBeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
+    ( void ) timeStep;    
+    Vector shiftedstrain = strain;
+    shiftedstrain[0] -= normalPlasticStrain;
+    temp_stress = BeamMaterialStatus::giveStiffnessTensor("elastic") * shiftedstrain;
+    return temp_stress;
+}
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterialStatus :: readFromLine(istringstream &iss) {
+     BeamMaterialStatus :: readFromLine(iss);
+}
+
+//////////////////////////////////////////////////////////
+// BEAM MATERIAL WITH PLASTICITY IN NORMAL DIRECTION
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterial :: readFromLine(istringstream &iss) {
+    BeamMaterial :: readFromLine(iss); //read elastic parameters
+    
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+
+    string param;
+    bool bplastic_envelope = false;
+    while (  iss >> param ) {
+        if ( param.compare("plastic_envelope") == 0 ) {
+            bplastic_envelope = true;
+            iss >> plasticEnvelopeFuncNum;
+        }
+    }
+    if ( !bplastic_envelope ) {
+        cerr << name << ": material parameter 'plastic_envelope' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+};
+
+//////////////////////////////////////////////////////////
+MaterialStatus *NormalPlasticBeamMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
+    NormalPlasticBeamMaterialStatus *newStatus = new NormalPlasticBeamMaterialStatus(this, e, ipnum); //needs to be deleted manually
+    return newStatus;
+};
+
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterial :: init(MaterialContainer *matcont) {
+    BeamMaterial :: init(matcont);
+    plasticEnvelope = matcont->giveModel()->giveFunctions()->giveFunction(plasticEnvelopeFuncNum);    
+};
+
+//////////////////////////////////////////////////////////
+double NormalPlasticBeamMaterial :: givePlasticLimit(double cumstrain) const{
+  return plasticEnvelope->giveY(cumstrain);
+}
