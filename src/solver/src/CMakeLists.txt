@@ -55,6 +55,10 @@ set (superelem_files
     element_superelem.cpp
     )
 
+set (pybind_files
+    material_neuralnetwork_pybind.cpp
+    )
+
 if (USE_ML_TORCH)
     list(APPEND solver_files material_neuralnetwork.cpp)
     add_library(ml_torch
@@ -62,6 +66,15 @@ if (USE_ML_TORCH)
         ${superelem_files}
         )
 endif ()
+
+if (USE_PYBIND)
+    list(APPEND solver_files material_neuralnetwork_pybind.cpp)
+    add_library(pybind
+        ${LIB_TYPE}
+        ${pybind_files}
+        )
+endif ()
+
 
 add_library(solver
     ${LIB_TYPE}
