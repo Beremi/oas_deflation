@@ -9,7 +9,7 @@ Model *masterModel;
 int main(int argc, char **argv) {
     vector< string >args(argv + 1, argv + argc);
     int num = 0;
-    string master_filename;
+    fs::path master_filename;
 
     if ( argc == 1 ) {
         fprintf(stdout, "Expected argument after options\n");
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
     fs :: path input = fs :: absolute(master_filename);
     if ( !fs :: exists(input) ) {
-        fprintf(stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.c_str() );
+        fprintf( stderr, "The problem with input file: %s. (Does not exist, wrong path) \n", input.string().c_str() );
         exit(EXIT_FAILURE);
     }
     GlobPaths :: BASEDIR = input.parent_path();

@@ -42,18 +42,19 @@ using namespace std;
 //#include <vtkMassProperties.h>
 #endif
 
-#define buffersize 200
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // VTK EXPORTERS
 
-void VTKExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
-    if ( iteration < 0 ) {
-        sprintf(buffer, "%s_%05d.vtu", filename.c_str(), step);
+std::string VTKExporter :: giveFileName(unsigned step, int iteration) const {
+    std::ostringstream oss;
+    if (iteration < 0) {
+        oss << filename << "_" << std::setfill('0') << std::setw(5) << step << ".vtu";
     } else {
-        sprintf(buffer, "%s_%05d_iter_%05d.vtu", filename.c_str(), step, iteration);
+        oss << filename << "_" << std::setfill('0') << std::setw(5) << step 
+            << "_iter_" << std::setfill('0') << std::setw(5) << iteration << ".vtu";
     }
+    return oss.str();
 }
 
 //////////////////////////////////////////////////////////
@@ -110,8 +111,7 @@ void VTKExporter :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    char buffer[ buffersize ];
-    giveFileName(step, iteration, buffer);
+    std::string fname = giveFileName(step, iteration);
     // Point P;
     // Element *ee;
 
@@ -240,7 +240,11 @@ void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path r
 
     //vtkNew<vtkXMLUnstructuredGridWriter> writer;
     vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
-    writer->SetFileName( ( resultDir / buffer ).string().c_str() );
+    
+    // Use safe path handling for Windows/MXE compatibility
+    fs::path outputPath = resultDir / fname;
+    writer->SetFileName( outputPath.string().c_str() );
+    
     writer->SetInputData(unstructuredGrid);
     if ( binaryswitch ) {
         writer->SetDataModeToBinary();
@@ -388,9 +392,7 @@ void VTKRB2DExporter :: exportData(unsigned step, int iteration, fs :: path resu
 // RIGID contacts TO VTU FILE
 //////////////////////////////////////////////////////////
 void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
-    char buffer[ buffersize ];
-    giveFileName(step, iteration, buffer);
-
+    std::string fname = giveFileName(step, iteration);
     Vector DoFs = solver->giveTrialDoFValues();
 
 #ifdef __VTK_MODULE
@@ -598,7 +600,11 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
 
     //vtkNew<vtkXMLUnstructuredGridWriter> writer;
     vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
-    writer->SetFileName( ( resultDir / buffer ).string().c_str() );
+    
+    // Use safe path handling for Windows/MXE compatibility  
+    fs::path outputPath = resultDir / fname;
+    writer->SetFileName( outputPath.string().c_str() );
+    
     writer->SetInputData(unstructuredGrid);
     if ( binaryswitch ) {
         writer->SetDataModeToBinary();
@@ -618,8 +624,7 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
 //////////////////////////////////////////////////////////
 void VTKRebarExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
     // Export of elements into vtu xml file format (vtu = vtk for unstructured grid)
-    char buffer[ buffersize ];
-    giveFileName(step, iteration, buffer);
+    std::string fname = giveFileName(step, iteration);
     // Point P;
     // Element *ee;
 
@@ -758,7 +763,9 @@ void VTKRebarExporter :: exportData(unsigned step, int iteration, fs :: path res
 
     //vtkNew<vtkXMLUnstructuredGridWriter> writer;
     vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
-    writer->SetFileName( ( resultDir / buffer ).string().c_str() );
+    
+    fs::path outputPath = resultDir / fname;
+    writer->SetFileName( outputPath.string().c_str() );
     writer->SetInputData(unstructuredGrid);
     if ( binaryswitch ) {
         writer->SetDataModeToBinary();
