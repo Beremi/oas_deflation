@@ -186,6 +186,60 @@ bool LUSolver :: solve(Vector &x, const Vector &b) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// SUPERLU SOLVER
+//////////////////////////////////////////////////////////
+
+#ifdef SUPERLU_FOUND
+SuperLUSolver :: SuperLUSolver() {
+    name = "SuperLUSolver";
+}
+
+//////////////////////////////////////////////////////////
+SuperLUSolver :: ~SuperLUSolver() {}
+
+//////////////////////////////////////////////////////////
+bool SuperLUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        superlu.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool SuperLUSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = superlu.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+#endif
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // LLT SOLVER
 //////////////////////////////////////////////////////////
 
@@ -315,8 +369,18 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     } else if ( solver_type == "EigenLLT" ) {
         Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
         x = simplicial_llt_solver.compute(A).solve(b);
+        
         //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
         result = 1;
+    } else if ( solver_type == "SuperLU" ) {
+#ifdef SUPERLU_FOUND
+        Eigen :: SuperLU < Eigen :: SparseMatrix< double > > superlu_solver;
+        superlu_solver.analyzePattern(A);
+        superlu_solver.factorize(A);
+        x = superlu_solver.solve(b);
+        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        result = 1;
+#endif
     } else if ( solver_type == "EigenSparseLU" ) {
         Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
         sparseLU_solver.analyzePattern(A);

@@ -56,6 +56,7 @@ endif ()
 option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
+option (USE_SUPERLU "Enable SuperLU solver" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
@@ -128,7 +129,7 @@ set(TARGETNAME OAS)
 
 # detect
 #find_package (Python3 COMPONENTS Interpreter)
-find_package (Eigen3 3.3.9 NO_MODULE)
+find_package (Eigen3 5.0.0 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
 if (USE_MPI)
@@ -161,13 +162,57 @@ else()
   add_custom_target(unpack-eigen
   ALL
   COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.4.0.tar.gz
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-5.0.0.tar.gz
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT
-    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0"
+    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0"
   )
-  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0)
+  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0)
+endif()
+
+# SuperLU support (used through Eigen's SuperLUSupport module)
+if (USE_SUPERLU)
+    find_package (SuperLU)
+    # set (CMAKE_REQUIRED_DEFINITIONS "-DEIGEN_SUPERLU_SUPPORT")
+    # set (CMAKE_REQUIRED_INCLUDES ${EIGEN3_INCLUDE_DIR})
+    # check_cxx_source_compiles(
+    #   "#include <Eigen/SuperLUSupport>
+    #    int main() { Eigen::SuperLUSupport::init(); return 0; }"
+    #   HAVE_EIGEN_SUPERLU_SUPPORT)
+    # if (HAVE_EIGEN_SUPERLU_SUPPORT)
+    #   message(STATUS "Eigen SuperLU support detected.")
+    #   set (USE_SUPERLU ON)
+    # else()
+    #   message(STATUS "Eigen SuperLU support not detected.")
+    #   set (USE_SUPERLU OFF)
+    # endif()
+else()
+    set (USE_SUPERLU OFF)
+endif()
+
+if(SuperLU_FOUND AND USE_SUPERLU)
+  message(STATUS "SuperLU found: ${SuperLU_LIBRARIES}")
+  message(STATUS "  SuperLU include dir: ${SuperLU_INCLUDE_DIRS}")
+  include_directories(${SuperLU_INCLUDE_DIRS})
+  
+  # Store SuperLU separately to control linking order
+  set(SUPERLU_LIBS ${SuperLU_LIBRARIES})
+  
+  # Define for both compile-time usage
+  add_definitions(-DEIGEN_SUPERLU_SUPPORT)
+  
+  # Also define a more semantic flag for your code
+  add_definitions(-DSUPERLU_FOUND)
+  
+  # Add linker flag to allow multiple definitions (resolve xerbla_ conflict)
+  if(NOT MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--allow-multiple-definition")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--allow-multiple-definition")
+  endif()
+else()
+  message(STATUS "SuperLU will not be used. Eigen's SuperLU sparse direct solver will not be available.")
+  message(STATUS "  Install/enable SuperLU to use: #include <Eigen/SuperLUSupport>")
 endif()
 
 add_custom_target(unpack-spectra
@@ -334,6 +379,11 @@ if (NOT TARGET Eigen3::Eigen)
 endif()
 add_dependencies(solver unpack-spectra)
 
+# Add SuperLU compile definition to solver if found
+if(SuperLU_FOUND)
+  target_compile_definitions(solver PUBLIC EIGEN_SUPERLU_SUPPORT SUPERLU_FOUND)
+endif()
+
 target_link_libraries(solver
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
@@ -369,6 +419,12 @@ target_link_libraries(${TARGETNAME}
                       ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
+
+# Link SuperLU separately after other libraries to avoid xerbla_ conflicts
+if(SuperLU_FOUND)
+  target_link_libraries(${TARGETNAME} PRIVATE ${SUPERLU_LIBS})
+  target_link_libraries(solver PRIVATE ${SUPERLU_LIBS})
+endif()
 
 # Link pybind11 to main executable and solver if USE_PYBIND is enabled
 if (USE_PYBIND)
