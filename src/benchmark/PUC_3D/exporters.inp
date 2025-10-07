@@ -1,2 +1,16 @@
 VTKElementExporter elems saveEvery 0.0001 cellData 4 strainN stressN damage crack_opening pointData 1 displacements 
 #VTKRCExporter faces saveEvery 0.0001 cellData 2 damage tempCrackOpening pointData 0
+SolverGauge LD iterations iterations
+SolverGauge LD restarts restarts
+SolverGauge LD error_displacements error_displacements
+SolverGauge LD error_residuals error_residuals
+SolverGauge LD error_energy error_energy
+SolverGauge LD idc_time idc_time
+SolverGauge LD converged converged
+SolverGauge LD simulation_time simulation_time
+SolverGauge LD number_of_dof number_of_dof
+SolverGauge LD elapsed_time elapsed_time
+SolverGauge energies Wdis[J] DisEnergyMech
+SolverGauge energies Wint[J] IntEnergyMech
+SolverGauge energies Wext[J] ExtEnergyMech
+SolverGauge energies Wkin[J] KinEnergyMech

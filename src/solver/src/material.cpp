@@ -31,14 +31,25 @@ Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: update() {
+double MaterialStatus :: giveEnergyDissipationIncrement() const {
+    return 0;
+}
+
+//////////////////////////////////////////////////////////
+void MaterialStatus :: computeEnergyDensities(){
     totalEnergyDensity += ( ( temp_stress + updt_stress ).dot(temp_strain - updt_strain) ) / 2.;
-    strainEnergyDensity = temp_stress.dot(temp_strain) / 2.; //only damage material
+    dissipEnergyDensityInc = giveEnergyDissipationIncrement();
+    dissipEnergyDensity = updt_dissip_energy + dissipEnergyDensityInc;    
+    strainEnergyDensity = totalEnergyDensity - dissipEnergyDensity;
     //unsigned ndim = element->giveDimension();
     //totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
-    //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material
-    dissipEnergyDensity = totalEnergyDensity - strainEnergyDensity;
-    dissipEnergyDensityInc = dissipEnergyDensity - updt_dissip_energy;
+    //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material    
+}
+
+
+//////////////////////////////////////////////////////////
+void MaterialStatus :: update() {
+    computeEnergyDensities();
     updt_strain = temp_strain;
     updt_stress = temp_stress;
     updt_dissip_energy = dissipEnergyDensity;

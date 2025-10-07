@@ -73,6 +73,7 @@ public:
     void sumFromElements(std :: string code, Vector &result) const;
     std :: vector< Vector >computePrincipalStresses() const;
     void replaceTrueMassMatricesByLumpedOnes();
+    double giveDissipatedEnergy() const;
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

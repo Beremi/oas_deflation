@@ -39,6 +39,8 @@ public:
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value);
+    virtual double giveEnergyDissipationIncrement() const;
+    virtual void computeEnergyDensities();    
     Vector giveCrackOpeningVector() const;
 };
 

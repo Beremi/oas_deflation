@@ -64,6 +64,7 @@ public:
     virtual Vector giveBoundingBox()const;
     virtual Vector giveFacetBoundingBox()const;
     Point giveCentroid() const { return centroid; };
+    virtual double giveDissipatedEnergy() const;
 
     virtual void extrapolateIPValuesToNodes(std :: string code, std :: vector< Vector > &result, Vector &weights) const;
     virtual bool isPointInside(Point *xn, const Point *x) const;

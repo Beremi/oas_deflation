@@ -229,6 +229,15 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
     //if (temp_damage < damageC && epsN<0) temp_damage = damageC;
 }
 
+//////////////////////////////////////////////////////////
+double CSLMaterialStatus :: giveEnergyDissipationIncrement() const {
+    return (updt_stress.dot(temp_strain)-temp_stress.dot(updt_strain))/2;
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterialStatus :: computeEnergyDensities(){
+    VectMechMaterialStatus :: computeEnergyDensities();
+}
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: update() {
@@ -307,6 +316,7 @@ Vector CSLMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
 //////////////////////////////////////////////////////////
 Vector CSLMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+    temp_strain = strain;
     temp_stress = VectMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
     if ( temp_strain [ 0 ] > 0 ) {
         temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only

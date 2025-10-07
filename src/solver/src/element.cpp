@@ -639,6 +639,15 @@ Matrix Element :: giveShapeFunctionsGrad(const Point *x) const {
 }
 
 //////////////////////////////////////////////////////////
+double Element :: giveDissipatedEnergy() const {
+    double E=0;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        E = stats [ i ]->giveDissipatedEnergyDensity() * inttype->giveIPWeight(i);
+    }
+    return E;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // MATERIAL TEST ELEMENT - only one material point and virtual loading through prescribed strains
 //////////////////////////////////////////////////////////

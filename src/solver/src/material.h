@@ -46,7 +46,9 @@ public:
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };
     virtual void initializeStressAndStrainVector(unsigned num);
-
+    double giveDissipatedEnergyDensity() const {return dissipEnergyDensity;};  
+    virtual double giveEnergyDissipationIncrement() const;
+    virtual void computeEnergyDensities();
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;

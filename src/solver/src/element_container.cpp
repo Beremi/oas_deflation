@@ -927,6 +927,15 @@ vector< Vector >ElementContainer :: computePrincipalStresses() const {
     return tensstress;
 }
 
+//////////////////////////////////////////////////////////
+double ElementContainer :: giveDissipatedEnergy() const {
+    double E=0;
+    for ( auto &e: elems ) {
+        E += e->giveDissipatedEnergy();
+    }
+    return E;
+}
+
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: assignFibersToElems() {

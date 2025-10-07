@@ -720,6 +720,11 @@ void RigidBodyContact :: extrapolateIPValuesToNodes(string code, vector< Vector 
 }
 
 //////////////////////////////////////////////////////////
+double RigidBodyContact :: giveDissipatedEnergy() const {
+    return Element::giveDissipatedEnergy()*ndim;
+}
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RBSN ELEMENT with rotational stiffness
 RigidBodyContactWithRotationalStiffness :: RigidBodyContactWithRotationalStiffness(const unsigned dim) : RigidBodyContact(dim) {

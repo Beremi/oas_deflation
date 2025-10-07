@@ -252,6 +252,9 @@ void Solver :: giveValues(string code, Vector &result) const {
     } else if ( code.compare("KinEnergyMech") == 0 ) {
         result.resize(1);
         result [ 0 ] = W_kin [ 0 ];
+    } else if ( code.compare("DisEnergyMech") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = elems->giveDissipatedEnergy();        
     } else {
         result.resize(0);
     }
