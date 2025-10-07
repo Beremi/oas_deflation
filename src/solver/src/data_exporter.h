@@ -9,6 +9,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <filesystem>
+
 //#include <bits/stdc++.h> //lower case string
 
 class Solver; //forward declaration
@@ -27,8 +32,8 @@ public:
     virtual void updateNextTimeToSave(const double &time);
     virtual void updateNextStepToSave(const unsigned &step);
     virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
-    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
-    std :: string giveFileName() const { return filename; };
+    virtual std::string giveFileName(unsigned step, int iteration) const;
+    std::string giveFileName() const { return filename; };
     virtual void init();
     size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
@@ -148,7 +153,7 @@ protected:
 public:
     Gauge(unsigned dimension) : DataExporter(dimension) {   name = "Gauge"; };
     ~Gauge() {};
-    virtual void giveFileName(unsigned step, int iteration, char *buffer) const;
+    virtual std::string giveFileName(unsigned step, int iteration) const override;
     std :: string giveGaugeName() const { return gname; }
 };
 

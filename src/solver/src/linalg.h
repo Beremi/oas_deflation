@@ -21,6 +21,9 @@
 #include <Eigen/SparseCholesky>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SparseCore>
+#ifdef SUPERLU_FOUND
+    #include <Eigen/SuperLUSupport>
+#endif
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/SymGEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
@@ -112,6 +115,21 @@ public:
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
 };
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, SUPERLU SOLVER
+#ifdef SUPERLU_FOUND
+class SuperLUSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: SuperLU< Eigen :: SparseMatrix< double > >superlu;
+public:
+    SuperLUSolver();
+    virtual ~SuperLUSolver();
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

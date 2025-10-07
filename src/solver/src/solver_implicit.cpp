@@ -219,6 +219,10 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             linalgsolver = std :: make_unique< LLTSolver >();
         } else if  ( symsolver_type == "EigenSparseLU" ) {
             linalgsolver = std :: make_unique< LUSolver >();
+#ifdef SUPERLU_FOUND
+        } else if  ( symsolver_type == "SuperLU" ) {
+            linalgsolver = std :: make_unique< SuperLUSolver >();
+#endif
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);

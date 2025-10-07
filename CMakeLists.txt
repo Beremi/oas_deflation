@@ -56,7 +56,9 @@ endif ()
 option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
+option (USE_SUPERLU "Enable SuperLU solver" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
+option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
 option (USE_DOCS "Enable documentation" ON)
 option (USE_VTK "Enable VTK (for exporting binary VTU-files)" ON)
@@ -127,7 +129,7 @@ set(TARGETNAME OAS)
 
 # detect
 #find_package (Python3 COMPONENTS Interpreter)
-find_package (Eigen3 3.3.9 NO_MODULE)
+find_package (Eigen3 5.0.0 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
 if (USE_MPI)
@@ -160,13 +162,57 @@ else()
   add_custom_target(unpack-eigen
   ALL
   COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-3.4.0.tar.gz
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-5.0.0.tar.gz
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT
-    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0"
+    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0"
   )
-  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-3.4.0)
+  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0)
+endif()
+
+# SuperLU support (used through Eigen's SuperLUSupport module)
+if (USE_SUPERLU)
+    find_package (SuperLU)
+    # set (CMAKE_REQUIRED_DEFINITIONS "-DEIGEN_SUPERLU_SUPPORT")
+    # set (CMAKE_REQUIRED_INCLUDES ${EIGEN3_INCLUDE_DIR})
+    # check_cxx_source_compiles(
+    #   "#include <Eigen/SuperLUSupport>
+    #    int main() { Eigen::SuperLUSupport::init(); return 0; }"
+    #   HAVE_EIGEN_SUPERLU_SUPPORT)
+    # if (HAVE_EIGEN_SUPERLU_SUPPORT)
+    #   message(STATUS "Eigen SuperLU support detected.")
+    #   set (USE_SUPERLU ON)
+    # else()
+    #   message(STATUS "Eigen SuperLU support not detected.")
+    #   set (USE_SUPERLU OFF)
+    # endif()
+else()
+    set (USE_SUPERLU OFF)
+endif()
+
+if(SuperLU_FOUND AND USE_SUPERLU)
+  message(STATUS "SuperLU found: ${SuperLU_LIBRARIES}")
+  message(STATUS "  SuperLU include dir: ${SuperLU_INCLUDE_DIRS}")
+  include_directories(${SuperLU_INCLUDE_DIRS})
+  
+  # Store SuperLU separately to control linking order
+  set(SUPERLU_LIBS ${SuperLU_LIBRARIES})
+  
+  # Define for both compile-time usage
+  add_definitions(-DEIGEN_SUPERLU_SUPPORT)
+  
+  # Also define a more semantic flag for your code
+  add_definitions(-DSUPERLU_FOUND)
+  
+  # Add linker flag to allow multiple definitions (resolve xerbla_ conflict)
+  if(NOT MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--allow-multiple-definition")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--allow-multiple-definition")
+  endif()
+else()
+  message(STATUS "SuperLU will not be used. Eigen's SuperLU sparse direct solver will not be available.")
+  message(STATUS "  Install/enable SuperLU to use: #include <Eigen/SuperLUSupport>")
 endif()
 
 add_custom_target(unpack-spectra
@@ -179,6 +225,18 @@ add_custom_target(unpack-spectra
     "Unpacking Spectra in ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0"
   )
 include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0/include)
+
+add_custom_target(unpack-pybind
+  ALL
+  COMMAND
+    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT
+    "Unpacking pybind11 in ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1"
+  )
+include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
+
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
 
@@ -193,19 +251,6 @@ if (USE_SOLVER)
   #list (APPEND MODULE_LIST "solver")
   list (APPEND LIBS $<TARGET_OBJECTS:solver>)
   target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
-endif ()
-
-if (USE_ML_TORCH)
-  find_package(Torch REQUIRED PATHS "${CMAKE_BINARY_DIR}/libtorch")
-  if (NOT TORCH_FOUND)
-    message("-- Torch not found")
-  else ()
-    message("-- Torch (${Torch_VERSION}) found in ${Torch_DIR}.")
-    list (APPEND LIBS $<TARGET_OBJECTS:ml_torch> )
-    target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
-    list (APPEND EXT_LIBS ${TORCH_LIBRARIES})
-    add_definitions(-DML_TORCH_FOUND)
-  endif ()
 endif ()
 
 #file(GLOB SOURCE "${OAS_SOURCE_DIR}/src/solver/src/*.h" "${OAS_SOURCE_DIR}/src/*.cpp")
@@ -253,6 +298,62 @@ if (USE_VTK)
     endif ()
 endif ()
 
+if (USE_ML_TORCH)
+  find_package(Torch REQUIRED PATHS "${CMAKE_BINARY_DIR}/libtorch")
+  if (NOT TORCH_FOUND)
+    message("-- Torch not found")
+  else ()
+    message("-- Torch (${Torch_VERSION}) found in ${Torch_DIR}.")
+    list (APPEND LIBS $<TARGET_OBJECTS:ml_torch> )
+    target_compile_options(solver PRIVATE "${OpenMP_CXX_FLAGS}")
+    list (APPEND EXT_LIBS ${TORCH_LIBRARIES})
+    add_definitions(-DML_TORCH_FOUND)
+  endif ()
+endif ()
+
+if (USE_PYBIND)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+  if(Python_FOUND)
+    message(STATUS "Python ${Python_VERSION} found")
+    message(STATUS "  Python executable: ${Python_EXECUTABLE}")
+    message(STATUS "  Python include dirs: ${Python_INCLUDE_DIRS}")
+    message(STATUS "  Python libraries: ${Python_LIBRARIES}")
+  endif()
+
+  find_package(pybind11 CONFIG QUIET)
+
+  if(NOT pybind11_FOUND)
+    # If pybind11 is not installed, fetch it from GitHub
+    # include(FetchContent)
+    # FetchContent_Declare(
+    #     pybind11
+    #     GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    #     GIT_TAG v2.11.1
+    # )
+    # FetchContent_MakeAvailable(pybind11)
+
+    message(STATUS "pybind11 not found via find_package, using local copy")
+    # If pybind11 is not installed, use the unpacked version
+    add_dependencies(solver unpack-pybind)
+    
+    # Manually add pybind11 cmake modules after unpacking
+    set(pybind11_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/share/cmake/pybind11")
+    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1")
+    
+    # Try to find it again after setting the path
+    find_package(pybind11 CONFIG QUIET PATHS "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1" NO_DEFAULT_PATH)
+    
+    if(NOT pybind11_FOUND)
+      # If still not found, we'll link manually
+      message(STATUS "Creating pybind11 headers-only interface")
+      set(PYBIND11_MANUAL TRUE)
+    endif()
+  endif()
+
+  include_directories(${Python_INCLUDE_DIRS})
+  add_definitions(-DPYBIND_FOUND)
+endif ()
+
 if (USE_EXPRTK)
     message("-- Adding Exprtk")
     target_compile_definitions (solver PUBLIC -D__EXPRTK_MODULE)
@@ -278,6 +379,11 @@ if (NOT TARGET Eigen3::Eigen)
 endif()
 add_dependencies(solver unpack-spectra)
 
+# Add SuperLU compile definition to solver if found
+if(SuperLU_FOUND)
+  target_compile_definitions(solver PUBLIC EIGEN_SUPERLU_SUPPORT SUPERLU_FOUND)
+endif()
+
 target_link_libraries(solver
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
@@ -295,12 +401,43 @@ if (USE_ML_TORCH)
                       )
 endif ()
 
+if (USE_PYBIND)
+  target_compile_definitions (solver PUBLIC -DPYBIND_FOUND)
+  
+  if(pybind11_FOUND AND NOT PYBIND11_MANUAL)
+    # Use pybind11::embed target if available
+    target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} pybind11::embed)
+  else()
+    # Link manually to Python libraries
+    target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} ${Python_LIBRARIES})
+  endif()
+endif ()
+
 target_link_libraries(${TARGETNAME}
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
                       ${EXT_LIBS}
                       #Eigen3::Eigen
                      )
+
+# Link SuperLU separately after other libraries to avoid xerbla_ conflicts
+if(SuperLU_FOUND)
+  target_link_libraries(${TARGETNAME} PRIVATE ${SUPERLU_LIBS})
+  target_link_libraries(solver PRIVATE ${SUPERLU_LIBS})
+endif()
+
+# Link pybind11 to main executable and solver if USE_PYBIND is enabled
+if (USE_PYBIND)
+  if(pybind11_FOUND AND NOT PYBIND11_MANUAL)
+    # Use pybind11::embed target if available
+    target_link_libraries(${TARGETNAME} PRIVATE pybind11::embed ${Python_LIBRARIES})
+    target_link_libraries(solver PRIVATE pybind11::embed ${Python_LIBRARIES})
+  else()
+    # Link manually to Python libraries only
+    target_link_libraries(${TARGETNAME} PRIVATE ${Python_LIBRARIES})
+    target_link_libraries(solver PRIVATE ${Python_LIBRARIES})
+  endif()
+endif ()
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(solver PUBLIC OpenMP::OpenMP_CXX)

@@ -6,12 +6,15 @@
 using namespace std;
 
 //////////////////////////////////////////////////////////
-void ElementStatsExporter :: giveFileName(unsigned step, int iteration, char *buffer) const {
-    if ( iteration < 0 ) {
-        sprintf(buffer, "%s_%05d.dat", filename.c_str(), step);
+std::string ElementStatsExporter :: giveFileName(unsigned step, int iteration) const {
+    std::ostringstream oss;
+    if (iteration < 0) {
+        oss << filename << "_" << std::setfill('0') << std::setw(5) << step << ".dat";
     } else {
-        sprintf(buffer, "%s_%05d_iter_%05d.dat", filename.c_str(), step, iteration);
+        oss << filename << "_" << std::setfill('0') << std::setw(5) << step 
+            << "_iter_" << std::setfill('0') << std::setw(5) << iteration << ".dat";
     }
+    return oss.str();
 }
 
 //////////////////////////////////////////////////////////
@@ -37,11 +40,8 @@ void ElementStatsExporter :: readFromLine(istringstream &iss) {
 
 //////////////////////////////////////////////////////////
 void ElementStatsExporter :: exportData(unsigned step, int iteration, fs :: path resultDir) const {
-    char buffer[ 100 ];
-
-    giveFileName(step, iteration, buffer);
-
-    std :: string this_file_path = ( resultDir / buffer ).string();
+    std::string fname = giveFileName(step, iteration);
+    std::string this_file_path = ( resultDir / fname ).string();
     double idc_time_converged = 0;
     double time_step;
     time_step = masterModel->giveSolver()->giveTimeStep();
