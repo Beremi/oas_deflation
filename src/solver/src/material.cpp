@@ -8,6 +8,19 @@ using namespace std;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC MATERIAL
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+MaterialStatus :: MaterialStatus(Material *m, Element *e, unsigned ipnum) {
+    name = "basic mat. status"; 
+    mat = m; element = e; 
+    idx = ipnum; 
+    totalEnergyDensity = 0; 
+    strainEnergyDensity = 0; 
+    dissipEnergyDensity = 0; 
+    updt_dissip_energy = 0;
+  }
+    
+//////////////////////////////////////////////////////////    
 MaterialStatus :: ~MaterialStatus() {
     for ( vector< MaterialStatus * > :: iterator n = matStatComponents.begin(); n != matStatComponents.end(); ++n ) {
         if ( * n != nullptr ) {
@@ -38,8 +51,7 @@ double MaterialStatus :: giveEnergyDissipationIncrement() const {
 //////////////////////////////////////////////////////////
 void MaterialStatus :: computeEnergyDensities(){
     totalEnergyDensity += ( ( temp_stress + updt_stress ).dot(temp_strain - updt_strain) ) / 2.;
-    dissipEnergyDensityInc = giveEnergyDissipationIncrement();
-    dissipEnergyDensity = updt_dissip_energy + dissipEnergyDensityInc;    
+    dissipEnergyDensity = updt_dissip_energy + giveEnergyDissipationIncrement();    
     strainEnergyDensity = totalEnergyDensity - dissipEnergyDensity;
     //unsigned ndim = element->giveDimension();
     //totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
@@ -124,10 +136,6 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     } else if ( code.compare("dissipated_energy_density") == 0 ) {
         result.resize(1);
         result [ 0 ] = dissipEnergyDensity;
-        return true;
-    } else if ( code.compare("dissipated_energy_density_inc") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = dissipEnergyDensityInc;
         return true;
     } else {
         result.resize(0);

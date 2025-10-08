@@ -20,7 +20,7 @@ class MaterialStatus
 private:
     std :: vector< MaterialStatus * >matStatComponents;
 public:
-    MaterialStatus(Material *m, Element *e, unsigned ipnum) { name = "basic mat. status"; mat = m; element = e; idx = ipnum; totalEnergyDensity = 0; strainEnergyDensity = 0; dissipEnergyDensity = 0; dissipEnergyDensityInc = 0; };
+    MaterialStatus(Material *m, Element *e, unsigned ipnum);
     MaterialStatus(Material *m) { name = "generic mat. status"; mat = m; };
     virtual ~MaterialStatus();
     std :: string giveName() { return name; }
@@ -56,7 +56,7 @@ protected:
     Material *mat;
     Vector eigenstrain;
     Vector updt_strain, temp_strain, updt_stress, temp_stress;
-    double totalEnergyDensity, strainEnergyDensity, dissipEnergyDensity, dissipEnergyDensityInc, updt_dissip_energy;
+    double totalEnergyDensity, strainEnergyDensity, dissipEnergyDensity, updt_dissip_energy;
     unsigned idx;
 };
 
