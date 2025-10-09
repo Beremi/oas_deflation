@@ -52,6 +52,7 @@ protected:
 public:
     LinAlgSolver() {};
     virtual ~LinAlgSolver() {};
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A){ return false; };
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
     virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
     std :: string giveName()const { return name; };
@@ -70,6 +71,7 @@ protected:
 public:
     ConjGradSolver();
     virtual ~ConjGradSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
     void setPrecisionAndRelMaxIters(double p, double rmi);
@@ -85,6 +87,7 @@ protected:
 public:
     LDLTSolver();
     virtual ~LDLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
 };
@@ -99,6 +102,7 @@ protected:
 public:
     LLTSolver();
     virtual ~LLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
 };
@@ -112,6 +116,7 @@ protected:
 public:
     LUSolver();
     virtual ~LUSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
 };
@@ -126,6 +131,7 @@ protected:
 public:
     SuperLUSolver();
     virtual ~SuperLUSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
 };

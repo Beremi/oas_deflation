@@ -213,15 +213,20 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             std :: unique_ptr< ConjGradSolver >cgs = std :: make_unique< ConjGradSolver >();
             cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
             linalgsolver = std :: move(cgs);
+            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenLDLT" ) {
             linalgsolver = std :: make_unique< LDLTSolver >();
+            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenLLT" ) {
             linalgsolver = std :: make_unique< LLTSolver >();
+            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenSparseLU" ) {
             linalgsolver = std :: make_unique< LUSolver >();
+            linalgsolver->analyzePattern(Keff);
 #ifdef SUPERLU_FOUND
         } else if  ( symsolver_type == "SuperLU" ) {
             linalgsolver = std :: make_unique< SuperLUSolver >();
+            linalgsolver->analyzePattern(Keff);
 #endif
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
