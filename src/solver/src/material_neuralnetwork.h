@@ -24,9 +24,9 @@ class NeuralNetworkMaterialStatus : public MaterialStatus
 protected:
     Matrix giveElasticStiffnessTensor3D() const;
 
-    std :: vector< std :: vector< torch :: Tensor > >hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
-    std :: vector< std :: vector< torch :: Tensor > >temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
-
+    std::vector<std::vector<torch::Tensor>> hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
+    std::vector<std::vector<torch::Tensor>> temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
+    Vector prev_strain;
 
 public:
     NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum);
@@ -52,6 +52,7 @@ protected:
     double E0, ft, Gt, RVEsize;
     bool planeStress;
     bool stiffness_from_matrix;
+    bool use_strain_increment = false;
 
     fs :: path sm_path;
     fs :: path nm_path;
@@ -80,6 +81,7 @@ public:
     double giveRVEsize() const { return RVEsize; }
     bool isPlaneStress() { return planeStress; };
     bool isStiffnessFromMatrix() { return stiffness_from_matrix; };
+    bool give_use_strain_increment() { return use_strain_increment; };
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont);  };
 
     Matrix giveNormMatrix() const { return norm; };
