@@ -271,7 +271,19 @@ add_executable(${TARGETNAME}
 #target_link_libraries (lib${TARGETNAME} ${EXT_LIBS})
 
 if (USE_VTK)
-    find_package (VTK REQUIRED NO_MODULE)
+    find_package (VTK REQUIRED
+	    COMPONENTS
+	      CommonCore
+	      CommonDataModel
+	      IOXML
+	      FiltersCore
+	    )
+    # Manually strip Qt-related targets (important if the distro’s VTK includes them anyway)
+    list(REMOVE_ITEM VTK_LIBRARIES
+	      VTK::GUISupportQt
+	        VTK::GUISupportQtQuick
+		  VTK::ViewsQt
+		  )
     if (NOT VTK_FOUND)
         message("-- Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
     endif()
