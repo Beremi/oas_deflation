@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
@@ -226,16 +226,16 @@ add_custom_target(unpack-spectra
   )
 include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0/include)
 
-add_custom_target(unpack-pybind
-  ALL
-  COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT
-    "Unpacking pybind11 in ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1"
-  )
-include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
+#add_custom_target(unpack-pybind
+#  ALL
+#  COMMAND
+#    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
+#  WORKING_DIRECTORY
+#    ${CMAKE_CURRENT_BINARY_DIR}
+#  COMMENT
+#    "Unpacking pybind11 in ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1"
+#  )
+#include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
 
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
@@ -336,30 +336,41 @@ if (USE_PYBIND)
 
   if(NOT pybind11_FOUND)
     # If pybind11 is not installed, fetch it from GitHub
-    # include(FetchContent)
-    # FetchContent_Declare(
-    #     pybind11
-    #     GIT_REPOSITORY https://github.com/pybind/pybind11.git
-    #     GIT_TAG v2.11.1
+    #include(FetchContent)
+    #FetchContent_Declare(
+    #    pybind11
+    #    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    #    GIT_TAG v3.0.1
     # )
-    # FetchContent_MakeAvailable(pybind11)
+    #FetchContent_MakeAvailable(pybind11)
 
     message(STATUS "pybind11 not found via find_package, using local copy")
     # If pybind11 is not installed, use the unpacked version
-    add_dependencies(solver unpack-pybind)
+    #add_dependencies(solver unpack-pybind)
+    set(THIRDPARTY_ARCHIVE "${CMAKE_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz")
+    set(THIRDPARTY_DEST "${CMAKE_BINARY_DIR}/thirdparty/pybind11-3.0.1")
+
+    if(NOT EXISTS ${THIRDPARTY_DEST})
+       file(ARCHIVE_EXTRACT
+         INPUT  ${THIRDPARTY_ARCHIVE}
+         DESTINATION ${THIRDPARTY_DEST}
+       )
+    endif()
+
+    include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
     
     # Manually add pybind11 cmake modules after unpacking
-    set(pybind11_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/share/cmake/pybind11")
-    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1")
+    #set(pybind11_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/share/cmake/pybind11")
+    #list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1")
     
     # Try to find it again after setting the path
     find_package(pybind11 CONFIG QUIET PATHS "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1" NO_DEFAULT_PATH)
     
-    if(NOT pybind11_FOUND)
+    #if(NOT pybind11_FOUND)
       # If still not found, we'll link manually
-      message(STATUS "Creating pybind11 headers-only interface")
-      set(PYBIND11_MANUAL TRUE)
-    endif()
+      #  message(STATUS "Creating pybind11 headers-only interface")
+      # set(PYBIND11_MANUAL TRUE)
+      #endif()
   endif()
 
   include_directories(${Python_INCLUDE_DIRS})
@@ -416,13 +427,8 @@ endif ()
 if (USE_PYBIND)
   target_compile_definitions (solver PUBLIC -DPYBIND_FOUND)
   
-  if(pybind11_FOUND AND NOT PYBIND11_MANUAL)
     # Use pybind11::embed target if available
     target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} pybind11::embed)
-  else()
-    # Link manually to Python libraries
-    target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} ${Python_LIBRARIES})
-  endif()
 endif ()
 
 target_link_libraries(${TARGETNAME}
