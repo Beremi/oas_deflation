@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
@@ -127,9 +127,24 @@ set (CMAKE_CXX_STANDARD 20)
 #set (CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O2 -pg")
 set(TARGETNAME OAS)
 
+include(FetchContent)
+FetchContent_Declare(
+    eigen
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-5.0.0.tar.gz"
+)
+FetchContent_MakeAvailable(eigen)
+
+FetchContent_Declare(
+    spectra
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/spectra-1.1.0.tar.gz"
+)
+# Populate Spectra but don't process its CMakeLists.txt (it's header-only anyway)
+FetchContent_Populate(spectra)
+# Don't call FetchContent_MakeAvailable to avoid processing Spectra's CMakeLists.txt
+# which tries to create install/export targets
+
 # detect
 #find_package (Python3 COMPONENTS Interpreter)
-find_package (Eigen3 5.0.0 NO_MODULE)
 find_package(OpenMP REQUIRED)
 
 if (USE_MPI)
@@ -155,20 +170,10 @@ if (USE_MPI)
 endif ()
 
 if(TARGET Eigen3::Eigen)
-  message(STATUS "Eigen3 v${EIGEN3_VERSION_STRING} found in ${EIGEN3_INCLUDE_DIR}")
-  include_directories(${EIGEN3_INCLUDE_DIR})
+  message(STATUS "Eigen3 found via FetchContent")
+  # Eigen3::Eigen target is available, no need to add include directories manually
 else()
-  message(STATUS "Eigen3 not found. Version from the thirdparty directory will be used.")
-  add_custom_target(unpack-eigen
-  ALL
-  COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen-5.0.0.tar.gz
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT
-    "Unpacking Eigen3 in ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0"
-  )
-  include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/eigen-5.0.0)
+  message(FATAL_ERROR "Eigen3 was not properly loaded via FetchContent")
 endif()
 
 # SuperLU support (used through Eigen's SuperLUSupport module)
@@ -215,27 +220,25 @@ else()
   message(STATUS "  Install/enable SuperLU to use: #include <Eigen/SuperLUSupport>")
 endif()
 
-add_custom_target(unpack-spectra
-  ALL
-  COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/spectra-1.1.0.tar.gz
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT
-    "Unpacking Spectra in ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0"
-  )
-include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/spectra-1.1.0/include)
+# Spectra is header-only, populated via FetchContent
+# Verify it was populated
+if(NOT spectra_POPULATED)
+  message(FATAL_ERROR "Spectra was not properly populated via FetchContent")
+else()
+  message(STATUS "Spectra populated successfully")
+  message(STATUS "Spectra include directory: ${spectra_SOURCE_DIR}/include")
+endif()
 
-add_custom_target(unpack-pybind
-  ALL
-  COMMAND
-    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT
-    "Unpacking pybind11 in ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1"
-  )
-include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
+#add_custom_target(unpack-pybind
+#  ALL
+#  COMMAND
+#    ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
+#  WORKING_DIRECTORY
+#    ${CMAKE_CURRENT_BINARY_DIR}
+#  COMMENT
+#    "Unpacking pybind11 in ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1"
+#  )
+#include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
 
 
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/exprtk)
@@ -271,7 +274,19 @@ add_executable(${TARGETNAME}
 #target_link_libraries (lib${TARGETNAME} ${EXT_LIBS})
 
 if (USE_VTK)
-    find_package (VTK REQUIRED NO_MODULE)
+    find_package (VTK REQUIRED
+	    COMPONENTS
+	      CommonCore
+	      CommonDataModel
+	      IOXML
+	      FiltersCore
+	    )
+    # Manually strip Qt-related targets (important if the distro’s VTK includes them anyway)
+    list(REMOVE_ITEM VTK_LIBRARIES
+	      VTK::GUISupportQt
+	        VTK::GUISupportQtQuick
+		  VTK::ViewsQt
+		  )
     if (NOT VTK_FOUND)
         message("-- Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
     endif()
@@ -324,30 +339,43 @@ if (USE_PYBIND)
 
   if(NOT pybind11_FOUND)
     # If pybind11 is not installed, fetch it from GitHub
-    # include(FetchContent)
-    # FetchContent_Declare(
-    #     pybind11
-    #     GIT_REPOSITORY https://github.com/pybind/pybind11.git
-    #     GIT_TAG v2.11.1
-    # )
-    # FetchContent_MakeAvailable(pybind11)
+    include(FetchContent)
+    FetchContent_Declare(
+        pybind11
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz
+    #    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    #    GIT_TAG v3.0.1
+    )
+    FetchContent_MakeAvailable(pybind11)
 
     message(STATUS "pybind11 not found via find_package, using local copy")
     # If pybind11 is not installed, use the unpacked version
-    add_dependencies(solver unpack-pybind)
+    #add_dependencies(solver unpack-pybind)
+    #set(THIRDPARTY_ARCHIVE "${CMAKE_SOURCE_DIR}/thirdparty/pybind11-3.0.1.tar.gz")
+    #set(THIRDPARTY_DEST "${CMAKE_BINARY_DIR}/thirdparty/pybind11-3.0.1")
+
+    #if(NOT EXISTS ${THIRDPARTY_DEST})
+    #   file(ARCHIVE_EXTRACT
+    #     INPUT  ${THIRDPARTY_ARCHIVE}
+    #     DESTINATION ${THIRDPARTY_DEST}
+    #   )
+    #endif()
+
+    include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/_deps/pybind11-src/include)
+    #include_directories(SYSTEM ${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/include)
     
     # Manually add pybind11 cmake modules after unpacking
-    set(pybind11_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/share/cmake/pybind11")
-    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1")
+    #set(pybind11_DIR "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1/share/cmake/pybind11")
+    #list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1")
     
     # Try to find it again after setting the path
     find_package(pybind11 CONFIG QUIET PATHS "${CMAKE_CURRENT_BINARY_DIR}/pybind11-3.0.1" NO_DEFAULT_PATH)
     
-    if(NOT pybind11_FOUND)
+    #if(NOT pybind11_FOUND)
       # If still not found, we'll link manually
-      message(STATUS "Creating pybind11 headers-only interface")
-      set(PYBIND11_MANUAL TRUE)
-    endif()
+      #  message(STATUS "Creating pybind11 headers-only interface")
+      # set(PYBIND11_MANUAL TRUE)
+      #endif()
   endif()
 
   include_directories(${Python_INCLUDE_DIRS})
@@ -374,50 +402,64 @@ else()
     set(CXX_FILESYSTEM_LIBRARIES)
 endif()
 
-if (NOT TARGET Eigen3::Eigen)
-  add_dependencies(solver unpack-eigen)
-endif()
-add_dependencies(solver unpack-spectra)
-
 # Add SuperLU compile definition to solver if found
 if(SuperLU_FOUND)
   target_compile_definitions(solver PUBLIC EIGEN_SUPERLU_SUPPORT SUPERLU_FOUND)
 endif()
 
+# Add Spectra include directory to solver and main target
+target_include_directories(solver 
+                           SYSTEM PUBLIC 
+                           ${spectra_SOURCE_DIR}/include)
+
+# Also add to main executable since it uses solver headers
+target_include_directories(${TARGETNAME}
+                           SYSTEM PRIVATE
+                           ${spectra_SOURCE_DIR}/include)
+
 target_link_libraries(solver
+                      PUBLIC
+                      Eigen3::Eigen
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
                       ${EXT_LIBS}
-                      #Eigen3::Eigen
                      )
 
 if (USE_ML_TORCH)
   target_compile_definitions (solver PUBLIC -DML_TORCH_FOUND)
   target_link_libraries(ml_torch
+                        PUBLIC
+                        Eigen3::Eigen
                         PRIVATE
                         ${CXX_FILESYSTEM_LIBRARIES}
                         ${EXT_LIBS}
-                        #Eigen3::Eigen
                       )
 endif ()
 
 if (USE_PYBIND)
   target_compile_definitions (solver PUBLIC -DPYBIND_FOUND)
   
-  if(pybind11_FOUND AND NOT PYBIND11_MANUAL)
+    # Add Spectra include directory to pybind target
+    target_include_directories(pybind 
+                               SYSTEM PUBLIC 
+                               ${spectra_SOURCE_DIR}/include)
+  
     # Use pybind11::embed target if available
-    target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} pybind11::embed)
-  else()
-    # Link manually to Python libraries
-    target_link_libraries(pybind PRIVATE ${CXX_FILESYSTEM_LIBRARIES} ${EXT_LIBS} ${Python_LIBRARIES})
-  endif()
+    target_link_libraries(pybind 
+                          PUBLIC
+                          Eigen3::Eigen
+                          PRIVATE 
+                          ${CXX_FILESYSTEM_LIBRARIES} 
+                          ${EXT_LIBS} 
+                          pybind11::embed)
 endif ()
 
 target_link_libraries(${TARGETNAME}
+                      PUBLIC
+                      Eigen3::Eigen
                       PRIVATE
                       ${CXX_FILESYSTEM_LIBRARIES}
                       ${EXT_LIBS}
-                      #Eigen3::Eigen
                      )
 
 # Link SuperLU separately after other libraries to avoid xerbla_ conflicts
@@ -428,15 +470,12 @@ endif()
 
 # Link pybind11 to main executable and solver if USE_PYBIND is enabled
 if (USE_PYBIND)
-  if(pybind11_FOUND AND NOT PYBIND11_MANUAL)
     # Use pybind11::embed target if available
     target_link_libraries(${TARGETNAME} PRIVATE pybind11::embed ${Python_LIBRARIES})
     target_link_libraries(solver PRIVATE pybind11::embed ${Python_LIBRARIES})
-  else()
     # Link manually to Python libraries only
     target_link_libraries(${TARGETNAME} PRIVATE ${Python_LIBRARIES})
     target_link_libraries(solver PRIVATE ${Python_LIBRARIES})
-  endif()
 endif ()
 
 if(OpenMP_CXX_FOUND)

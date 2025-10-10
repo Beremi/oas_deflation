@@ -42,57 +42,89 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
 
     // std::cout << "Input norm" << input_norm_N << "\n" << std::flush;
 
-
     Eigen :: VectorXf input_float = input_norm_N.cast< float > ();
     torch :: Tensor inputs_torch = torch :: from_blob(input_float.data(), { 1, 10 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
     // inputs_torch = inputs_torch.unsqueeze(0); // so that sequence len = 1
 
-    inputs_torch.unsqueeze_(0);
+    inputs_torch = inputs_torch.unsqueeze(0);
+
+    // std::cout << "prev_strain" << prev_strain << "\n" << std::flush;
+    // std::cout << "prev_strain size: " << prev_strain.size() << "\n";
+
+    ///// strain increment - calculation, normalization, casting to torch tensor
+    Vector strain_increment = temp_strain - prev_strain;
+    Vector strain_increment_norm = ( strain_increment.array() - x_mean.head(6).array() ) / x_std.head(6).array();
+    Eigen :: VectorXf increment_float = strain_increment_norm.cast< float > ();
+    torch :: Tensor increment_torch = torch :: from_blob(increment_float.data(), { 1, 6 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
+    increment_torch = increment_torch.unsqueeze(0);
+    // std::cout << "increment_torch norm" << increment_torch << "\n" << std::flush;
+
 
     // inputs into form that libtorch wants
     std :: vector< torch :: jit :: IValue >inputs;
     inputs.push_back(inputs_torch);
 
-    std :: vector< Layer >layers = m->giveNetworkProps();
+    if (m -> give_use_strain_increment()) {
+        inputs.push_back(increment_torch);
+    }
+
+    std::vector<Layer> layers = m->giveNetworkProps();
     for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ]; // <- note the &
-        if ( layer.name == "LSTM" ) {
-            auto hc_in = std :: make_tuple(hc_vectors [ i ] [ 0 ], hc_vectors [ i ] [ 1 ]);
+        Layer& layer = layers[i]; // <- note the &
+        if (layer.name == "LSTM") {
+            auto hc_in = std::make_tuple(hc_vectors[i][0].clone(), hc_vectors[i][1].clone());
             inputs.push_back(hc_in);
-        } else if ( layer.name == "GRU" ) {
-            auto h_in = hc_vectors [ i ] [ 0 ];
+        } else if (layer.name == "GRU") {
+            auto h_in = hc_vectors[i][0].clone();
+            inputs.push_back(h_in);
+        } else if (layer.name == "LMSC") {
+            // auto h_in = hc_vectors[i][0];
+            auto h_in = hc_vectors[i][0].clone();
+
             inputs.push_back(h_in);
         }
     }
 
+    // std::cout << "inputs \n"  << inputs << "\n";
+
     // network prediction
     auto outputs = m->giveNetwork().forward(inputs);
+    // std::cout << "prediction succesful00\n"  << "\n";
+
     auto tuple_output = outputs.toTuple();
     // std::cout << "prediction succesful\n"  << "\n";
 
-    torch :: Tensor stress_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
-    // torch :: Tensor hidden_new = tuple_output->elements() [ 1 ].toTensor();
+    // std::cout << "output \n"  << tuple_output << "\n";
 
+    torch :: Tensor stress_norm_tensor = tuple_output->elements() [ 0 ].toTensor();
+    // std::cout << "stress norm tensor \n"  << stress_norm_tensor << "\n";
+    // torch :: Tensor hidden_new = tuple_output->elements() [ 1 ].toTensor();
+    // std::cout << "hidden_new \n"  << hidden_new << "\n";
+
+    // std::cout << "hc_vectors_prev \n"  << hc_vectors << "\n";
+    
     // Update hidden states
     for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ]; // <- note the &
-        if ( layer.name == "LSTM" ) {
-            auto hc_tuple = tuple_output->elements() [ i + 1 ].toTuple();
-            temp_hc_vectors [ i ] [ 0 ] = hc_tuple->elements() [ 0 ].toTensor(); // update h tensor
-            temp_hc_vectors [ i ] [ 1 ] = hc_tuple->elements() [ 1 ].toTensor(); // update c tensor
-        } else if ( layer.name == "GRU" ) {
-            auto h_tensor = tuple_output->elements() [ i + 1 ].toTensor();
-            temp_hc_vectors [ i ] [ 0 ] = h_tensor;
+        Layer& layer = layers[i]; // <- note the &
+        if (layer.name == "LSTM") {
+            auto hc_tuple = tuple_output->elements()[i+1].toTuple();
+            temp_hc_vectors[i][0] = hc_tuple->elements()[0].toTensor(); // update h tensor
+            temp_hc_vectors[i][1] = hc_tuple->elements()[1].toTensor(); // update c tensor
+        } else if ((layer.name == "GRU") || (layer.name == "LMSC")) {
+            auto h_tensor = tuple_output->elements()[i+1].toTensor();
+            temp_hc_vectors[i][0] = h_tensor;
         }
     }
+;
+    // std::cout << "hc_vectors_post \n"  << hc_vectors << "\n";
 
     // std::cout << "post hidden update\n"  << "\n";
 
     // temp_hidden = hidden_new;
 
-    stress_norm_tensor = stress_norm_tensor.squeeze(0); // gets rid of the "sequence" dimension
-    stress_norm_tensor.squeeze_(0); // gets rid of the "batch_size" dimension (use in case batch_size = 1)
-
+    stress_norm_tensor = stress_norm_tensor.squeeze(0);
+    stress_norm_tensor = stress_norm_tensor.squeeze(0); // !! do not use _squeeze() - it is IN-PLACE and messes up the tensor memory address
+    
     // std::cout << "\nCheckpoint 03\n" << std::flush;
 
     // Convert forces_norm Tensor to vector and to Eigen Vector and to double type
@@ -103,6 +135,7 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
 
     // // Denormalize output stress
     temp_stress = ( stress_norm.array() * y_std.array() ) + y_mean.array();
+    // std::cout << "Stress\n" << temp_stress << "\n" << std::flush;    
 
     // std::cout << "returning stress\n"  << "\n";
     return temp_stress;
@@ -193,6 +226,7 @@ void NeuralNetworkMaterialStatus :: update() {
     for (size_t i = 0; i < hc_vectors.size(); ++i) {
         hc_vectors [ i ] = temp_hc_vectors [ i ];
     }
+    prev_strain = temp_strain;
 }
 
 //////////////////////////////////////////////////////////
@@ -208,10 +242,13 @@ std :: vector< std :: vector< torch :: Tensor > >NeuralNetworkMaterialStatus :: 
 }
 
 //////////////////////////////////////////////////////////
-NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
+NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum)  {
     name = "neural network tensorial mechanical mat. status";
 
-    std :: vector< Layer >layers = m->giveNetworkProps();
+    // prev_strain = Vector::Zero(temp_strain.size()); // doesn't work, needs to be done differently (with m -> giveDimension())
+    prev_strain = Vector::Zero(6);
+
+    std::vector<Layer> layers = m->giveNetworkProps();
 
     for (size_t i = 0; i < layers.size(); ++i) {
         Layer &layer = layers [ i ]; // <- note the &
@@ -228,15 +265,18 @@ NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial
             hc.push_back(c);
             hc_vectors.push_back(hc);
             temp_hc_vectors.push_back(hc);
-        } else if ( layer.name == "GRU" ) {
-            std :: vector< torch :: Tensor >hc;
-            torch :: Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
+
+        } else if ((layer.name == "GRU") || (layer.name == "LMSC") ) {
+            std::vector<torch::Tensor> hc;
+            torch::Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
             h.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
             hc.push_back(h);
             hc_vectors.push_back(hc);
             temp_hc_vectors.push_back(hc);
         }
         // std::cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std::flush;
+
+        
     }
 }
 
@@ -464,8 +504,14 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
                 exit(EXIT_FAILURE);
             }
         }
-        std :: cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std :: flush;
+        std::cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std::flush;
+
+        if (layer.name == "LMSC") {
+            use_strain_increment = true;
+        }
     }
+
+    
 };
 
 //////////////////////////////////////////////////////////

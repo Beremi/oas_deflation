@@ -34,7 +34,7 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     if ( A.rows() > 0 ) {
         cgK.setMaxIterations(relMaxIT * A.cols() );
         cgK.setTolerance(precision);
-        cgK.compute(A);
+        cgK.factorize(A);
         initialGuess = Vector :: Zero(A.cols() );
         maxIT = relMaxIT * A.cols();
     }
@@ -48,6 +48,27 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #endif
     return true;
 }
+
+//////////////////////////////////////////////////////////
+bool ConjGradSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( A.rows() > 0 ) {
+        cgK.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
 
 
 //////////////////////////////////////////////////////////
@@ -97,7 +118,7 @@ bool LDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
     if ( A.rows() > 0 ) {
-        ldlt.compute(A);
+        ldlt.factorize(A);
     }
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -108,6 +129,28 @@ bool LDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #endif
     return true;
 }
+
+
+//////////////////////////////////////////////////////////
+bool LDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( A.rows() > 0 ) {
+        ldlt.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
 
 
 //////////////////////////////////////////////////////////
@@ -149,7 +192,27 @@ bool LUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     auto start = std :: chrono :: system_clock :: now();
 #endif
     if ( A.rows() > 0 ) {
-        lu.compute(A);
+        lu.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool LUSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( A.rows() > 0 ) {
+        lu.analyzePattern(A);
     }
 
 #if PRINT_DEBUG_TIME
@@ -218,6 +281,25 @@ bool SuperLUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 
 
 //////////////////////////////////////////////////////////
+bool SuperLUSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        superlu.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
 bool SuperLUSolver :: solve(Vector &x, const Vector &b) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
@@ -257,7 +339,28 @@ bool LLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #endif
 
     if ( A.rows() > 0 ) {
-        llt.compute(A);
+        llt.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool LLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( A.rows() > 0 ) {
+        llt.analyzePattern(A);
     }
 
 #if PRINT_DEBUG_TIME
@@ -332,6 +435,7 @@ bool LLTSolver :: solve(Vector &x, const Vector &b) {
 
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
+    std::cout << "Using solver type: " << solver_type << std::endl;
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -372,13 +476,10 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
         
         //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
         result = 1;
-    } else if ( solver_type == "SuperLU" ) {
 #ifdef SUPERLU_FOUND
+    } else if ( solver_type == "SuperLU" ) {
         Eigen :: SuperLU < Eigen :: SparseMatrix< double > > superlu_solver;
-        superlu_solver.analyzePattern(A);
-        superlu_solver.factorize(A);
-        x = superlu_solver.solve(b);
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
+        superlu_solver.compute(A);
         result = 1;
 #endif
     } else if ( solver_type == "EigenSparseLU" ) {
