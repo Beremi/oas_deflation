@@ -1,6 +1,7 @@
 #include "element.h"
 #include "element_container.h"
 #include "boundary_condition.h"
+#include <Eigen/Dense>
 
 using namespace std;
 
@@ -543,29 +544,31 @@ Point Element :: findNaturalCoords(const Point *x) const {
     Point natcoords;
     if ( shafunc->isInNaturalCoords() ) {
         natcoords = Point(0, 0, 0);
-        Point testglocoords, glocoords, testnatcoords, errcoords;
+        Point testglocoords, glocoords, testnatcoords;
+        Vector errcoordsvec(ndim);
+        Matrix grad = Matrix::Zero(ndim,ndim); 
+        Vector natcoordsvec;
         giveGlobalCoords(& glocoords, & natcoords);
-        errcoords = glocoords - ( * x );
-        double err = errcoords.norm();
-        Point grad, prevgrad;
-        double step = 1e-8;
-        unsigned maxit = 1000;
+        for(unsigned i=0; i<ndim; i++) errcoordsvec[i] = glocoords[i] - ( * x )[i];
+        double err = errcoordsvec.norm();
+        double step = 1e-3;
+        unsigned maxit = 10;
         unsigned it = 0;
-        double xnorm = x->norm();
-        while ( err / xnorm > 1e-3 && it < maxit ) {
+        double xnorm = max(x->norm(),1e-5);
+        while ( err / xnorm > 1e-4 && it < maxit ) {
             testnatcoords = natcoords;
             for ( unsigned dim = 0; dim < ndim; dim++ ) {
                 testnatcoords [ dim ] += step;
                 giveGlobalCoords(& testglocoords, & testnatcoords);
-                errcoords = testglocoords - ( * x );
-                grad [ dim ] = ( errcoords.norm() - err ) / step;
+                for(unsigned i=0; i<ndim; i++) grad(i,dim) = (testglocoords[i]-glocoords[i])/ step;
                 testnatcoords [ dim ] -= step;
-            }
-            natcoords -= grad * ( err / grad.norm() ); //maybe grad.norm square
+            }        
+            natcoordsvec = grad.householderQr().solve(errcoordsvec); //maybe grad.norm square
+            for(unsigned i=0; i<ndim; i++) natcoords[i] -= natcoordsvec[i];
             giveGlobalCoords(& glocoords, & natcoords);
-            errcoords = glocoords - ( * x );
-            err = errcoords.norm();
-            it++;
+            for(unsigned i=0; i<ndim; i++) errcoordsvec[i] = glocoords[i] - ( * x )[i];
+            err = errcoordsvec.norm();
+            it++;     
         }
         if ( it == maxit ) {
             cerr << "Error in " << name << ": Natural coordinates were not found, error " << err << endl;
