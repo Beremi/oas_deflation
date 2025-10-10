@@ -435,11 +435,7 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
         }
     }
 
-    if ( temp_mech_stress [ 0 ] > 0 ) {
-        temp_crackOpening = ( temp_mech_strain [ 0 ] - ( temp_mech_stress [ 0 ] / m->giveE0() ) ) * L;
-    } else {
-        temp_crackOpening = 0;
-    }
+    temp_crackOpening = max( temp_mech_strain [ 0 ] - ( temp_mech_stress [ 0 ] / m->giveE0() ), 0. ) * L;
 
     //giveVirtualDamage();
 
