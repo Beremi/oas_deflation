@@ -96,7 +96,7 @@ if (MSVC)
 	  #set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Zi") # todo: find how to set multiprocessor compilation /MP, debug information format /Zi etc...
 else ()
     #-ffast-math disables all NaN and Inf checks
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb  -fopenmp
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wextra -Wshadow -ffast-math -fno-math-errno -march=native -DNDEBUG") # -pedantic-errors -ggdb -fopenmp
     #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -Wall -Wextra  -Wshadow -fno-math-errno -march=native -DNDEBUG") # -pedantic-errorsc -ggdb  -fopenmp
     if (CHECK_CONVERSION)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion -Wconversion")
@@ -274,19 +274,9 @@ add_executable(${TARGETNAME}
 #target_link_libraries (lib${TARGETNAME} ${EXT_LIBS})
 
 if (USE_VTK)
-    find_package (VTK REQUIRED
-	    COMPONENTS
-	      CommonCore
-	      CommonDataModel
-	      IOXML
-	      FiltersCore
-	    )
-    # Manually strip Qt-related targets (important if the distro’s VTK includes them anyway)
-    list(REMOVE_ITEM VTK_LIBRARIES
-	      VTK::GUISupportQt
-	        VTK::GUISupportQtQuick
-		  VTK::ViewsQt
-		  )
+    
+    find_package (VTK REQUIRED NO_MODULE)
+
     if (NOT VTK_FOUND)
         message("-- Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
     endif()
