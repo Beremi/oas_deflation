@@ -57,6 +57,7 @@ option (USE_PREPROCESSOR "Enable preprocessor" ON)
 option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
 option (USE_SUPERLU "Enable SuperLU solver" OFF)
+option (USE_PARDISO "Enable Intel MKL Pardiso solver" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
@@ -218,6 +219,31 @@ if(SuperLU_FOUND AND USE_SUPERLU)
 else()
   message(STATUS "SuperLU will not be used. Eigen's SuperLU sparse direct solver will not be available.")
   message(STATUS "  Install/enable SuperLU to use: #include <Eigen/SuperLUSupport>")
+endif()
+
+# Pardiso support (used through Eigen's PardisoSupport module)
+if (USE_PARDISO)
+    find_package (Pardiso)
+else()
+    set (USE_PARDISO OFF)
+endif()
+
+if(Pardiso_FOUND AND USE_PARDISO)
+  message(STATUS "Intel MKL Pardiso found: ${Pardiso_LIBRARIES}")
+  message(STATUS "  Pardiso/MKL include dir: ${Pardiso_INCLUDE_DIRS}")
+  include_directories(${Pardiso_INCLUDE_DIRS})
+  
+  # Store Pardiso libraries separately to control linking order
+  set(PARDISO_LIBS ${Pardiso_LIBRARIES})
+  
+  # Define for both compile-time usage
+  add_definitions(-DEIGEN_USE_MKL_ALL)
+  
+  # Also define a more semantic flag for your code
+  add_definitions(-DPARDISO_FOUND)
+else()
+  message(STATUS "Pardiso will not be used. Eigen's Pardiso sparse direct solver will not be available.")
+  message(STATUS "  Install/enable Intel MKL to use: #include <Eigen/PardisoSupport>")
 endif()
 
 # Spectra is header-only, populated via FetchContent
@@ -397,6 +423,11 @@ if(SuperLU_FOUND)
   target_compile_definitions(solver PUBLIC EIGEN_SUPERLU_SUPPORT SUPERLU_FOUND)
 endif()
 
+# Add Pardiso compile definition to solver if found
+if(Pardiso_FOUND)
+  target_compile_definitions(solver PUBLIC EIGEN_USE_MKL_ALL PARDISO_FOUND)
+endif()
+
 # Add Spectra include directory to solver and main target
 target_include_directories(solver 
                            SYSTEM PUBLIC 
@@ -456,6 +487,12 @@ target_link_libraries(${TARGETNAME}
 if(SuperLU_FOUND)
   target_link_libraries(${TARGETNAME} PRIVATE ${SUPERLU_LIBS})
   target_link_libraries(solver PRIVATE ${SUPERLU_LIBS})
+endif()
+
+# Link Pardiso (MKL) libraries
+if(Pardiso_FOUND)
+  target_link_libraries(${TARGETNAME} PRIVATE ${PARDISO_LIBS})
+  target_link_libraries(solver PRIVATE ${PARDISO_LIBS})
 endif()
 
 # Link pybind11 to main executable and solver if USE_PYBIND is enabled

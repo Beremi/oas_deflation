@@ -228,6 +228,17 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             linalgsolver = std :: make_unique< SuperLUSolver >();
             linalgsolver->analyzePattern(Keff);
 #endif
+#ifdef PARDISO_FOUND
+        } else if  ( symsolver_type == "PardisoLU" ) {
+            linalgsolver = std :: make_unique< PardisoLUSolver >();
+            linalgsolver->analyzePattern(Keff);
+        } else if  ( symsolver_type == "PardisoLDLT" ) {
+            linalgsolver = std :: make_unique< PardisoLDLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+        } else if  ( symsolver_type == "PardisoLLT" ) {
+            linalgsolver = std :: make_unique< PardisoLLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+#endif
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);

@@ -396,6 +396,221 @@ bool LLTSolver :: solve(Vector &x, const Vector &b) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// PARDISO LU SOLVER
+//////////////////////////////////////////////////////////
+
+#ifdef PARDISO_FOUND
+PardisoLUSolver :: PardisoLUSolver() {
+    name = "PardisoLUSolver";
+}
+
+//////////////////////////////////////////////////////////
+PardisoLUSolver :: ~PardisoLUSolver() {}
+
+//////////////////////////////////////////////////////////
+bool PardisoLUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool PardisoLUSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool PardisoLUSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = pardiso.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PARDISO LDLT SOLVER
+//////////////////////////////////////////////////////////
+
+PardisoLDLTSolver :: PardisoLDLTSolver() {
+    name = "PardisoLDLTSolver";
+}
+
+//////////////////////////////////////////////////////////
+PardisoLDLTSolver :: ~PardisoLDLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool PardisoLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool PardisoLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool PardisoLDLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = pardiso.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// PARDISO LLT SOLVER
+//////////////////////////////////////////////////////////
+
+PardisoLLTSolver :: PardisoLLTSolver() {
+    name = "PardisoLLTSolver";
+}
+
+//////////////////////////////////////////////////////////
+PardisoLLTSolver :: ~PardisoLLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool PardisoLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+
+//////////////////////////////////////////////////////////
+bool PardisoLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        pardiso.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool PardisoLLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = pardiso.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+#endif
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 
 

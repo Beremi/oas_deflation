@@ -24,6 +24,9 @@
 #ifdef SUPERLU_FOUND
     #include <Eigen/SuperLUSupport>
 #endif
+#ifdef PARDISO_FOUND
+    #include <Eigen/PardisoSupport>
+#endif
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/SymGEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
@@ -131,6 +134,47 @@ protected:
 public:
     SuperLUSolver();
     virtual ~SuperLUSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+#endif
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, PARDISO SOLVERS
+#ifdef PARDISO_FOUND
+class PardisoLUSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: PardisoLU< Eigen :: SparseMatrix< double > >pardiso;
+public:
+    PardisoLUSolver();
+    virtual ~PardisoLUSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+
+class PardisoLDLTSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: PardisoLDLT< Eigen :: SparseMatrix< double > >pardiso;
+public:
+    PardisoLDLTSolver();
+    virtual ~PardisoLDLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+
+class PardisoLLTSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: PardisoLLT< Eigen :: SparseMatrix< double > >pardiso;
+public:
+    PardisoLLTSolver();
+    virtual ~PardisoLLTSolver();
     virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);

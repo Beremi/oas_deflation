@@ -561,7 +561,7 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
         msize = 1;
         i = 0;
         for ( vector< Node * > :: const_iterator nn = nodes->begin(); nn != nodes->end(); ++nn, i++ ) {
-            if ( static_cast< Particle * >( * nn ) ) {
+            if ( dynamic_cast< Particle * >( * nn ) ) {
                 ( * nn )->giveValues(codes [ p ].c_str(), solver, data [ i ]);
                 msize = max< size_t >(msize, data [ i ].size() );
             } else {
