@@ -1,5 +1,9 @@
 #include "linalg.h"
 
+#ifdef PARDISO_FOUND
+    #include <mkl.h>  // For mkl_set_num_threads
+#endif
+
 using namespace std;
 
 //////////////////////////////////////////////////////////
@@ -402,6 +406,35 @@ bool LLTSolver :: solve(Vector &x, const Vector &b) {
 #ifdef PARDISO_FOUND
 PardisoLUSolver :: PardisoLUSolver() {
     name = "PardisoLUSolver";
+    
+    // Set MKL to use all available threads for Pardiso
+    // This can be overridden by MKL_NUM_THREADS environment variable
+    int max_threads = mkl_get_max_threads();
+    
+    // Check if MKL_NUM_THREADS or OMP_NUM_THREADS is set
+    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
+    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
+    
+    if (mkl_threads_env != nullptr) {
+        int requested_threads = std::atoi(mkl_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLU: Using " << requested_threads 
+                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+        }
+    } else if (omp_threads_env != nullptr) {
+        int requested_threads = std::atoi(omp_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLU: Using " << requested_threads 
+                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+        }
+    } else {
+        // Use all available threads by default
+        mkl_set_num_threads(max_threads);
+        std::cout << "PardisoLU: Using " << max_threads 
+                  << " threads (default - all available)" << std::endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -473,6 +506,32 @@ bool PardisoLUSolver :: solve(Vector &x, const Vector &b) {
 
 PardisoLDLTSolver :: PardisoLDLTSolver() {
     name = "PardisoLDLTSolver";
+    
+    // Set MKL to use all available threads for Pardiso
+    int max_threads = mkl_get_max_threads();
+    
+    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
+    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
+    
+    if (mkl_threads_env != nullptr) {
+        int requested_threads = std::atoi(mkl_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLDLT: Using " << requested_threads 
+                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+        }
+    } else if (omp_threads_env != nullptr) {
+        int requested_threads = std::atoi(omp_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLDLT: Using " << requested_threads 
+                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+        }
+    } else {
+        mkl_set_num_threads(max_threads);
+        std::cout << "PardisoLDLT: Using " << max_threads 
+                  << " threads (default - all available)" << std::endl;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -544,6 +603,32 @@ bool PardisoLDLTSolver :: solve(Vector &x, const Vector &b) {
 
 PardisoLLTSolver :: PardisoLLTSolver() {
     name = "PardisoLLTSolver";
+    
+    // Set MKL to use all available threads for Pardiso
+    int max_threads = mkl_get_max_threads();
+    
+    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
+    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
+    
+    if (mkl_threads_env != nullptr) {
+        int requested_threads = std::atoi(mkl_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLLT: Using " << requested_threads 
+                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+        }
+    } else if (omp_threads_env != nullptr) {
+        int requested_threads = std::atoi(omp_threads_env);
+        if (requested_threads > 0 && requested_threads <= max_threads) {
+            mkl_set_num_threads(requested_threads);
+            std::cout << "PardisoLLT: Using " << requested_threads 
+                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+        }
+    } else {
+        mkl_set_num_threads(max_threads);
+        std::cout << "PardisoLLT: Using " << max_threads 
+                  << " threads (default - all available)" << std::endl;
+    }
 }
 
 //////////////////////////////////////////////////////////

@@ -67,9 +67,10 @@ find_library(MKL_INTERFACE_LIBRARY
         /usr/local/lib
 )
 
-# Find threading layer (sequential for no threading, or intel_thread for threaded)
+# Find threading layer - IMPORTANT: Prefer threaded versions for parallel Pardiso!
+# Priority: gnu_thread > intel_thread > sequential (single-threaded)
 find_library(MKL_THREADING_LIBRARY
-    NAMES mkl_sequential mkl_intel_thread
+    NAMES mkl_gnu_thread mkl_intel_thread mkl_sequential
     PATHS
         ${PC_MKL_LIBRARY_DIRS}
         $ENV{MKLROOT}/lib/intel64
@@ -128,6 +129,42 @@ if(Pardiso_FOUND)
             INTERFACE_LINK_LIBRARIES "${Pardiso_LIBRARIES}"
             INTERFACE_INCLUDE_DIRECTORIES "${Pardiso_INCLUDE_DIR}"
         )
+    endif()
+    
+    # Detect which threading layer was found and add appropriate OpenMP library
+    get_filename_component(MKL_THREADING_NAME "${MKL_THREADING_LIBRARY}" NAME_WE)
+    if(MKL_THREADING_NAME MATCHES "gnu_thread")
+        # Using GNU OpenMP - need libgomp
+        find_library(GOMP_LIBRARY 
+            NAMES gomp
+            PATHS
+                /usr/lib/gcc/x86_64-linux-gnu/13
+                /usr/lib/gcc/x86_64-linux-gnu/12
+                /usr/lib/gcc/x86_64-linux-gnu/11
+                /usr/lib/gcc/x86_64-linux-gnu/10
+                /usr/lib/gcc/x86_64-linux-gnu/9
+                /usr/lib/x86_64-linux-gnu
+                /usr/lib
+        )
+        if(GOMP_LIBRARY)
+            list(APPEND Pardiso_LIBRARIES ${GOMP_LIBRARY})
+            message(STATUS "Pardiso: Using GNU threading with libgomp: ${GOMP_LIBRARY}")
+        else()
+            message(WARNING "Pardiso: Using GNU threading but libgomp not found - parallel execution may not work")
+            message(WARNING "  Try: sudo apt-get install libgomp1")
+        endif()
+    elseif(MKL_THREADING_NAME MATCHES "intel_thread")
+        # Using Intel OpenMP - need libiomp5
+        find_library(IOMP5_LIBRARY NAMES iomp5)
+        if(IOMP5_LIBRARY)
+            list(APPEND Pardiso_LIBRARIES ${IOMP5_LIBRARY})
+            message(STATUS "Pardiso: Using Intel threading (libiomp5)")
+        else()
+            message(WARNING "Pardiso: Using Intel threading but libiomp5 not found - parallel execution may not work")
+        endif()
+    elseif(MKL_THREADING_NAME MATCHES "sequential")
+        message(WARNING "Pardiso: Using sequential (single-threaded) MKL - no parallel execution!")
+        message(WARNING "  For parallel Pardiso, install libmkl-gnu-thread or libmkl-intel-thread")
     endif()
     
     # Note: Pardiso also needs libpthread and libm on Linux
