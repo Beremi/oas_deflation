@@ -448,6 +448,12 @@ target_link_libraries(solver
 
 if (USE_ML_TORCH)
   target_compile_definitions (solver PUBLIC -DML_TORCH_FOUND)
+  
+  # Add Spectra include directory to ml_torch target
+  target_include_directories(ml_torch 
+                             SYSTEM PUBLIC 
+                             ${spectra_SOURCE_DIR}/include)
+  
   target_link_libraries(ml_torch
                         PUBLIC
                         Eigen3::Eigen
