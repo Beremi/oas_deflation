@@ -58,6 +58,7 @@ option (USE_POSTPROCESSOR "Enable postprocessor" ON)
 option (USE_SOLVER "Enable solver" ON)
 option (USE_SUPERLU "Enable SuperLU solver" OFF)
 option (USE_PARDISO "Enable Intel MKL Pardiso solver" OFF)
+option (USE_CHOLMOD "Enable SuiteSparse CHOLMOD solver" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
@@ -246,6 +247,67 @@ else()
   message(STATUS "  Install/enable Intel MKL to use: #include <Eigen/PardisoSupport>")
 endif()
 
+# CHOLMOD/SuiteSparse support (used through Eigen's CholmodSupport module)
+if (USE_CHOLMOD)
+    message(STATUS "Attempting to fetch SuiteSparse v7.8.3 from GitHub...")
+    
+    FetchContent_Declare(
+        suitesparse
+        GIT_REPOSITORY https://github.com/DrTimothyAldenDavis/SuiteSparse.git
+        GIT_TAG v7.8.3
+        GIT_SHALLOW TRUE
+    )
+    
+    set(SUITESPARSE_USE_CUDA OFF CACHE BOOL "Disable CUDA for SuiteSparse")
+    set(SUITESPARSE_USE_FORTRAN OFF CACHE BOOL "Disable Fortran for SuiteSparse")
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries for SuiteSparse")
+    set(BUILD_STATIC_LIBS ON CACHE BOOL "Build static libraries for SuiteSparse")
+    
+    FetchContent_MakeAvailable(suitesparse)
+    
+    if(TARGET SuiteSparse::CHOLMOD)
+        set(CHOLMOD_FOUND TRUE)
+        message(STATUS "SuiteSparse CHOLMOD found via FetchContent")
+        
+        # Get all required SuiteSparse libraries
+        set(CHOLMOD_LIBS 
+            SuiteSparse::CHOLMOD
+            SuiteSparse::AMD
+            SuiteSparse::COLAMD
+            SuiteSparse::CAMD
+            SuiteSparse::CCOLAMD
+            SuiteSparse::SuiteSparseConfig
+        )
+        
+        add_definitions(-DEIGEN_CHOLMOD_SUPPORT)
+        add_definitions(-DCHOLMOD_FOUND)
+        set(USE_CHOLMOD ON)
+    else()
+        message(STATUS "SuiteSparse CHOLMOD not found via FetchContent, trying system installation...")
+        find_package(CHOLMOD QUIET)
+        
+        if(CHOLMOD_FOUND)
+            message(STATUS "CHOLMOD found in system: ${CHOLMOD_LIBRARIES}")
+            include_directories(${CHOLMOD_INCLUDE_DIR})
+            set(CHOLMOD_LIBS ${CHOLMOD_LIBRARIES})
+            add_definitions(-DEIGEN_CHOLMOD_SUPPORT)
+            add_definitions(-DCHOLMOD_FOUND)
+        else()
+            message(STATUS "CHOLMOD not found. Will proceed without CHOLMOD support.")
+            set(USE_CHOLMOD OFF)
+        endif()
+    endif()
+else()
+    set(USE_CHOLMOD OFF)
+endif()
+
+if(USE_CHOLMOD)
+  message(STATUS "CHOLMOD will be used for Cholesky decomposition.")
+else()
+  message(STATUS "CHOLMOD will not be used. Eigen's built-in Cholesky solvers will be used.")
+  message(STATUS "  Enable with -DUSE_CHOLMOD=ON to use SuiteSparse CHOLMOD solvers.")
+endif()
+
 # Spectra is header-only, populated via FetchContent
 # Verify it was populated
 if(NOT spectra_POPULATED)
@@ -428,6 +490,11 @@ if(Pardiso_FOUND)
   target_compile_definitions(solver PUBLIC EIGEN_USE_MKL_ALL PARDISO_FOUND)
 endif()
 
+# Add CHOLMOD compile definition to solver if found
+if(USE_CHOLMOD AND CHOLMOD_FOUND)
+  target_compile_definitions(solver PUBLIC EIGEN_CHOLMOD_SUPPORT CHOLMOD_FOUND)
+endif()
+
 # Add Spectra include directory to solver and main target
 target_include_directories(solver 
                            SYSTEM PUBLIC 
@@ -499,6 +566,13 @@ endif()
 if(Pardiso_FOUND)
   target_link_libraries(${TARGETNAME} PRIVATE ${PARDISO_LIBS})
   target_link_libraries(solver PRIVATE ${PARDISO_LIBS})
+endif()
+
+# Link CHOLMOD (SuiteSparse) libraries
+if(USE_CHOLMOD AND CHOLMOD_FOUND)
+  target_link_libraries(${TARGETNAME} PRIVATE ${CHOLMOD_LIBS})
+  target_link_libraries(solver PRIVATE ${CHOLMOD_LIBS})
+  message(STATUS "Linking CHOLMOD libraries to OAS")
 endif()
 
 # Link pybind11 to main executable and solver if USE_PYBIND is enabled

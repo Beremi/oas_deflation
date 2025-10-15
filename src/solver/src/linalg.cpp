@@ -696,6 +696,221 @@ bool PardisoLLTSolver :: solve(Vector &x, const Vector &b) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// CHOLMOD SIMPLICIAL LLT SOLVER
+//////////////////////////////////////////////////////////
+
+#ifdef CHOLMOD_FOUND
+CholmodLLTSolver :: CholmodLLTSolver() {
+    name = "CholmodLLTSolver";
+    std::cout << "CholmodLLT: Using CHOLMOD simplicial LLT factorization" << std::endl;
+}
+
+//////////////////////////////////////////////////////////
+CholmodLLTSolver :: ~CholmodLLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool CholmodLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodLLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = cholmod.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// CHOLMOD SIMPLICIAL LDLT SOLVER
+//////////////////////////////////////////////////////////
+
+CholmodLDLTSolver :: CholmodLDLTSolver() {
+    name = "CholmodLDLTSolver";
+    std::cout << "CholmodLDLT: Using CHOLMOD simplicial LDLT factorization" << std::endl;
+}
+
+//////////////////////////////////////////////////////////
+CholmodLDLTSolver :: ~CholmodLDLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool CholmodLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodLDLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = cholmod.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// CHOLMOD SUPERNODAL LLT SOLVER
+//////////////////////////////////////////////////////////
+
+CholmodSupernodalLLTSolver :: CholmodSupernodalLLTSolver() {
+    name = "CholmodSupernodalLLTSolver";
+    std::cout << "CholmodSupernodalLLT: Using CHOLMOD supernodal LLT factorization" << std::endl;
+}
+
+//////////////////////////////////////////////////////////
+CholmodSupernodalLLTSolver :: ~CholmodSupernodalLLTSolver() {}
+
+//////////////////////////////////////////////////////////
+bool CholmodSupernodalLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.factorize(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodSupernodalLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+    if ( A.rows() > 0 ) {
+        cholmod.analyzePattern(A);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool CholmodSupernodalLLTSolver :: solve(Vector &x, const Vector &b) {
+#if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+#endif
+
+    if ( b.size() > 0 ) {
+        x = cholmod.solve(b);
+    }
+
+#if PRINT_DEBUG_TIME
+    now = std :: chrono :: system_clock :: now();
+
+    elapsed_seconds = now - start;
+    std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
+    cout.flush();
+#endif
+    return true;
+}
+#endif
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 
 
