@@ -198,11 +198,11 @@ OAS.exe ..\..\master.inp
 OAS master.inp
 \endcode
 
-\subsection OPENMP OpenMP
-Using OpenMP to use parallel Conjugate gradient (and some other operations) in Eigen on Linux:
+\subsection OPENMP OpenMP and MKL
+Using OpenMP (e.g. Conjugate gradients) in Eigen on Linux:
 \code{.sh}
 ./OAS -j number_of_threads master.inp
-OR
+OR global for all shared libraries
 OMP_NUM_THREADS=4 ./OAS master.inp
 OR
 export OMP_NUM_THREADS=4
@@ -214,6 +214,16 @@ set OMP_NUM_THREADS=4
 OAS master.inp
 OR
 OAS -j number_of_threads master.inp
+\endcode
+- if MKL is used (e.g. with Pardiso) it is needed to set
+\code{.sh}
+export MKL_NUM_THREADS=4
+export OMP_NUM_THREADS=4
+\endcode
+on Windows:
+\code
+set MKL_NUM_THREADS=4
+set OMP_NUM_THREADS=4
 \endcode
 
 
@@ -273,7 +283,17 @@ docker run -it --entrypoint /bin/bash a992
                 cmake -DBUILD_SHARED_LIBS=OFF ..
                 cmake --build . --parallel 4 --config Release
                 [Linux, Windows gcc]
-                cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+                cmake \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    -DVTK_GROUP_ENABLE_Qt=NO \
+                    -DVTK_MODULE_ENABLE_VTK_GUISupportQt=NO \
+                    -DVTK_GROUP_ENABLE_Rendering=NO \
+                    -DVTK_WRAP_PYTHON=OFF \
+                    -DVTK_USE_X=OFF \
+                    -DVTK_OPENGL_HAS_EGL=OFF \
+                    -DCMAKE_INSTALL_PREFIX=/usr/local \
+                    ..
                 cmake --build . --parallel 4
             \endcode
         - to enable GUI -DVTK_MODULE_ENABLE_VTK_RenderingContextOpenGL2=YES
@@ -308,4 +328,47 @@ docker run -it --entrypoint /bin/bash a992
     set PATH=%PATH%;C:\..\libtorch\lib (temporarily in cmd)
   \endcode
 
-*/
+
+\section Pybind11 Pybind11 for Python interface
+- enable Pybind11 in current build configuration
+  \code{.sh}
+    cmake -DUSE_PYBIND=ON ../OAS
+  \endcode
+
+\section Pardiso Pardiso for direct solver
+- download and install library from https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html?operatingsystem=linux&linux-install=offline
+- enable Pardiso in current build configuration
+  \code{.sh}
+    cmake -DUSE_PARDISO=ON ../OAS
+  \endcode
+
+\subsection Oneapi Intel oneAPI on Ubuntu 24.04
+- install oneAPI using apt-get
+  \code{.sh}
+    # Intel oneAPI installation
+    # echo "=== Adding Intel oneAPI repository ==="
+    wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+         | gpg --dearmor | tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+         | tee /etc/apt/sources.list.d/oneAPI.list
+     
+    # Update package lists with Intel repository
+    apt-get update
+    
+    # Install Intel oneAPI compilers and MKL
+    # echo "=== Installing Intel oneAPI compilers ==="
+    apt-get install -y --no-install-recommends \
+         intel-oneapi-compiler-dpcpp-cpp \
+         intel-oneapi-compiler-fortran
+
+    # echo "=== Installing Intel MKL ==="
+    apt-get install -y --no-install-recommends \
+         intel-oneapi-mkl-devel \
+         intel-oneapi-mkl
+  \endcode
+
+\section Cholmod Suitesparse CHOLMOD sparse direct solver
+- enable CHOLMOD in current build configuration
+  \code{.sh}
+    cmake -DUSE_CHOLMOD=ON ../OAS
+  \endcode
