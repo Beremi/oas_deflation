@@ -258,8 +258,11 @@ if (USE_CHOLMOD)
         GIT_SHALLOW TRUE
     )
     
+    # Configure SuiteSparse to build only required libraries for CHOLMOD
+    set(SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;amd;colamd;camd;ccolamd;cholmod" CACHE STRING "Enable only required SuiteSparse projects")
     set(SUITESPARSE_USE_CUDA OFF CACHE BOOL "Disable CUDA for SuiteSparse")
     set(SUITESPARSE_USE_FORTRAN OFF CACHE BOOL "Disable Fortran for SuiteSparse")
+    set(SUITESPARSE_USE_OPENMP ON CACHE BOOL "Enable OpenMP for SuiteSparse")
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries for SuiteSparse")
     set(BUILD_STATIC_LIBS ON CACHE BOOL "Build static libraries for SuiteSparse")
     
@@ -268,6 +271,24 @@ if (USE_CHOLMOD)
     if(TARGET SuiteSparse::CHOLMOD)
         set(CHOLMOD_FOUND TRUE)
         message(STATUS "SuiteSparse CHOLMOD found via FetchContent")
+        
+        # Add include directories for CHOLMOD headers (required for Eigen)
+        if(suitesparse_SOURCE_DIR)
+            # Set CHOLMOD include directories as variables for Eigen to find
+            set(CHOLMOD_INCLUDE_DIRS
+                ${suitesparse_SOURCE_DIR}/CHOLMOD/Include
+                ${suitesparse_SOURCE_DIR}/SuiteSparse_config
+                ${suitesparse_SOURCE_DIR}/AMD/Include
+                ${suitesparse_SOURCE_DIR}/COLAMD/Include
+                ${suitesparse_SOURCE_DIR}/CAMD/Include
+                ${suitesparse_SOURCE_DIR}/CCOLAMD/Include
+            )
+            
+            # Add to global include directories (this makes headers available to all targets)
+            include_directories(SYSTEM ${CHOLMOD_INCLUDE_DIRS})
+            
+            message(STATUS "Added SuiteSparse include directories: ${suitesparse_SOURCE_DIR}")
+        endif()
         
         # Get all required SuiteSparse libraries
         set(CHOLMOD_LIBS 
@@ -493,6 +514,19 @@ endif()
 # Add CHOLMOD compile definition to solver if found
 if(USE_CHOLMOD AND CHOLMOD_FOUND)
   target_compile_definitions(solver PUBLIC EIGEN_CHOLMOD_SUPPORT CHOLMOD_FOUND)
+  
+  # Add CHOLMOD include directories to solver target
+  if(suitesparse_SOURCE_DIR)
+    target_include_directories(solver SYSTEM PUBLIC
+        ${suitesparse_SOURCE_DIR}/CHOLMOD/Include
+        ${suitesparse_SOURCE_DIR}/SuiteSparse_config
+        ${suitesparse_SOURCE_DIR}/AMD/Include
+        ${suitesparse_SOURCE_DIR}/COLAMD/Include
+        ${suitesparse_SOURCE_DIR}/CAMD/Include
+        ${suitesparse_SOURCE_DIR}/CCOLAMD/Include
+    )
+    message(STATUS "Added SuiteSparse include directories to solver target")
+  endif()
 endif()
 
 # Add Spectra include directory to solver and main target
@@ -521,6 +555,11 @@ if (USE_ML_TORCH)
                              SYSTEM PUBLIC 
                              ${spectra_SOURCE_DIR}/include)
   
+  # Add CHOLMOD include directories to ml_torch if available
+  if(USE_CHOLMOD AND CHOLMOD_FOUND AND DEFINED CHOLMOD_INCLUDE_DIRS)
+    target_include_directories(ml_torch SYSTEM PUBLIC ${CHOLMOD_INCLUDE_DIRS})
+  endif()
+  
   target_link_libraries(ml_torch
                         PUBLIC
                         Eigen3::Eigen
@@ -537,6 +576,11 @@ if (USE_PYBIND)
     target_include_directories(pybind 
                                SYSTEM PUBLIC 
                                ${spectra_SOURCE_DIR}/include)
+    
+    # Add CHOLMOD include directories to pybind if available
+    if(USE_CHOLMOD AND CHOLMOD_FOUND AND DEFINED CHOLMOD_INCLUDE_DIRS)
+      target_include_directories(pybind SYSTEM PUBLIC ${CHOLMOD_INCLUDE_DIRS})
+    endif()
   
     # Use pybind11::embed target if available
     target_link_libraries(pybind 

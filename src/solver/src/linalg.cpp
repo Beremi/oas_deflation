@@ -771,9 +771,29 @@ bool CholmodLLTSolver :: solve(Vector &x, const Vector &b) {
 // CHOLMOD SIMPLICIAL LDLT SOLVER
 //////////////////////////////////////////////////////////
 
+
 CholmodLDLTSolver :: CholmodLDLTSolver() {
-    name = "CholmodLDLTSolver";
-    std::cout << "CholmodLDLT: Using CHOLMOD simplicial LDLT factorization" << std::endl;
+    name = "CholmodLDLT";
+    cout << "Creating CholmodLDLTSolver (Simplicial LDLT)" << endl;
+    
+    // Access internal CHOLMOD settings using correct Eigen API
+    cholmod_common& c = cholmod.cholmod();
+    
+    // Try different ordering methods (may help with some matrices)
+    // AMD ordering (default)
+    c.nmethods = 1;
+    //c.method[0].ordering = CHOLMOD_AMD;
+    
+    // OR try METIS if available (sometimes better for large problems)
+    c.method[0].ordering = CHOLMOD_METIS;
+    
+    // OR try nested dissection
+    //c.method[0].ordering = CHOLMOD_NESDIS;
+    
+    // Ensure single-threaded
+    c.useGPU = 0;
+    
+    //cout << "CHOLMOD LDLT using ordering: " << c.method[0].ordering << endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -782,38 +802,55 @@ CholmodLDLTSolver :: ~CholmodLDLTSolver() {}
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
-    auto start = std :: chrono :: system_clock :: now();
+    auto start = std::chrono::system_clock::now();
 #endif
-    if ( A.rows() > 0 ) {
+    
+    if (A.rows() > 0) {
+#if PRINT_DEBUG_TIME
+        std::cout << "CHOLMOD LDLT factorization:" << std::endl;
+        std::cout << "  Matrix size: " << A.rows() << "x" << A.cols() << std::endl;
+        std::cout << "  Non-zeros in A: " << A.nonZeros() << std::endl;
+#endif
         cholmod.factorize(A);
-    }
 
 #if PRINT_DEBUG_TIME
-    now = std :: chrono :: system_clock :: now();
-
-    elapsed_seconds = now - start;
-    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
-    cout.flush();
+        if (cholmod.info() != Eigen::Success) {
+            std::cerr << "CHOLMOD factorization failed!" << std::endl;
+            return false;
+        }
 #endif
+    }
+    
+#if PRINT_DEBUG_TIME
+    auto now = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration<double>(now - start);
+    std::cout << "  Factorization time: " << elapsed.count() << " seconds" << std::endl;
+#endif
+
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+    auto start = std::chrono::system_clock::now();
+    
+    if (A.rows() > 0) {
 #if PRINT_DEBUG_TIME
-    auto start = std :: chrono :: system_clock :: now();
+        // Print matrix statistics
+        std::cout << "CHOLMOD LDLT analyzing matrix pattern:" << std::endl;
+        std::cout << "  Size: " << A.rows() << " x " << A.cols() << std::endl;
+        std::cout << "  Non-zeros: " << A.nonZeros() << std::endl;
+        std::cout << "  Density: " << (double)A.nonZeros() / (A.rows() * A.cols()) * 100.0 << "%" << std::endl;
 #endif
-    if ( A.rows() > 0 ) {
         cholmod.analyzePattern(A);
     }
 
 #if PRINT_DEBUG_TIME
-    now = std :: chrono :: system_clock :: now();
-
-    elapsed_seconds = now - start;
-    std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
-    cout.flush();
+    auto now = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration<double>(now - start);
+    std::cout << "  Pattern analysis time: " << elapsed.count() << " seconds" << std::endl;
 #endif
+    
     return true;
 }
 
