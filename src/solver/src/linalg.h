@@ -27,6 +27,9 @@
 #ifdef PARDISO_FOUND
     #include <Eigen/PardisoSupport>
 #endif
+#ifdef CHOLMOD_FOUND
+    #include <Eigen/CholmodSupport>
+#endif
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/SymGEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
@@ -69,7 +72,7 @@ class ConjGradSolver : public LinAlgSolver
 protected:
     Vector initialGuess;
     double relMaxIT, maxIT, precision;
-    Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper >cgK;
+    Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper, Eigen :: DiagonalPreconditioner< double > >cgK;
     //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
 public:
     ConjGradSolver();
@@ -175,6 +178,47 @@ protected:
 public:
     PardisoLLTSolver();
     virtual ~PardisoLLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+#endif
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, CHOLMOD SOLVERS
+#ifdef CHOLMOD_FOUND
+class CholmodLLTSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: CholmodSimplicialLLT< Eigen :: SparseMatrix< double > >cholmod;
+public:
+    CholmodLLTSolver();
+    virtual ~CholmodLLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+
+class CholmodLDLTSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: CholmodSimplicialLDLT< Eigen :: SparseMatrix< double > >cholmod;
+public:
+    CholmodLDLTSolver();
+    virtual ~CholmodLDLTSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+};
+
+class CholmodSupernodalLLTSolver : public LinAlgSolver
+{
+protected:
+    Eigen :: CholmodSupernodalLLT< Eigen :: SparseMatrix< double > >cholmod;
+public:
+    CholmodSupernodalLLTSolver();
+    virtual ~CholmodSupernodalLLTSolver();
     virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
