@@ -11,7 +11,7 @@ using namespace std;
  #include <vtkCellArray.h>
  #include <vtkNew.h>
  #include <vtkPointData.h>
- #include <vtkProperty.h>
+ //#include <vtkProperty.h>
  #include <vtkPlane.h>
  #include <vtkBitArray.h>
  #include <vtkUnstructuredGrid.h>

@@ -239,6 +239,17 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             linalgsolver = std :: make_unique< PardisoLLTSolver >();
             linalgsolver->analyzePattern(Keff);
 #endif
+#ifdef CHOLMOD_FOUND
+        } else if  ( symsolver_type == "CholmodLLT" ) {
+            linalgsolver = std :: make_unique< CholmodLLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+        } else if  ( symsolver_type == "CholmodLDLT" ) {
+            linalgsolver = std :: make_unique< CholmodLDLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+        } else if  ( symsolver_type == "CholmodSupernodalLLT" ) {
+            linalgsolver = std :: make_unique< CholmodSupernodalLLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+#endif
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);

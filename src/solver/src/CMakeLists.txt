@@ -60,7 +60,7 @@ set (pybind_files
     )
 
 if (USE_ML_TORCH)
-    list(APPEND solver_files material_neuralnetwork.cpp)
+    list(APPEND solver_files material_neuralnetwork.cpp ${superelem_files})
     add_library(ml_torch
         ${LIB_TYPE}
         ${superelem_files}
