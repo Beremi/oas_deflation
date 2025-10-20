@@ -220,7 +220,7 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
         } else if  ( symsolver_type == "EigenLLT" ) {
             linalgsolver = std :: make_unique< LLTSolver >();
             linalgsolver->analyzePattern(Keff);
-        } else if  ( symsolver_type == "EigenSparseLU" ) {
+        } else if  ( symsolver_type == "EigenLU" || symsolver_type == "EigenSparseLU" ) {
             linalgsolver = std :: make_unique< LUSolver >();
             linalgsolver->analyzePattern(Keff);
 #ifdef SUPERLU_FOUND
