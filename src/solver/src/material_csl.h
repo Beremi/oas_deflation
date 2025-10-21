@@ -54,7 +54,7 @@ protected:
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
 public:
-    CSLMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "CSL material"; lam0 = 1e10; }; //confinement removed
+    CSLMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "CSL material"; lam0 = -1.; }; //confinement removed
     virtual ~CSLMaterial() {};
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
@@ -73,7 +73,7 @@ public:
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
     virtual double giveAlphaForDamage() const { return VectMechMaterial :: giveAlpha(); }
-
+    virtual bool requestTetrahedralBackgroundMesh()const{return (lam0>0);} //for volumetric strain
     virtual void init(MaterialContainer *matcont);
 };
 

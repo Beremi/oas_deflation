@@ -197,7 +197,8 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             S0 = giveS0tension(omega);
 
             unsigned dim = element->giveDimension();
-            double flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
+            double flam = 1.;
+            if (m->giveLam0()>0) flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
             K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
 
             if ( omega < 0.0 ) {

@@ -26,6 +26,7 @@ public:
     void runPreparationForStressEvaluation(ElementContainer *elems);
     Model* giveModel() const;
     void setModel(Model *m);
+    bool requestTetrahedralBackgroundMesh() const;
 protected:
 };
 

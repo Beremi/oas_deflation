@@ -83,6 +83,7 @@ public:
     double giveMuinf() { return muinf; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
+    virtual bool requestTetrahedralBackgroundMesh()const{return true;} //for volumetric strain    
 };
 
 //////////////////////////////////////////////////////////

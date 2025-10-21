@@ -736,6 +736,7 @@ void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &f
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: findElementFriends() {
+    cout << "building background tetra mesh for volumetric strain calculation" << endl;
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->findElementFriends(this);
     }

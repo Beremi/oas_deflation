@@ -91,6 +91,7 @@ public:
     virtual void prepareForStressEvaluation(ElementContainer *elems) { ( void ) elems; };
     bool requiresMassMatrixUpdate() const { return massMatUpdate; };
     bool requiresDampingsMatrixUpdate() const { return dampMatUpdate; };
+    virtual bool requestTetrahedralBackgroundMesh()const{return false;} //for volumetric strain
 };
 
 
