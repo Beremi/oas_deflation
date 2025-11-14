@@ -18,6 +18,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     vtk_cell_type = 3;
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrDiscrete1();
+    areIPLocsInNaturalCoords = false;    
     projectArea = true;
     intPoints = "centroid";
     userDefinedCentroid = false;

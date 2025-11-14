@@ -23,7 +23,8 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     vtk_cell_type = 10;
     shafunc = new Linear3DTetraShapeF();
     inttype = new IntegrLDPM12();
-
+    areIPLocsInNaturalCoords = false;
+    
     vert.resize(12);
     lengths.resize(12);
     //volumes.resize(12);
