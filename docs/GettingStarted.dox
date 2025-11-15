@@ -267,6 +267,29 @@ docker run -it --entrypoint /bin/bash a992
 \endcode
 
 
+\subsection Apptainer Apptainer
+
+In OAS/apptainer directory run:
+\code{.sh}
+bash build_container.sh
+\endcode
+this will create OAS_build-container directory and create
+- OAS_build.sif - container containing OAS build environment
+- OAS_release.sif - container containing OAS run environment
+- OAS.sif - container containing OAS build and run environment
+To rebuild OAS container run again build_container.sh script.
+If the definition files ".def" were not changed, there is no need to rebuild the build and release containers.
+To run container use:
+\code
+./OAS.sif master.inp
+OR
+apptainer run OAS.sif master.inp
+\endcode
+Container OAS.sif can be copied to other machine and used there without installation of all dependencies.
+The machine needs only Apptainer installed (https://github.com/apptainer/apptainer/releases).
+
+
+
 
 \section VTK VTK
 - install system VTK library
