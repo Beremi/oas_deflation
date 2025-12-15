@@ -1,0 +1,337 @@
+# ==============================================================================
+# OAS (Open Academic Solver) - Base Apptainer/Singularity Container Definition
+# ==============================================================================
+# Ubuntu 24.04 LTS base image with all required dependencies for building OAS
+# This is a base image without OAS pre-built
+# 
+# Build command:
+#   apptainer build oas_ubuntu24_base.sif ubuntu_24-base.def
+#
+# Run command:
+#   apptainer shell oas_ubuntu24_base.sif
+# ==============================================================================
+
+Bootstrap: docker
+From: ubuntu:24.04
+
+# ==============================================================================
+# Labels - Container Metadata
+# ==============================================================================
+
+%labels
+    Author OAS Development Team
+    Version 0.2.0
+    Description Open Academic Solver - Base Development Environment
+    Distribution Ubuntu 24.04 LTS
+    BuildDate 2025-10-15
+
+# ==============================================================================
+# Help Section
+# ==============================================================================
+
+%help
+    OAS - Open Academic Solver (Base Environment)
+    
+    This container provides a complete build environment for OAS with:
+    - GCC compiler suite (default)
+    - OpenBLAS/LAPACK libraries (optimized, multi-threaded)
+    - VTK 9.x (visualization)
+    - Python 3.x with pybind11 (Python bindings)
+    - OpenMP (parallel computing)
+    - Build tools (CMake, GCC, etc.)
+    
+    Optional (commented out by default):
+    - Intel oneAPI compilers (icx, icpx, ifx)
+    - Intel MKL (Math Kernel Library)
+    
+    OAS is NOT pre-built. Use this for development.
+    
+    Interactive shell:
+        apptainer shell oas_ubuntu24_base.sif
+    
+    Build OAS inside container:
+        apptainer shell oas_ubuntu24_base.sif
+        cd /path/to/OAS
+        mkdir build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        make -j$(nproc)
+    
+    For more information: https://kelidas.gitlab.io/OAS-site
+
+# ==============================================================================
+# Setup - Create mount points for bind mounts during build
+# ==============================================================================
+
+%setup
+    # Create directories that can be used as bind mount points
+    mkdir -p ${APPTAINER_ROOTFS}/workspace
+
+# ==============================================================================
+# Environment Variables
+# ==============================================================================
+
+%environment
+    # GCC Compiler settings (default)
+    export CC=gcc
+    export CXX=g++
+    export FC=gfortran
+    
+    # Intel oneAPI environment (OPTIONAL - uncomment to use Intel compilers)
+    # if [ -f /opt/intel/oneapi/setvars.sh ]; then
+    #     . /opt/intel/oneapi/setvars.sh --force
+    # fi
+    
+    # Intel Compiler settings (uncomment to use Intel compilers instead of GCC)
+    # export CC=icx
+    # export CXX=icpx
+    # export FC=ifx
+    
+    # Intel oneAPI root (uncomment if using Intel compilers)
+    # export ONEAPI_ROOT=/opt/intel/oneapi
+    
+    # Intel MKL settings (uncomment if Intel MKL is installed)
+    # export MKLROOT=/opt/intel/oneapi/mkl/latest
+    # export LD_LIBRARY_PATH=/opt/intel/oneapi/mkl/latest/lib/intel64:${LD_LIBRARY_PATH}
+    # export PKG_CONFIG_PATH=/opt/intel/oneapi/mkl/latest/lib/pkgconfig:${PKG_CONFIG_PATH}
+    
+    # Intel Compiler runtime libraries (uncomment if using Intel compilers)
+    # export PATH=/opt/intel/oneapi/compiler/latest/bin:${PATH}
+    # export LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:${LD_LIBRARY_PATH}
+    # export LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib/x64:${LD_LIBRARY_PATH}
+    
+    # OpenBLAS threading settings
+    export OPENBLAS_NUM_THREADS=4
+    
+    # Build settings
+    export OMP_NUM_THREADS=4
+    export MAKEFLAGS="-j4"
+    
+    # Path settings
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+    
+    # Locale settings
+    export LC_ALL=C
+    export LANG=C.UTF-8
+
+# ==============================================================================
+# Post-Installation - Install dependencies
+# ==============================================================================
+
+%post
+    # Prevent interactive prompts during package installation
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=Europe/Prague
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    
+    # Update package index
+    echo "=== Updating package lists ==="
+    apt-get update
+    
+    # Install build essentials and tools
+    echo "=== Installing build tools ==="
+    apt-get install -y --no-install-recommends \
+        apt-utils \
+        ca-certificates \
+        gnupg \
+        software-properties-common \
+        git \
+        wget \
+        curl \
+        cmake \
+        make \
+        gcc \
+        g++ \
+        gfortran \
+        pkg-config
+    
+    # Intel oneAPI installation (OPTIONAL - uncomment to enable Intel compilers and MKL)
+    # echo "=== Adding Intel oneAPI repository ==="
+    # wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+    #     | gpg --dearmor | tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+    # echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+    #     | tee /etc/apt/sources.list.d/oneAPI.list
+    # 
+    # # Update package lists with Intel repository
+    # apt-get update
+    # 
+    # # Install Intel oneAPI compilers and MKL
+    # echo "=== Installing Intel oneAPI compilers ==="
+    # apt-get install -y --no-install-recommends \
+    #     intel-oneapi-compiler-dpcpp-cpp \
+    #     intel-oneapi-compiler-fortran
+    # 
+    # echo "=== Installing Intel MKL ==="
+    # apt-get install -y --no-install-recommends \
+    #     intel-oneapi-mkl-devel \
+    #     intel-oneapi-mkl
+    
+    # Install mathematical libraries (using OpenBLAS instead of MKL for better performance)
+    echo "=== Installing OpenBLAS and LAPACK libraries ==="
+    apt-get install -y --no-install-recommends \
+        libopenblas-dev \
+        liblapack-dev \
+        liblapacke-dev \
+        libomp-dev
+    
+    # Install VTK dependencies (Qt5, OpenGL, X11)
+    echo "=== Installing VTK build dependencies ==="
+    apt-get install -y --no-install-recommends \
+        ninja-build
+    
+    # Download and build VTK from source
+    echo "=== Downloading VTK 9.5.2 ==="
+    cd /workspace
+    wget https://www.vtk.org/files/release/9.5/VTK-9.5.2.tar.gz
+    #wget https://www.vtk.org/files/release/9.5/VTKDataFiles-9.5.2.tar.gz
+    
+    echo "=== Extracting VTK ==="
+    tar -xzf VTK-9.5.2.tar.gz
+    #tar -xzf VTKDataFiles-9.5.2.tar.gz -C VTK-9.5.2
+    
+    echo "=== Building VTK (this will take a while...) ==="
+    cd VTK-9.5.2
+    mkdir build
+    cd build
+    
+    cmake \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DVTK_GROUP_ENABLE_Qt=NO \
+        -DVTK_MODULE_ENABLE_VTK_GUISupportQt=NO \
+        -DVTK_GROUP_ENABLE_Rendering=NO \
+        -DVTK_WRAP_PYTHON=OFF \
+        -DVTK_USE_X=OFF \
+        -DVTK_OPENGL_HAS_EGL=OFF \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        ..
+    
+    cmake --build . --parallel 15
+    
+    echo "=== Installing VTK ==="
+    cmake --install .
+    
+    echo "=== Cleaning up VTK build files ==="
+    cd /workspace
+    rm -rf VTK-9.5.2.tar.gz VTKDataFiles-9.5.2.tar.gz
+    
+    # Update library cache
+    ldconfig
+    
+    # Install Python development files
+    echo "=== Installing Python development files ==="
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-dev \
+        python3-pip
+    
+    # Install development and debugging tools
+    echo "=== Installing development tools ==="
+    apt-get install -y --no-install-recommends \
+        gdb \
+        valgrind \
+        vim \
+        nano
+    
+    # Clean up package cache to reduce image size
+    echo "=== Cleaning up package cache ==="
+    rm -rf /var/lib/apt/lists/*
+    apt-get autoclean
+    apt-get autoremove -y
+    apt-get clean
+    
+    echo "=== Base container build complete ==="
+    echo "Using GCC compilers and OpenBLAS/LAPACK (optimized, multi-threaded)"
+    echo "Intel oneAPI/MKL installation is commented out (optional)"
+    echo "Ready for OAS development"
+
+# ==============================================================================
+# Testing - Verify installation
+# ==============================================================================
+
+%test
+    echo "=== Testing base environment installation ==="
+    
+    # Check GCC (primary/default compiler)
+    gcc --version || {
+        echo "ERROR: GCC not found"
+        exit 1
+    }
+    
+    g++ --version || {
+        echo "ERROR: G++ not found"
+        exit 1
+    }
+    
+    gfortran --version || {
+        echo "ERROR: GFortran not found"
+        exit 1
+    }
+    
+    # Check for OpenBLAS
+    if [ -f /usr/lib/x86_64-linux-gnu/libopenblas.so ] || [ -f /usr/lib/x86_64-linux-gnu/libopenblas.a ]; then
+        echo "INFO: OpenBLAS found (optimized BLAS implementation)"
+    else
+        echo "WARNING: OpenBLAS not found"
+    fi
+    
+    # Check for Intel MKL (OPTIONAL)
+    if [ -d /opt/intel/oneapi/mkl ]; then
+        echo "INFO: Intel MKL found at /opt/intel/oneapi/mkl"
+    else
+        echo "INFO: Intel MKL not installed (optional, using system BLAS/LAPACK)"
+    fi
+    
+    # Check Intel compilers (OPTIONAL - only warnings if not found)
+    if [ -f /opt/intel/oneapi/setvars.sh ]; then
+        . /opt/intel/oneapi/setvars.sh --force
+        
+        icx --version 2>/dev/null || {
+            echo "INFO: Intel C compiler (icx) not available (optional)"
+        }
+        
+        icpx --version 2>/dev/null || {
+            echo "INFO: Intel C++ compiler (icpx) not available (optional)"
+        }
+        
+        ifx --version 2>/dev/null || {
+            echo "INFO: Intel Fortran compiler (ifx) not available (optional)"
+        }
+    else
+        echo "INFO: Intel oneAPI not configured (optional)"
+    fi
+    
+    # Check CMake
+    cmake --version || {
+        echo "ERROR: CMake not found"
+        exit 1
+    }
+    
+    # Check Python
+    python3 --version || {
+        echo "ERROR: Python3 not found"
+        exit 1
+    }
+    
+    echo "=== Base container tests passed successfully! ==="
+
+# ==============================================================================
+# Runscript - Default execution
+# ==============================================================================
+
+%runscript
+    #!/bin/bash
+    echo "OAS - Open Academic Solver (Base Environment)"
+    echo "Ubuntu 24.04 with GCC and OpenBLAS/LAPACK"
+    echo "========================================"
+    echo ""
+    echo "This is a base development environment."
+    echo "OAS is not pre-built in this container."
+    echo ""
+    echo "To build OAS:"
+    echo "  1. Start shell: apptainer shell oas_ubuntu24_base.sif"
+    echo "  2. Navigate to OAS source"
+    echo "  3. Build with CMake"
+    echo ""
+    exec /bin/bash

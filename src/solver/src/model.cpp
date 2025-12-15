@@ -50,7 +50,7 @@ void Model :: init(const bool &initial) {     //initialization
     bconds.init( solver->giveTime() );
     cout << "initialization of nodes" << endl; cout.flush();
     nodes.init();
-    nodes.initSimplices();
+    if (matrs.requestTetrahedralBackgroundMesh()) nodes.initSimplices();
     cout << "initialization of constraints" << endl; cout.flush();
     constr.init(& nodes, & bconds, solver);
     elems.assignFibersToElems();
