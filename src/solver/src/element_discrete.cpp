@@ -274,7 +274,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] *= ni.dot(normal);
             if ( ais [ i ] < 1e-15 ) {
                 if ( !ignoreNegativeAreas ) {
-                    cout << "RigidBodyContact Warning: negative area " << ais [ i ] << ", incorrect orientation of verices, corrected automatically" << endl;
+                    //cout << "RigidBodyContact Warning: negative area " << ais [ i ] << ", incorrect orientation of verices, corrected automatically" << endl;
                     ais [ i ] = std :: abs(ais [ i ]);
                 } else {
                     ais [ i ] = 0.;
@@ -1284,7 +1284,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
             ai *= ni.dot(normal);
             if ( ai < 1e-15 ) {
                 if ( !ignoreNegativeAreas ) {
-                    cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
+                    //cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
                     ai = std :: abs(ai);
                 } else {
                     ai = 0.;
@@ -1451,7 +1451,6 @@ Vector DiscreteTrsprtElem :: giveStrain(unsigned i, const Vector &DoFs) {
     return Element :: giveStrain(i, DoFs);
 };
 
-
 //////////////////////////////////////////////////////////
 Matrix DiscreteTrsprtElem :: giveStiffnessMatrix(string matrixType) const {
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
@@ -1593,7 +1592,7 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
         }
         m++;
     }
-    stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
+    stats [ 0 ]->setParameterValue("crack_param", crackInNeighborhood);
     stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
 
     //Biot effect

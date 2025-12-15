@@ -26,6 +26,15 @@ void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
 }
 
 //////////////////////////////////////////////////////////
+void MechanicalPeriodicBC :: setEigenStrain(Vector &eigstr){
+    if (strainFunc.size() != (unsigned) eigstr.size()){
+        cout << giveName() << " uses " << strainFunc.size() << " strain values but " << eigstr.size() << " were submitted" << endl;
+        exit(1);
+    }
+    strainBC->setInitialDoFFields(eigstr);
+}
+
+//////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
     //apply contraints, connect periodic images
     JointDoF *jd;
@@ -312,7 +321,6 @@ void MechanicalPeriodicBC :: apply(Model *model) {
 
     //set prescribed strain and stress
     vector< double >bcmults;
-    BoundaryCondition *bc;
     vector< int >dBC, nBC;
 
     unsigned n = strainFunc.size();
@@ -331,8 +339,8 @@ void MechanicalPeriodicBC :: apply(Model *model) {
             cerr << "Error in Periodic boundary condition: cannot prescribe both stress and strain for the same direction, direction " << i << endl;
         }
     }
-    bc = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
-    bcs->addBoundaryCondition(bc);
+    strainBC = new BoundaryCondition(nodes->giveNode(initalNodeNum), dBC, nBC, bcmults);
+    bcs->addBoundaryCondition(strainBC);
 
     //export data
     generateExporters(nodes, ex);
@@ -1342,14 +1350,16 @@ void TransportPeriodicBC :: readLoading(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void TransportPeriodicBC :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
     if ( volumetricAverageRigidBC < 0 ) {  //last master node cannot move
-        Node *m = constrs->giveConstraint(constrs->giveConstraintsSize() - 1)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
+        unsigned p = 0;
+        while (constrs->isDependent(constrs->giveConstraint(p)->giveMasterNode(0))) p++;
+        Node *m = constrs->giveConstraint(p)->giveMasterNode(0); //todo:  warning C4267: 'argument': conversion from 'size_t' to 'const unsigned int', possible loss of data
         BoundaryCondition *bc;
         vector< int >dBC, nBC;
         dBC.resize(m->giveNumberOfDoFs(), funcs->giveSize() );          //todo: conversion from 'size_t' to 'const _Ty', possible loss of data
         nBC.resize(m->giveNumberOfDoFs(), -1);
         bc = new BoundaryCondition(m, dBC, nBC);
         bcs->addBoundaryCondition(bc);
-
+        
         //add constant function
         vector< double >x, y;
         x.resize(1, 0);

@@ -60,7 +60,7 @@ void SteadyStateLinearSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
-    factorizeLinearSystem();
+    factorizeLinearSystem(); 
 }
 
 //////////////////////////////////////////////////////////
@@ -141,6 +141,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: solve() {
+
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     updateFieldVariables();      //with ddr=0
@@ -268,7 +269,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
 
     EPS2.resize(4);
     EPS2 [ 0 ] = 1e-20; //mechanics
-    EPS2 [ 1 ] = 1e-12; //transport
+    EPS2 [ 1 ] = 1e-10; //transport
     EPS2 [ 2 ] = 1e-17; //temperature
     EPS2 [ 3 ] = 1e-18; //humidity
 
@@ -288,6 +289,11 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     restarts = 0;
     cumul_it = 0;
     stiffMatType = "secant";
+    
+    //eigen error fields
+    eigen_trial_rPF = Vector :: Zero(numPhysicalFields);
+    eigen_f_extPF = Vector :: Zero(numPhysicalFields);
+    eigen_WextPF = Vector :: Zero(numPhysicalFields);    
 }
 
 //////////////////////////////////////////////////////////
@@ -316,7 +322,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
-
+  
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
 
@@ -524,17 +530,47 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
     }
-
+    
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
+        trial_rPF [ i ] += eigen_trial_rPF[ i ] + 2*sqrt(eigen_trial_rPF[ i ]*trial_rPF [ i ]);
+        f_extPF [ i ] += eigen_f_extPF[ i ] + 2*sqrt(eigen_f_extPF[ i ]*f_extPF [ i ]);      
+
         resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]) + eigen_WextPF[ i ], abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
     eneErr = sqrt(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_rPF(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }
+    eigen_trial_rPF[pf] = value;
+}    
+    
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_fext(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }    
+    eigen_f_extPF[pf] = value;    
+}    
+    
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_Wext(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }    
+    eigen_WextPF[pf] = value;    
 }
 
 //////////////////////////////////////////////////////////

@@ -117,6 +117,13 @@ void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path r
 
 #ifdef __VTK_MODULE
 
+    /*if (list.size()==0){
+        list.resize(elems->giveSize());
+        for(unsigned i=0; i<elems->giveSize(); i++){
+            list[i] = i;
+        }
+    }*/
+
     Vector DoFs = solver->giveTrialDoFValues();
 
     vtkSmartPointer< vtkUnstructuredGrid >unstructuredGrid = vtkSmartPointer< vtkUnstructuredGrid > :: New();
@@ -146,31 +153,31 @@ void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path r
     size_t msize;
     vector< Vector >data;
     unsigned p;
+    
     // ****************** cell data
     data.resize(elems->giveSize() );
-    for ( p = 0; p < cell_data_size; p++ ) {
+    for ( p = 0; p < cell_data_size; p++ ) {    
         msize = 1;
-        i = 0;
-        for ( vector< Element * > :: const_iterator ee = elems->begin(); ee != elems->end(); ++ee, i++ ) {
-            ( * ee )->giveValues(codes [ p ].c_str(), data [ i ]);
-            msize = max< size_t >(msize, data [ i ].size() );
-        }
+        for ( unsigned e = 0; e < elems->giveSize(); e++ ) {
+            el = elems->giveElement(e);
+            el->giveValues(codes [ p ].c_str(), data [ e ]);
+            msize = max< size_t >(msize, data [ e ].size() );
+        }   
         vtkSmartPointer< vtkDoubleArray >cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
         cellDataArray->SetName(codes [ p ].c_str() );
         cellDataArray->SetNumberOfComponents(msize);
         cellDataArray->SetNumberOfValues(elems->giveSize() * msize);
         i = 0;
-        for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {
+        for ( vector< Vector > :: const_iterator d = data.begin(); d != data.end(); ++d, i++ ) {            
             for ( j = 0; j < min< size_t >(msize, d->size() ); j++ ) {
                 cellDataArray->SetValue(msize * i + j, ( * d ) [ j ]);
             }
             for ( ; j < msize; j++ ) {
                 cellDataArray->SetValue(msize * i + j, 0);
             }
-        }
+        }     
         unstructuredGrid->GetCellData()->AddArray(cellDataArray);
     }
-
 
     // ****************** node data
     data.resize(nodes->giveSize() );
@@ -212,7 +219,6 @@ void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path r
         }
         unstructuredGrid->GetPointData()->AddArray(pointDataArray);
     }
-
     // ****************** extrapolated node data
     for ( ; p < codes.size(); p++ ) {
         msize = 1;
@@ -237,7 +243,6 @@ void VTKElementExporter :: exportData(unsigned step, int iteration, fs :: path r
         }
         unstructuredGrid->GetPointData()->AddArray(pointDataArray);
     }
-
     //vtkNew<vtkXMLUnstructuredGridWriter> writer;
     vtkSmartPointer< vtkXMLUnstructuredGridWriter >writer = vtkSmartPointer< vtkXMLUnstructuredGridWriter > :: New();
     

@@ -448,7 +448,7 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                     tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
                     tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
                 }
-            }
+            }          
         }
     }
 

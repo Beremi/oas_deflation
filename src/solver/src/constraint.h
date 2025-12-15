@@ -57,7 +57,8 @@ class LagrangeMultiplier : public JointDoF
 protected:
 public:
     LagrangeMultiplier() {};
-    LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    //LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});
+    LagrangeMultiplier(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns = {}, const std :: vector< double > &time_mult = {});    
     virtual ~LagrangeMultiplier() {};
     virtual void init(Solver *solver);
 };
@@ -128,6 +129,7 @@ public:
     JointDoF *giveConstraint(const unsigned &i) { return constraints [ i ]; };
     LagrangeMultiplier *giveLagrangeMultiplier(const unsigned &i) { return lagmults [ i ]; };
     void addConstraint(JointDoF *jd) { constraints.push_back(jd); };
+    void addLagrangeMult(LagrangeMultiplier *jd) { lagmults.push_back(jd); };    
     size_t giveConstraintsSize() { return constraints.size(); };
     size_t giveLagrangeMultsSize() { return lagmults.size(); };
     bool isActive() const { return !constraints.empty(); }
@@ -136,6 +138,7 @@ public:
     void addHangingNodeConstraint(Node *dependent, Element *primary);
     void checkInternalDependencies();
     std :: vector< unsigned >giveConstraintsOfSpecificNode(const Node *n)const;
+    bool isDependent(const Node *n)const;    
 
     std :: vector< JointDoF * > :: iterator begin() { return constraints.begin(); }
     std :: vector< JointDoF * > :: iterator end() { return constraints.end(); }

@@ -16,7 +16,7 @@ CSLMaterialStatus :: CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnu
 
 //////////////////////////////////////////////////////////
 bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
+    if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 || code.compare("normal_crack_opening") == 0) {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
         return true;

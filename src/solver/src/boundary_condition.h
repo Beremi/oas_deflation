@@ -56,6 +56,7 @@ public:
     double giveBeginTime() const { return beginTime; };
     double giveEndTime() const { return endTime; };
     void setInitialDoFFields(Solver *s);
+    void setInitialDoFFields(Vector &DoFs);
 };
 
 
@@ -113,6 +114,7 @@ class BCContainer
 private:
     FunctionContainer *functions;
     std :: vector< BoundaryCondition * >BC;
+    
     std :: vector< unsigned >dirichDoFs;
     std :: vector< unsigned >neumannDoFs;
 

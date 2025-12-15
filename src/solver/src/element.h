@@ -119,6 +119,7 @@ public:
     virtual Vector giveBoundingBox()const;
     virtual Vector findIntersectionsWithLine(Point *A, Point *B)const;
     bool doesMechanics()const { return ( physicalFields [ 0 ] > 0 ); };
+    bool doesTransport()const { return ( physicalFields [ 1 ] > 0 ); };    
     std :: vector< std :: vector< unsigned > >giveTraingulatedFaces()const;
     virtual double giveDissipatedEnergy() const;
 };

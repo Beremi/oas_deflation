@@ -49,6 +49,8 @@ protected:
     bool save_iterations;
     double multiplier;
     Solver *solver;
+    
+    std :: vector< unsigned >list;  // list of entities to export
 
     std :: vector< double >times_to_save;  // vector to store times for export
     double saveTime_each = std :: numeric_limits< double > :: max(); // time period

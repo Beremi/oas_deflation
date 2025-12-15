@@ -42,6 +42,7 @@ public:
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();    
     Vector giveCrackOpeningVector() const;
+    virtual double giveNormalCrackOpening()const {return temp_crackOpening;};
 };
 
 //////////////////////////////////////////////////////////

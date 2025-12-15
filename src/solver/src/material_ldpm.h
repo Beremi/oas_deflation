@@ -44,6 +44,7 @@ public:
     virtual bool isElastic(const bool &now = false) const;
     virtual void initializeStressAndStrainVector(unsigned num);
     double giveSigmaBCDiff(double relt, double *transSigmaBC);
+    virtual double giveNormalCrackOpening()const {return temp_crackOpening;};    
 };
 
 //////////////////////////////////////////////////////////

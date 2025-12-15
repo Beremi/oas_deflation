@@ -403,6 +403,14 @@ Node *NodeContainer :: giveNode(unsigned const num) const {
     return nodes [ num ];
 }
 
+//////////////////////////////////////////////////////////
+unsigned NodeContainer :: giveNumOfPhysicalFieldNodes(unsigned i) const{
+    unsigned h = 0;
+    for ( auto &n:nodes ) {
+        if (n->doesPhysicalField(i)) h++;
+    }
+    return h;
+}
 
 //////////////////////////////////////////////////////////
 unsigned NodeContainer :: giveNodeNumber(const Node *n) const {

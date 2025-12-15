@@ -29,6 +29,7 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     lengths.resize(12);
     //volumes.resize(12);
     areas.resize(12);
+    surflengths.resize(12);
     normals.resize(12);
     t1s.resize(12);
     t2s.resize(12);
@@ -75,6 +76,19 @@ vector< unsigned >LDPMTetra :: giveOppositeFacetsToNode(unsigned k) const {
     return f;
 }
 
+//////////////////////////////////////////////////////////
+void LDPMTetra :: computeCrackParametersForPoiseuilleFlow(unsigned k, double *crackParam, double *crackVolume)const{
+    vector< unsigned > IP = giveOppositeFacetsToNode(k);    
+    (*crackParam) = 0;
+    (*crackVolume) = 0;    
+    double co;    
+    for(unsigned ip:IP){
+        VectMechMaterialStatus *vm = static_cast<VectMechMaterialStatus *>(stats[ip]);
+        (*crackParam) += pow(vm->giveNormalCrackOpening(),3)*surflengths[ip];
+        (*crackVolume) += vm->giveNormalCrackOpening()*areas[ip];
+    }
+}
+    
 /////////////////////////////////////////////////////////
 void LDPMTetra :: readFromLine(istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     unsigned num;
@@ -109,7 +123,6 @@ void LDPMTetra :: checkNodeType() const {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: setIntegrationPointsAndWeights() {
     stats.resize(12);
-
     for ( unsigned i = 0; i < 12; i++ ) {
         //true face normal
         Point n = ( vert [ vertcodes [ 2 * i ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() ).cross(vert [ 0 ]->givePoint() - vert [ vertcodes [ 2 * i ] ]->givePoint() );
@@ -120,6 +133,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         normals [ i ] /= lengths [ i ];
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
         areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
+        surflengths [ i ] = (vert [ vertcodes [ 2 * i  ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint()).norm();
         if ( n.norm() == n.norm() ) { //NaN test
             areas [ i ] *= abs( n.dot(normals [ i ]) );     //projection of area
         }
@@ -506,30 +520,17 @@ LDPMCoupledTransport :: LDPMCoupledTransport(ElementContainer *allelems) : Discr
 //////////////////////////////////////////////////////////
 Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
     //crack opening
-    /*
-     * double crackInNeighborhood = 0;
-     * double crackVolume = 0.;
-     * double elem_crack_opening;
-     *
-     * for ( auto &f: friends ) {
-     *  elem_crack_opening = 0.;
-     *  for ( unsigned k = 0; k < f->giveNumIP(); k++ ) {
-     *      f->giveIPValues("crack_opening", k, res);
-     *      if ( res.size() == 1 ) {
-     *          elem_crack_opening += abs(res [ 0 ]);
-     *      }
-     *  }
-     *  crackInNeighborhood += pow(elem_crack_opening / f->giveNumIP(), 3) * friendsweight [ m ];
-     *  if ( ndim == 3 ) {
-     *      crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea() * length / f->givePerimeter();
-     *  } else if ( ndim == 2 ) {
-     *      crackVolume += ( elem_crack_opening / f->giveNumIP() ) * f->giveArea();
-     *  }
-     *  m++;
-     * }
-     * stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
-     * stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
-     */
+    
+    double crackParam, crackVolume;
+    tetA->computeCrackParametersForPoiseuilleFlow(LDPMsideA, &crackParam, &crackVolume);
+    if (tetB){
+        double crackParamB, crackVolumeB;
+        tetB->computeCrackParametersForPoiseuilleFlow(LDPMsideB, &crackParamB, &crackVolumeB);
+        crackVolume += crackVolumeB;
+        crackParam = 1./(g1/crackParam + g2/crackParamB);
+    }
+    stats [ 0 ]->setParameterValue("crack_param", crackParam);
+    stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
 
     //Biot effect
     double volStrain = tetA->giveVolumetricStrain();
@@ -538,7 +539,6 @@ Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
         volStrain /= 2.;
     }
     stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
-
     return DiscreteTrsprtElem :: giveStrain(i, DoFs);
 };
 
@@ -547,9 +547,6 @@ void LDPMCoupledTransport :: readFromLine(std :: istringstream &iss, NodeContain
     ( void ) fullnodes;
     iss >> LDPMTetraIDA;
     iss >> LDPMTetraIDB;
-    if ( LDPMTetraIDA == LDPMTetraIDB ) {
-        cerr << "Error " << name << ": two identical tetrahedras supplied, " << LDPMTetraIDA << endl;
-    }
     unsigned num;
     iss >> num;
     mat = fullmatrs->giveMaterial(num);
@@ -570,6 +567,9 @@ void LDPMCoupledTransport :: init() {
     if ( ( !tetA ) or ( !tetB ) ) {
         cout << "Error " << name << ": the element numbers are not LDPM tetras" << endl;
         exit(1);
+    }
+    if ( LDPMTetraIDA == LDPMTetraIDB ) {
+        cerr << "Error " << name << ": two identical tetrahedras supplied, " << LDPMTetraIDA << endl;
     }
     nodes.resize(2);
     nodes [ 0 ] = tetA->giveCentroid();
@@ -640,8 +640,18 @@ void LDPMCoupledTransport :: init() {
         vert [ p ] = nodesA [ k ];
         p++;
     }
-
     DiscreteTrsprtCoupledElem :: init();
+    
+    if (!tetB){
+        g1 = 1;
+        g2 = 0;
+    } else {
+        Point S = tetA->giveVertex(tetA->giveOppositeSurfaceVertexToNode(LDPMsideA))->givePoint();
+        g1 = (nodes[0]->givePoint()-S).norm();
+        g2 = (nodes[1]->givePoint()-S).norm();        
+        g1 /= g1+g2;
+        g2 = 1.-g1;        
+    }
 }
 
 
@@ -651,6 +661,7 @@ void LDPMCoupledTransport :: init() {
 //////////////////////////////////////////////////////////
 LDPMCoupledTransportBoundary :: LDPMCoupledTransportBoundary(ElementContainer *allelems) : LDPMCoupledTransport(allelems) {
     name = "LDPMCoupledTransportBoundary";
+    tetB = nullptr;
 };
 
 //////////////////////////////////////////////////////////

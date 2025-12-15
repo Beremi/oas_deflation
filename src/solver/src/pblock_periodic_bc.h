@@ -22,6 +22,7 @@ protected:
     bool crack_active = false;
 
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
+    BoundaryCondition *strainBC; ///< new boundary condition prescribing strain values
 
     virtual void generateNewDoFs(NodeContainer *nodes);
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
@@ -35,9 +36,11 @@ public:
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
+    std :: vector< double > giveSize() const {return PUCsize;};
     virtual void calculateVolume(ElementContainer *elems);
     std :: vector< unsigned >giveMasters() const { return masters; };
     std :: vector< unsigned >giveSlaves() const { return slaves; };
+    void setEigenStrain(Vector &eigstr); 
 };
 
 //////////////////////////////////////////////////////////

@@ -71,6 +71,12 @@ void DataExporter :: readFromLine(istringstream &iss) {
             iss >> precision;
         } else if ( param.compare("multiplier") == 0 ) {
             iss >> multiplier;
+        } else if ( param.compare("list") == 0 ) {
+            iss >> num;     
+            list.resize(num);
+            for ( int i = 0; i < num; i++ ) {
+                iss >> list[i];
+            } 
         } else if ( param.compare("saveIterations") == 0 ) {
             iss >> save_iterations;
         }

@@ -83,7 +83,7 @@ double VectTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type)
 double VectTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
     VectTrsprtCoupledMaterial *tmat = static_cast< VectTrsprtCoupledMaterial * >( mat );
     DiscreteTrsprtCoupledElem *tc = static_cast< DiscreteTrsprtCoupledElem * >( element );
-    return ( TensTrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
+   return ( TensTrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
 }
 
 //////////////////////////////////////////////////////////
@@ -130,7 +130,7 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
 void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double value) {
     if ( code.compare("volumetric_strain") == 0 ) {
         temp_volumetricStrain = value;
-    } else if ( code.compare("crack_opening") == 0 ) {
+    } else if ( code.compare("crack_param") == 0 ) {
         crackParam = value;
     } else if ( code.compare("crack_volume") == 0 ) {
         temp_crackVolume = value;

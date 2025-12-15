@@ -58,6 +58,7 @@ protected:
 
     IndirectControl *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
+    Vector eigen_trial_rPF, eigen_f_extPF, eigen_WextPF; //RVE fields to transfer macroscopic data to error evaluation
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
     void printAllVectors();
@@ -76,6 +77,9 @@ public:
     virtual void runAfterEachStep();
     virtual void solve();
     double giveIDCtime(const bool converged = true);
+    void setEigenErrorValue_rPF(unsigned pf, double value);
+    void setEigenErrorValue_fext(unsigned pf, double value);
+    void setEigenErrorValue_Wext(unsigned pf, double value);
 };
 
 //////////////////////////////////////////////////////////
