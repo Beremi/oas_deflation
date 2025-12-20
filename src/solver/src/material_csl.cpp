@@ -56,6 +56,19 @@ bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
         return true;
+    } else if ( code.compare("normal_dissipation_density") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = normalEnergyDensity - 0.5*temp_stress[0]*temp_strain[0];
+        return true;
+    } else if ( code.compare("shear_dissipation_density") == 0 ) {
+        VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );     
+        result.resize(1);
+        if (m->giveDimension()==2){
+            result [ 0 ] = shearEnergyDensity  - 0.5*temp_stress[1]*temp_strain[1];
+        }else{
+            result [ 0 ] = shearEnergyDensity - 0.5*(temp_stress[1]*temp_strain[1]+temp_stress[2]*temp_strain[2]);                
+        }
+        return true;        
     } else {
         return VectMechMaterialStatus :: giveValues(code, result);
     }
@@ -631,9 +644,6 @@ void CoupledCSLMaterialStatus :: updateStressByBiotEffect(double timeStep) {
     ( void ) timeStep;
     CoupledCSLMaterial *m = static_cast< CoupledCSLMaterial * >( mat );
     temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
-    if ( element->giveID() == 0 && idx == 0 ) {
-        cout << 0 << " " << 0 << " " << temp_stress [ 0 ] << " " << avgPressure << endl;
-    }
 }
 
 //////////////////////////////////////////////////////////

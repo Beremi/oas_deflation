@@ -90,6 +90,20 @@ bool LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
         return true;
+    } else if ( code.compare("normal_dissipation_density") == 0 ) {
+        VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );    
+        result.resize(1);
+        result [ 0 ] = normalEnergyDensity - 0.5*pow(temp_stress[0],2)/m->giveE0();
+        return true;
+    } else if ( code.compare("shear_dissipation_density") == 0 ) {
+        VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );     
+        result.resize(1);
+        if (m->giveDimension()==2){
+            result [ 0 ] = shearEnergyDensity - 0.5*(pow(temp_stress[1],2))/(m->giveE0()* m->giveAlpha());
+        }else{
+            result [ 0 ] = shearEnergyDensity - 0.5*(pow(temp_stress[1],2)+pow(temp_stress[2],2))/(m->giveE0()* m->giveAlpha());                
+        }
+        return true;           
     } else {
         return VectMechMaterialStatus :: giveValues(code, result);
     }

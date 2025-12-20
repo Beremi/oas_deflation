@@ -113,6 +113,7 @@ class VectMechMaterial;
 class VectMechMaterialStatus : public MaterialStatus
 {
 protected:
+    double normalEnergyDensity, shearEnergyDensity;
 public:
     VectMechMaterialStatus(VectMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectMechMaterialStatus() {};
@@ -123,6 +124,7 @@ public:
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual double giveNormalCrackOpening()const {return 0;};
+    virtual void update();    
 };
 
 //////////////////////////////////////////////////////////
@@ -130,6 +132,7 @@ class VectMechMaterial : public Material
 {
 protected:
     double E0, alpha, density;
+    
 public:
     VectMechMaterial(unsigned dimension);
     ~VectMechMaterial() {};

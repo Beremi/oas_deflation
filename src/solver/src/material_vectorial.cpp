@@ -151,7 +151,7 @@ Vector VectTrsprtCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vect
 
 
 //////////////////////////////////////////////////////////
-void VectTrsprtCoupledMaterialStatus ::  update() {
+void VectTrsprtCoupledMaterialStatus ::  update() {    
     TensTrsprtMaterialStatus :: update();
     volumetricStrain = temp_volumetricStrain;
     crackVolume = temp_crackVolume;
@@ -241,6 +241,8 @@ MaterialStatus *VectTrsprtCoupledMaterial :: giveNewMaterialStatus(Element *e, u
 VectMechMaterialStatus :: VectMechMaterialStatus(VectMechMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "discrete mechanical mat. status";
     mat = m;
+    normalEnergyDensity = 0;
+    shearEnergyDensity = 0;        
 }
 
 //////////////////////////////////////////////////////////
@@ -267,6 +269,15 @@ Vector VectMechMaterialStatus ::  giveStress(const Vector &strain, double timeSt
     return giveStressWithFrozenIntVars(strain, timeStep);
 };
 
+
+//////////////////////////////////////////////////////////
+void VectMechMaterialStatus ::  update(){
+    normalEnergyDensity += (temp_strain[0] - updt_strain[0])*(updt_stress[0] + temp_stress[0])/2.;
+    shearEnergyDensity += (temp_strain[1] - updt_strain[1])*(updt_stress[1] + temp_stress[1])/2.;
+    if (mat->giveDimension() == 3)  shearEnergyDensity += (temp_strain[2] - updt_strain[2])*(updt_stress[2] + temp_stress[2])/2.;
+    MaterialStatus :: update();
+}
+    
 //////////////////////////////////////////////////////////
 Vector VectMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
     ( void ) timeStep;

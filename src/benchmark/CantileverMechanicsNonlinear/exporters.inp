@@ -1,6 +1,7 @@
 TXTNodalExporter translations 1 d
 TXTIntegrationPointExporter IPdamage 3 x y damage
 TXTElementExporter Elemdamage 1 damage
+TXTElementExporter dissipation 2 normal_dissipation shear_dissipation
 DisplacementGauge LD displ uy 0 0 3 1
 ForceGauge LD load fy 1 6
 VTKElementExporter elems time_every 1e-20 cellData 3 stress crack_opening damage pointData 1 displacement extrapolatedNodeData 1 stress

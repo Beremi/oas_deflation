@@ -395,9 +395,25 @@ vector< unsigned >LDPMTetra :: giveFacetNodeCodes(unsigned k) const {
 //////////////////////////////////////////////////////////
 void LDPMTetra :: giveValues(string code, Vector &result) const {
     if ( code.compare("volumetric_strain") == 0 ) {
-        result.resize(0);
+        result.resize(1);
         result [ 0 ] = volumetricStrain;
-    } else {
+    } else  if ( code.compare("normal_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("normal_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;         
+        }
+    } else  if ( code.compare("shear_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("shear_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;
+        }
+    } else {    
         Element :: giveValues(code, result);
     }
 };

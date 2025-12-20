@@ -67,6 +67,22 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
                 result [ i ] = R(2, i);
             }
         }
+    } else  if ( code.compare("normal_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("normal_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;
+        }
+    } else  if ( code.compare("shear_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("shear_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;
+        }
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);
         result [ 0 ] = area * length / ndim;
