@@ -79,17 +79,38 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// LDPM TEMP ELEMENT
+class LDPMTetraWithHeatConduction : public LDPMTetra
+{
+protected:
+    virtual void computeMassMatrix();
+    virtual void checkNodeType() const;    
+
+public:
+    LDPMTetraWithHeatConduction(unsigned ndim);
+    ~LDPMTetraWithHeatConduction() {};
+    virtual void init();
+    virtual Matrix giveBMatrix(unsigned k) const;
+    virtual Matrix giveHMatrix(const Point *x) const;    
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // LDPM COUPLED ELEMENT
-class LDPMCoupledTetra : public LDPMTetra
+class LDPMCoupledTranspTetra : public LDPMTetra
 {
 protected:
 
 public:
-    LDPMCoupledTetra();
-    ~LDPMCoupledTetra() {};
+    LDPMCoupledTranspTetra();
+    ~LDPMCoupledTranspTetra() {};
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void giveValues(std :: string code, Vector &result) const;
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

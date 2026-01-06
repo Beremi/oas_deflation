@@ -594,6 +594,14 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
                 cellDataArray->SetValue(msize * ( i * 2 + 1 ) + j, 0);
             }
         }
+        for ( const auto &tet: exportedElemsTET ) {
+            for ( unsigned k = 0; k < tet->giveNumOfFacets(); k++ ) {
+                //tet->giveIPValues(codes [ p ].c_str(), k, data [ i ]);
+                //msize = max< size_t >(msize, data [ i ].size() );
+                //i++;
+                //TODO 
+            }
+        }        
         unstructuredGrid->GetCellData()->AddArray(cellDataArray);
     }
 

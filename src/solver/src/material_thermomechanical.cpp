@@ -16,26 +16,9 @@ bool ThermoMechanicalMaterialStatus :: giveValues(std :: string code, Vector &re
 
 //////////////////////////////////////////////////////////
 Vector ThermoMechanicalMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    Vector mstrain, mstress;
-
     addTemperatureEffectToMechanics();
 
-    unsigned k = 0;
-    unsigned h, i;
-    for ( auto &s:stats ) {
-        h = s->giveMaterial()->giveStrainSize();
-        mstrain.resize(h);
-        for ( i = 0; i < h; i++ ) {
-            mstrain [ i ] = temp_strain [ k + i ];
-        }
-        mstress = s->giveStress(mstrain, timeStep);
-        for ( i = 0; i < h; i++ ) {
-            temp_stress [ k + i ] = mstress [ i ];
-        }
-        k += h;
-    }
-    return temp_stress;
+    return CoupledMaterialStatus::giveStress(strain, timeStep);
 }
 
 
@@ -49,39 +32,22 @@ void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, dou
 
 //////////////////////////////////////////////////////////
 Vector ThermoMechanicalMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    Vector mstrain, mstress;
-
     addTemperatureEffectToMechanics();
 
-    unsigned k = 0;
-    unsigned h, i;
-    for ( auto &s:stats ) {
-        h = s->giveMaterial()->giveStrainSize();
-        mstrain.resize(h);
-        for ( i = 0; i < h; i++ ) {
-            mstrain [ i ] = temp_strain [ k + i ];
-        }
-        mstress = s->giveStressWithFrozenIntVars(mstrain, timeStep);
-        for ( i = 0; i < h; i++ ) {
-            temp_stress [ k + i ] = mstress [ i ];
-        }
-        k += h;
-    }
-    return temp_stress;
+    return CoupledMaterialStatus::giveStressWithFrozenIntVars(strain, timeStep);
 }
 
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterial :: init(MaterialContainer *matcont) {
     CoupledMaterial :: init(matcont);
     if ( mats.size() != 2 ) {
-        cerr << name << "Error: two materials are reqested, " << mats.size() << " provided." << endl;
+        cerr << name << "Error: two materials are requested, " << mats.size() << " provided." << endl;
         exit(1);
     }
     VectMechMaterial *vmm = dynamic_cast< VectMechMaterial * >( mats [ 0 ] );
-    VectTrsprtMaterial *vtm = dynamic_cast< VectTrsprtMaterial * >( mats [ 1 ] );
+    VectHeatConductionMaterial *vtm = dynamic_cast< VectHeatConductionMaterial * >( mats [ 1 ] );
     if ( !vmm || !vtm ) {
-        cerr << name << "Error: first material must be inherited from VectMechMaterial, the second from VectTrsprtMaterial." << endl;
+        cerr << name << "Error: first material must be inherited from VectMechMaterial, the second from VectHeatConductionMaterial." << endl;
         exit(1);
     }
 };
@@ -125,7 +91,7 @@ MaterialStatus *ThermoMechanicalMaterial :: giveNewMaterialStatus(Element *e, un
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus ::  addTemperatureEffectToMechanics() {
     ThermoMechanicalMaterial *tmm = static_cast< ThermoMechanicalMaterial * >( mat );
-    Vector eig = Vector :: Zero(mat->giveDimension() );
+    Vector eig = Vector :: Zero(mat->giveDimension());
     eig [ 0 ] = ( temperature - tmm->giveInitialTemperature() ) * tmm->giveThermalExpansionCoeff();
     stats [ 0 ]->setEigenStrain(eig);
 };

@@ -60,10 +60,10 @@ void MaterialStatus :: computeEnergyDensities(){
 
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: update() {
-    computeEnergyDensities();
+void MaterialStatus :: update() { 
+    computeEnergyDensities(); 
     updt_strain = temp_strain;
-    updt_stress = temp_stress;
+    updt_stress = temp_stress;  
     updt_dissip_energy = dissipEnergyDensity;
 }
 
@@ -145,6 +145,10 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
+    if (num!=giveMaterial()->giveStrainSize()) {
+        cerr <<"Error in " << giveName() << ": strain size does not match" << endl;
+        exit(1);
+    }
     temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(num);
 }
 
@@ -186,6 +190,14 @@ CoupledMaterialStatus :: ~CoupledMaterialStatus() {
             delete * m;
         }
     }
+}
+
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: init() {
+    for ( auto &s:stats ) {
+        s->init();
+    }    
 }
 
 //////////////////////////////////////////////////////////
@@ -275,9 +287,41 @@ bool CoupledMaterialStatus :: giveValues(std :: string code, Vector &result) con
 //////////////////////////////////////////////////////////
 void CoupledMaterialStatus :: update() {
     for ( auto &s:stats ) {
-        s->update();
+        s->update();      
     }
     MaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus* CoupledMaterialStatus :: giveMechanicalMaterialStatus(){
+    for ( auto &s:stats ) {
+        if(s->giveMechanicalMaterialStatus()) return s;
+    }    
+    return nullptr; 
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus* CoupledMaterialStatus :: giveTransportMaterialStatus(){
+    for ( auto &s:stats ) {
+        if(s->giveTransportMaterialStatus()) return s;
+    }  
+    return nullptr;
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus* CoupledMaterialStatus :: giveHeatConductionMaterialStatus(){
+    for ( auto &s:stats ) {
+        if(s->giveHeatConductionMaterialStatus()) return s;
+    }  
+    return nullptr;
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
+    MaterialStatus::initializeStressAndStrainVector(num);    
+    for ( auto &s:stats ) {
+        s->initializeStressAndStrainVector(s->giveMaterial()->giveStrainSize());
+    } 
 }
 
 //////////////////////////////////////////////////////////
@@ -333,3 +377,27 @@ Material *CoupledMaterial :: giveMaterial(unsigned i) const {
     }
     return mats [ i ];
 };
+
+//////////////////////////////////////////////////////////
+Material* CoupledMaterial :: giveMechanicalMaterial(){
+    for ( auto &s:mats ) {
+        if(s->giveMechanicalMaterial()) return s;
+    }    
+    return nullptr; 
+}
+
+//////////////////////////////////////////////////////////
+Material* CoupledMaterial :: giveTransportMaterial(){
+    for ( auto &s:mats ) {
+        if(s->giveTransportMaterial()) return s;
+    }  
+    return nullptr;
+}
+
+//////////////////////////////////////////////////////////
+Material* CoupledMaterial :: giveHeatConductionMaterial(){
+    for ( auto &s:mats ) {
+        if(s->giveHeatConductionMaterial()) return s;
+    }  
+    return nullptr;
+}

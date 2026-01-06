@@ -129,6 +129,7 @@ double LDPMMaterialStatus :: giveStrengthLimit(double omega) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_prev, Vector stress_prev) {
+
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
     // new strains & strains + stresses from previous step
@@ -160,7 +161,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
     temp_maxEpsN = max(maxEpsN, epsN);
     temp_maxEpsT = max(maxEpsT, epsT);
     double temp_maxEpsEff = sqrt(pow(temp_maxEpsN, 2) + m->giveAlpha() * pow(temp_maxEpsT, 2) );          // max effective strains
-
+    
     // elasticity
     double dEps = epsEff - epsEff_prev;
     double dStrElastic = m->giveE0() * dEps;
@@ -198,6 +199,7 @@ Vector LDPMMaterialStatus :: giveTension(const Vector &strain, Vector strain_pre
             intStress [ 2 ] = m->giveAlpha() * strEff * strain [ 2 ] / epsEff;
         }
     }
+    
     return intStress;
 }
 
@@ -429,8 +431,9 @@ Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    temp_mech_strain = addEigenStrain(strain);
+    
+    temp_strain = addEigenStrain(strain);
+    temp_mech_strain = temp_strain;
 
     //compute differentiations
     deVdt = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
@@ -442,7 +445,7 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
         temp_mech_stress = passZero(temp_mech_strain);
     } else {
         //if ( min(temp_mech_strain [ 0 ], updt_mech_strain[0])<= 0 ) {  // normal evolution in compression
-        if ( temp_mech_strain [ 0 ] > 0 || updt_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension
+        if ( temp_mech_strain [ 0 ] > 0 || updt_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension       
             temp_mech_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_mech_stress);
         } else {
             temp_mech_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_mech_stress);
@@ -455,6 +458,7 @@ Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
 
     //this is needed because of the rate form, some other physical processes might update the totoal stress
     temp_stress = temp_mech_stress;
+    
     return temp_stress;
 }
 

@@ -1722,11 +1722,9 @@ Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
             B(j, i + p + 1) = RB(j, i + p);
         }
     }
-    //transport
+    //temperature
     B(ndim, p) = -1. / length;
-    ;
     B(ndim, 2 * p + 1) = 1. / length;
-    ;
     return B;
 }
 
@@ -1734,7 +1732,7 @@ Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Vector RigidBodyContactWithHeatConduction :: giveStrain(unsigned i, const Vector &DoFs) {
     unsigned p = 3 * ( ndim - 1 );
-    stats [ 0 ]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
+    stats[i]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
     return RigidBodyContact :: giveStrain(i, DoFs);
 }
 

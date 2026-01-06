@@ -23,6 +23,8 @@ public:
     VectTrsprtMaterialStatus(VectTrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectTrsprtMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual MaterialStatus* giveTransportMaterialStatus() {return this;};      
+    
 };
 
 //////////////////////////////////////////////////////////
@@ -35,6 +37,7 @@ public:
     ~VectTrsprtMaterial() {};
     virtual void init(MaterialContainer *matcont) { TensTrsprtMaterial :: init(matcont); strainsize = 1; }
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual Material* giveTransportMaterial() {return this;};      
 };
 
 //////////////////////////////////////////////////////////
@@ -49,6 +52,7 @@ public:
     VectHeatConductionMaterialStatus(VectHeatConductionMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectHeatConductionMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual MaterialStatus* giveHeatConductionMaterialStatus() {return this;};      
 };
 
 //////////////////////////////////////////////////////////
@@ -61,6 +65,7 @@ public:
     ~VectHeatConductionMaterial() {};
     virtual void init(MaterialContainer *matcont) { TensHeatConductionMaterial :: init(matcont); strainsize = 1; }
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
+    virtual Material* giveHeatConductionMaterial() {return this;};      
 };
 
 
@@ -125,6 +130,7 @@ public:
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual double giveNormalCrackOpening()const {return 0;};
     virtual void update();    
+    virtual MaterialStatus* giveMechanicalMaterialStatus() {return this;};
 };
 
 //////////////////////////////////////////////////////////
@@ -142,6 +148,7 @@ public:
     double giveAlpha() const { return alpha; }
     double giveE0() const { return E0; }
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim; }
+    virtual Material* giveMechanicalMaterial() {return this;};
 };
 
 //////////////////////////////////////////////////////////
