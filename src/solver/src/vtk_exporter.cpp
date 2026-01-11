@@ -538,6 +538,7 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
                 i++;
             }
         }
+        cout << codes [ p ] << " " << msize << endl;
         vtkSmartPointer< vtkDoubleArray >cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
         cellDataArray->SetName(codes [ p ].c_str() );
         cellDataArray->SetNumberOfComponents(msize);
