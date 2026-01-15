@@ -830,7 +830,7 @@ Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &
 
 //////////////////////////////////////////////////////////
 void DamagePlasticMaterialStatus :: update() {
-    VectMechMaterialStatus :: update();
+    //VectMechMaterialStatus :: update();
 
     prev_damage = damage;
     prev_epsNP = epsNP;
@@ -1171,8 +1171,8 @@ void FatigueMaterialStatus :: update() {
             FatigueShearMaterialStatus :: setDamage(res [ 0 ]);
         }
     }
+    DamagePlasticMaterialStatus :: update();  
     FatigueShearMaterialStatus :: update();
-    DamagePlasticMaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
