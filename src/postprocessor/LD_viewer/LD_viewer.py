@@ -135,12 +135,20 @@ class LDFile(HasStrictTraits):
     def _name_default(self):
         return 'F{}'.format(self.ldfile_num)
 
-    def _open_button_fired ( self ):
-        """ Handles the user clicking the 'Open...' button.
-        """
-        file_name = open_file(extensions=FileInfo(), id='ld_openfile')
-        if file_name != '':
-            self.ld_file = str(pathlib.Path(file_name).absolute())
+    def _open_button_fired(self):
+        """Handles the user clicking the 'Open...' button."""
+        wildcard = '*.out|*.txt|*.dat|*.csv|*.*'
+        default_dir = str(pathlib.Path(self.ld_file).parent) if self.ld_file else str(pathlib.Path.cwd())
+        
+        dialog = FileDialog(
+            title='Open LD File',
+            action='open',
+            wildcard=wildcard,
+            default_directory=default_dir
+        )
+        
+        if dialog.open() == OK:
+            self.ld_file = str(pathlib.Path(dialog.path).absolute())
 
     def _reload_button_fired(self, silent=False):
         """
