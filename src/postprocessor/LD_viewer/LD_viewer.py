@@ -7,21 +7,23 @@ import datetime
 #os.environ["ETS_TOOLKIT"] = "qt"
 #os.environ["QT_API"] = "pyqt6"
 from traits.api import HasStrictTraits, Instance, List, Enum, Button, Str, \
-                        Any, Bool, Float, Tuple
+                        Any, Bool, Float, Tuple, Property
 from traitsui.api import Item, View, HSplit, NoButtons, HGroup, Group, \
                          Handler, VGroup, ListEditor, TreeEditor, TreeNode
 from traitsui.menu \
-    import Menu, Action, Separator
+    import Menu, Action, Separator, MenuBar
 from traitsui.qt.tree_editor \
     import CopyAction, CutAction, \
            PasteAction, DeleteAction, RenameAction
 from traitsui.message import Message
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
+from pyface.api import FileDialog, OK
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
 import pandas as pd
 import mplcursors
 from threading import Thread, Event
+import json
 
 class TimeFilter(logging.Filter):
 
@@ -73,7 +75,17 @@ class LDFile(HasStrictTraits):
         super().__init__(**traits)
 
     name = Str
+    active = Bool(True)  # Control whether to draw this file
     ld_file = Str('', changed=True, enter_set=True, auto_set=False)
+    
+    tree_label = Property(depends_on='name, active')
+    
+    def _get_tree_label(self):
+        """Return formatted label for tree display"""
+        if self.active:
+            return self.name
+        else:
+            return f"⊘ {self.name}"
     open_button = Button('Open...')
     reload_button = Button('Reload')
     data = Any(None)
@@ -115,6 +127,10 @@ class LDFile(HasStrictTraits):
         
         self.parent.ldfiles.append(new_file)
         logging.info(f'Duplicated {self.name} with {len(new_file.ld_curves)} curves')
+    
+    def toggle_active(self):
+        """Toggle the active state"""
+        self.active = not self.active
 
     def _name_default(self):
         return 'F{}'.format(self.ldfile_num)
@@ -126,16 +142,22 @@ class LDFile(HasStrictTraits):
         if file_name != '':
             self.ld_file = str(pathlib.Path(file_name).absolute())
 
-    def _reload_button_fired ( self ):
+    def _reload_button_fired(self, silent=False):
         """
+        Reload data from files
+        Args:
+            silent: If True, suppress error dialogs (used by background thread)
         """
-        self.labels = self.__load_data()
+        self.labels = self.__load_data(silent=silent)
 
     def _ld_file_changed(self):
         self.labels = self.__load_data()
 
-    def __load_data(self):
-        """Load data from LD file"""
+    def __load_data(self, silent=False):
+        """Load data from LD file
+        Args:
+            silent: If True, suppress error dialogs (only log errors)
+        """
         if not self.ld_file:
             logging.debug('No file specified yet')
             self.data = None
@@ -143,7 +165,8 @@ class LDFile(HasStrictTraits):
         
         if not pathlib.Path(self.ld_file).exists():
             logging.error(f'File does not exist: {self.ld_file}')
-            error(f'File does not exist:\n{self.ld_file}', 'Error')
+            if not silent:
+                error(f'File does not exist:\n{self.ld_file}', 'Error')
             self.data = None
             return []
         
@@ -154,7 +177,8 @@ class LDFile(HasStrictTraits):
             return list(self.data.columns)
         except Exception as err:
             logging.error(f'Failed to load {self.ld_file}: {err}')
-            error(f'The file cannot be loaded:\n{self.ld_file}\n\n{str(err)}', 'Error')
+            if not silent:
+                error(f'The file cannot be loaded:\n{self.ld_file}\n\n{str(err)}', 'Error')
             self.data = None
             return []
 
@@ -186,6 +210,16 @@ class LDCurve(HasStrictTraits):
     labels = List
 
     name = Str
+    active = Bool(True)  # Control whether to draw this curve
+    
+    tree_label = Property(depends_on='name, active')
+    
+    def _get_tree_label(self):
+        """Return formatted label for tree display"""
+        if self.active:
+            return self.name
+        else:
+            return f"⊘ {self.name}"
 
     x_values = Enum(values='labels')
     y_values = Enum(values='labels')
@@ -238,13 +272,18 @@ class LDCurve(HasStrictTraits):
             return False
         return True
 
-    def draw_line(self, ax):
+    def draw_line(self, ax, ignore_last_step=False):
         """Draw line on the given axes"""
         if not self._validate_data():
             return []
         
         x_to_draw = self.ldfile.data[self.x_values] * self.x_scale
         y_to_draw = self.ldfile.data[self.y_values] * self.y_scale
+        
+        # Exclude last data point if ignore_last_step is True
+        if ignore_last_step and len(x_to_draw) > 1:
+            x_to_draw = x_to_draw[:-1]
+            y_to_draw = y_to_draw[:-1]
         
         return ax.plot(x_to_draw, y_to_draw,
                        label=f'{self.ldfile.name}-{self.name}', 
@@ -287,8 +326,25 @@ class LDCurve(HasStrictTraits):
 
     def _name_default(self):
         return 'LD {}'.format(self.ld_num)
+    
+    def toggle_active(self):
+        """Toggle the active state"""
+        self.active = not self.active
 
-    view = View(VGroup(Item('name'),
+    view = View(VGroup(HGroup(Item('name'),
+                              Item('active', label='Draw')),
+                       HGroup(HItem('x_values'),
+                               Item('x_scale', show_label=False)),
+                       HGroup(HItem('y_values'),
+                               Item('y_scale', show_label=False)),
+                       Item('draw_this_button', show_label=False),
+                       Item('copy_to_clipboard', show_label=False),
+                       Item('save_to_txt', show_label=False),
+                       )
+                )
+
+ldcurve_view = View(VGroup(HGroup(Item('name'),
+                              Item('active', label='Draw')),
                        HGroup(HItem('x_values'),
                                Item('x_scale', show_label=False)),
                        HGroup(HItem('y_values'),
@@ -320,30 +376,6 @@ class LDFiles(HasStrictTraits):
                 item.parent = self
             if item.figure is None:
                 item.figure = self.figure
-    
-    def duplicate_ldfile(self, ldfile):
-        """Duplicate an LDFile with all its curves"""
-        if not isinstance(ldfile, LDFile):
-            return
-        
-        new_file = LDFile(figure=self.figure)
-        new_file.name = f"{ldfile.name}_copy"
-        new_file.ld_file = ldfile.ld_file
-        new_file.data = ldfile.data
-        new_file.labels = ldfile.labels.copy() if ldfile.labels else []
-        
-        # Duplicate all curves
-        for curve in ldfile.ld_curves:
-            new_curve = LDCurve(ldfile=new_file, labels=new_file.labels)
-            new_curve.name = curve.name
-            new_curve.x_values = curve.x_values
-            new_curve.y_values = curve.y_values
-            new_curve.x_scale = curve.x_scale
-            new_curve.y_scale = curve.y_scale
-            new_file.ld_curves.append(new_curve)
-        
-        self.ldfiles.append(new_file)
-        logging.info(f'Duplicated {ldfile.name} with {len(new_file.ld_curves)} curves')
 
     view = View(
         Item('add_ldfile', show_label=False),
@@ -397,11 +429,25 @@ class ReloadingThread(Thread):
     def run(self):
         while not self.event.is_set():
             try:
-                self.controler._reload_button_fired()
+                # Use silent=True to suppress error dialogs in background
+                for lds in list(self.controler.ldfiles.ldfiles):
+                    try:
+                        lds._reload_button_fired(silent=True)
+                    except Exception as e:
+                        logging.error(f"Error reloading {lds.name}: {e}")
+            except Exception as e:
+                logging.error(f"Error reloading files: {e}")
+            
+            try:
                 self.controler._clear_button_fired()
+            except Exception as e:
+                logging.error(f"Error clearing figure: {e}")
+            
+            try:
                 self.controler._draw_button_fired()
             except Exception as e:
-                logging.error(f"Error in reloading thread: {e}")
+                logging.error(f"Error drawing curves: {e}")
+            
             self.event.wait(timeout=self.controler.time_to_sleep)
 
 
@@ -410,7 +456,8 @@ ldfile_view = View(VGroup(HGroup(Item('open_button', show_label=False, id='ld_op
                        Item('reload_button', show_label=False),
                        Item('ld_file', id='ld_file'),#, style='readonly')
                         ),
-                Item('name'),
+                HGroup(Item('name'),
+                       Item('active', label='Draw')),
                 Item('add_ldcurve', show_label=False),
                 Item('ld_curves', style='custom', show_label=False,
                 editor=ListEditor(use_notebook=True,
@@ -431,6 +478,17 @@ duplicate_ldfile_action = Action(
     action='object.duplicate'
 )
 
+# Custom action for toggling active state
+toggle_ldfile_active_action = Action(
+    name='Toggle Active/Inactive',
+    action='object.toggle_active'
+)
+
+toggle_ldcurve_active_action = Action(
+    name='Toggle Active/Inactive',
+    action='object.toggle_active'
+)
+
 # Tree editor
 tree_editor = TreeEditor(
     nodes = [
@@ -440,29 +498,45 @@ tree_editor = TreeEditor(
                   label     = '=LD Files',
                   add       = [ LDFile ],
                   move      = [ LDFile ],
-                  menu=Menu( add_ldfile_action,
-                             Separator(),
-                             CopyAction,
-                             CutAction,
-                             PasteAction,
+                  menu=Menu( #add_ldfile_action,
+                             #Separator(),
+                             #CopyAction,
+                             #CutAction,
+                             #PasteAction,
                              Separator(),
                              DeleteAction),
                   view =  View()),
         TreeNode( node_for  = [ LDFile ],
                   auto_open = True,
-                  label     = 'name',
+                  label     = 'tree_label',
+                  children  = 'ld_curves',
                   copy       = True,
-                  menu=Menu( add_ldfile_action,
+                  add       = [ LDCurve ],
+                  move      = [ LDCurve ],
+                  menu=Menu( #add_ldfile_action,
+                             #Separator(),
+                             toggle_ldfile_active_action,
                              Separator(),
-                             CopyAction,
+                             #CopyAction,
                              duplicate_ldfile_action,
-                             CutAction,
-                             PasteAction,
+                             #CutAction,
+                             #PasteAction,
                              Separator(),
                              DeleteAction,
                              Separator(),
                              RenameAction),
-                  view =  ldfile_view)
+                  view =  ldfile_view),
+        TreeNode( node_for  = [ LDCurve ],
+                  auto_open = True,
+                  label     = 'tree_label',
+                  copy      = True,
+                  menu=Menu( toggle_ldcurve_active_action,
+                             Separator(),
+                             Separator(),
+                             DeleteAction,
+                             Separator(),
+                             RenameAction),
+                  view =  ldcurve_view)
     ],
     hide_root=False,
     orientation="vertical",
@@ -475,6 +549,7 @@ class ControlPanel(HasStrictTraits):
     axis_settings = Instance(AxisSettings, ())
     figure = Instance(Figure)
     cursor = Any()  # mplcursors cursor instance
+    current_file = Str('')  # Track current save file
 
     add_ldfile_button = Button('Add new LD file')
     draw_button = Button('Draw all')
@@ -483,6 +558,8 @@ class ControlPanel(HasStrictTraits):
     update_axis_labels = Button('Update default labels')
     
     get_current_limits = Button('Get current limits')
+    save_state_button = Button('Save State')
+    restore_state_button = Button('Restore State')
         
     reloading_thread = Instance(Thread)
     event = Instance(Event, ())
@@ -504,8 +581,6 @@ class ControlPanel(HasStrictTraits):
     def _ldfiles_default(self):
         logging.debug(f'Initializing LDFiles with figure: {self.figure}')
         ldfiles = LDFiles(figure=self.figure)
-        # Create one empty LDFile on startup
-        ldfiles.ldfiles.append(LDFile(figure=self.figure, parent=ldfiles))
         return ldfiles
 
     def _add_ldfile_button_fired(self):
@@ -553,9 +628,15 @@ class ControlPanel(HasStrictTraits):
         ax = self.figure.axes[0]
         lines = []
         
+        ignore_last = self.figure_settings.ignore_last_step
+        
         for ldfile in self.ldfiles.ldfiles:
+            if not ldfile.active:  # Skip inactive files
+                continue
             for curve in ldfile.ld_curves:
-                line_result = curve.draw_line(ax)
+                if not curve.active:  # Skip inactive curves
+                    continue
+                line_result = curve.draw_line(ax, ignore_last_step=ignore_last)
                 if line_result:
                     lines.extend(line_result)
         
@@ -583,14 +664,180 @@ class ControlPanel(HasStrictTraits):
         logging.info(f'Drew {len(lines)} curve(s)')
 
     def _reload_button_fired(self):
-        for lds in self.ldfiles.ldfiles:
-            lds.reload_button = True
+        # Iterate over a copy to avoid issues if list is modified during iteration
+        for lds in list(self.ldfiles.ldfiles):
+            try:
+                lds.reload_button = True
+            except Exception as e:
+                logging.error(f"Error reloading {lds.name}: {e}")
         logging.info('Reloaded all files')
         
     def _get_current_limits_fired(self):
         ax = self.figure.axes[0]
         self.figure_settings.x_limits = ax.get_xlim()
         self.figure_settings.y_limits = ax.get_ylim()
+    
+    def _save_state_to_file(self, file_name):
+        """Internal method to save state to a specific file"""
+        try:
+            state = {
+                'ldfiles': [],
+                'figure_settings': {
+                    'ignore_last_step': self.figure_settings.ignore_last_step,
+                    'show_legend': self.figure_settings.show_legend,
+                    'set_xlim': self.figure_settings.set_xlim,
+                    'x_limits': list(self.figure_settings.x_limits),
+                    'set_ylim': self.figure_settings.set_ylim,
+                    'y_limits': list(self.figure_settings.y_limits),
+                },
+                'axis_settings': {
+                    'title': self.axis_settings.title,
+                    'xlabel': self.axis_settings.xlabel,
+                    'ylabel': self.axis_settings.ylabel,
+                }
+            }
+            
+            for ldfile in self.ldfiles.ldfiles:
+                ldfile_data = {
+                    'name': ldfile.name,
+                    'active': ldfile.active,
+                    'ld_file': ldfile.ld_file,
+                    'curves': []
+                }
+                
+                for curve in ldfile.ld_curves:
+                    curve_data = {
+                        'name': curve.name,
+                        'active': curve.active,
+                        'x_values': curve.x_values,
+                        'y_values': curve.y_values,
+                        'x_scale': curve.x_scale,
+                        'y_scale': curve.y_scale,
+                    }
+                    ldfile_data['curves'].append(curve_data)
+                
+                state['ldfiles'].append(ldfile_data)
+            
+            with open(file_name, 'w') as f:
+                json.dump(state, f, indent=2)
+            
+            self.current_file = file_name
+            logging.info(f'State saved to {file_name}')
+            return True
+        except Exception as err:
+            logging.error(f'Failed to save state: {err}')
+            error(f'Failed to save state:\n{str(err)}', 'Error')
+            return False
+    
+    def save_state(self, parent=None):
+        """Save to current file or prompt for new file"""
+        if self.current_file:
+            return self._save_state_to_file(self.current_file)
+        else:
+            return self.save_state_as(parent=parent)
+    
+    def save_state_as(self, parent=None):
+        """Prompt for file and save state"""
+        wildcard = '*.json'
+        default_path = self.current_file if self.current_file else 'ld_viewer_state.json'
+        
+        dialog = FileDialog(
+            title='Save State',
+            action='save as',
+            wildcard=wildcard,
+            default_path=default_path
+        )
+        
+        if dialog.open() == OK:
+            file_name = dialog.path
+        else:
+            logging.info('Save state cancelled')
+            return False
+        
+        if not file_name.endswith('.json'):
+            file_name += '.json'
+        
+        return self._save_state_to_file(file_name)
+    
+    def _save_state_button_fired(self):
+        """Save current state to JSON file (for button compatibility)"""
+        self.save_state_as()
+    
+    def _restore_state_button_fired(self):
+        """Restore state from JSON file (for button compatibility)"""
+        self.open_state()
+    
+    def open_state(self, parent=None):
+        """Restore state from JSON file"""
+        wildcard = '*.json'
+        default_dir = str(pathlib.Path(self.current_file).parent) if self.current_file else str(pathlib.Path.cwd())
+        
+        dialog = FileDialog(
+            title='Open State',
+            action='open',
+            wildcard=wildcard,
+            default_directory=default_dir
+        )
+        
+        if dialog.open() == OK:
+            file_name = dialog.path
+        else:
+            logging.info('Restore state cancelled')
+            return False
+        
+        try:
+            with open(file_name, 'r') as f:
+                state = json.load(f)
+            
+            # Clear current ldfiles
+            self.ldfiles.ldfiles = []
+            
+            # Restore figure settings
+            fs = state.get('figure_settings', {})
+            self.figure_settings.ignore_last_step = fs.get('ignore_last_step', False)
+            self.figure_settings.show_legend = fs.get('show_legend', False)
+            self.figure_settings.set_xlim = fs.get('set_xlim', False)
+            self.figure_settings.x_limits = tuple(fs.get('x_limits', [float('nan'), float('nan')]))
+            self.figure_settings.set_ylim = fs.get('set_ylim', False)
+            self.figure_settings.y_limits = tuple(fs.get('y_limits', [float('nan'), float('nan')]))
+            
+            # Restore axis settings
+            ax = state.get('axis_settings', {})
+            self.axis_settings.title = ax.get('title', '')
+            self.axis_settings.xlabel = ax.get('xlabel', '')
+            self.axis_settings.ylabel = ax.get('ylabel', '')
+            
+            # Restore ldfiles
+            for ldfile_data in state.get('ldfiles', []):
+                new_ldfile = LDFile(figure=self.figure, parent=self.ldfiles)
+                new_ldfile.name = ldfile_data['name']
+                new_ldfile.active = ldfile_data.get('active', True)
+                new_ldfile.ld_file = ldfile_data['ld_file']
+                
+                # Load data if file exists
+                if new_ldfile.ld_file and pathlib.Path(new_ldfile.ld_file).exists():
+                    new_ldfile._ld_file_changed()
+                
+                # Restore curves
+                for curve_data in ldfile_data.get('curves', []):
+                    new_curve = LDCurve(ldfile=new_ldfile, labels=new_ldfile.labels)
+                    new_curve.name = curve_data['name']
+                    new_curve.active = curve_data.get('active', True)
+                    new_curve.x_values = curve_data.get('x_values', '')
+                    new_curve.y_values = curve_data.get('y_values', '')
+                    new_curve.x_scale = curve_data.get('x_scale', 1.0)
+                    new_curve.y_scale = curve_data.get('y_scale', 1.0)
+                    new_ldfile.ld_curves.append(new_curve)
+                
+                self.ldfiles.ldfiles.append(new_ldfile)
+            
+            self.current_file = file_name
+            logging.info(f'State restored from {file_name}')
+            return True
+        except Exception as err:
+            logging.error(f'Failed to restore state: {err}')
+            error(f'Failed to restore state:\n{str(err)}', 'Error')
+            return False
 
     view = View(VGroup(
                     Group(
@@ -613,6 +860,9 @@ class ControlPanel(HasStrictTraits):
                         Item('reload_button', show_label=False, springy=True),
                         Item('clear_button', show_label=False, springy=True),
                         Item('draw_button', show_label=False, springy=True)),
+                    HGroup(
+                        Item('save_state_button', show_label=False, springy=True),
+                        Item('restore_state_button', show_label=False, springy=True)),
                     HGroup(Item('time_to_sleep', enabled_when='reloading_thread.event.is_set()'),
                         Item('start_stop_reloading', show_label=False)),),
                 resizable=True,
@@ -625,6 +875,21 @@ class TC_Handler(Handler):
     def object_title_changed(self, info):
         if info.initialized:
             info.ui.title = info.object.title
+    
+    def open_file(self, info):
+        """Menu action: Open state file"""
+        parent = info.ui.control if hasattr(info.ui, 'control') else None
+        info.object.panel.open_state(parent=parent)
+    
+    def save_file(self, info):
+        """Menu action: Save to current file"""
+        parent = info.ui.control if hasattr(info.ui, 'control') else None
+        info.object.panel.save_state(parent=parent)
+    
+    def save_file_as(self, info):
+        """Menu action: Save As"""
+        parent = info.ui.control if hasattr(info.ui, 'control') else None
+        info.object.panel.save_state_as(parent=parent)
             
     def close(self, info, is_OK):
         """Clean up before closing"""
@@ -657,6 +922,15 @@ class LDViewer(HasStrictTraits):
                        Item('figure', show_label=False, editor=MPLFigureEditor(), dock='vertical', width=0.8),
                        show_labels=False, id='ld_hsplit', dock='tab'
                       ),
+                menubar=MenuBar(
+                    Menu(
+                        Action(name='Open', action='open_file'),
+                        Separator(),
+                        Action(name='Save', action='save_file'),
+                        Action(name='Save As...', action='save_file_as'),
+                        name='File'
+                    )
+                ),
                 title='LD Viewer',
                 resizable=True,
                 height=0.75, width=0.75,
@@ -687,6 +961,21 @@ def init_parser():
                         type=str,
                         #nargs='?',
                         help='y axis')
+    
+    parser.add_argument('-x_scale',
+                        type=float,
+                        default=1.0,
+                        help='x axis scale factor (default: 1.0)')
+    
+    parser.add_argument('-y_scale',
+                        type=float,
+                        default=1.0,
+                        help='y axis scale factor (default: 1.0)')
+    
+    parser.add_argument('-state',
+                        type=pathlib.Path,
+                        default=None,
+                        help='Load state from JSON file')
 
     # Execute the parse_args() method
     return parser.parse_args()
@@ -698,7 +987,64 @@ if __name__ == '__main__':
     start_time = time.time()
     logging.info('Loading data')
     
-    if args.ld_files:
+    # Load state file if provided
+    if args.state:
+        if args.state.exists():
+            logging.info(f'Loading state from {args.state}')
+            ld_viewer.panel.current_file = str(args.state.absolute())
+            try:
+                with open(args.state, 'r') as f:
+                    state = json.load(f)
+                
+                # Restore figure settings
+                fs = state.get('figure_settings', {})
+                ld_viewer.panel.figure_settings.ignore_last_step = fs.get('ignore_last_step', False)
+                ld_viewer.panel.figure_settings.show_legend = fs.get('show_legend', False)
+                ld_viewer.panel.figure_settings.set_xlim = fs.get('set_xlim', False)
+                ld_viewer.panel.figure_settings.x_limits = tuple(fs.get('x_limits', [float('nan'), float('nan')]))
+                ld_viewer.panel.figure_settings.set_ylim = fs.get('set_ylim', False)
+                ld_viewer.panel.figure_settings.y_limits = tuple(fs.get('y_limits', [float('nan'), float('nan')]))
+                
+                # Restore axis settings
+                ax = state.get('axis_settings', {})
+                ld_viewer.panel.axis_settings.title = ax.get('title', '')
+                ld_viewer.panel.axis_settings.xlabel = ax.get('xlabel', '')
+                ld_viewer.panel.axis_settings.ylabel = ax.get('ylabel', '')
+                
+                # Restore ldfiles
+                for ldfile_data in state.get('ldfiles', []):
+                    new_ldfile = LDFile(figure=ld_viewer.panel.figure, parent=ld_viewer.panel.ldfiles)
+                    new_ldfile.name = ldfile_data['name']
+                    new_ldfile.active = ldfile_data.get('active', True)
+                    new_ldfile.ld_file = ldfile_data['ld_file']
+                    
+                    # Load data if file exists
+                    if new_ldfile.ld_file and pathlib.Path(new_ldfile.ld_file).exists():
+                        new_ldfile._ld_file_changed()
+                    
+                    # Restore curves
+                    for curve_data in ldfile_data.get('curves', []):
+                        new_curve = LDCurve(ldfile=new_ldfile, labels=new_ldfile.labels)
+                        new_curve.name = curve_data['name']
+                        new_curve.active = curve_data.get('active', True)
+                        new_curve.x_values = curve_data.get('x_values', '')
+                        new_curve.y_values = curve_data.get('y_values', '')
+                        new_curve.x_scale = curve_data.get('x_scale', 1.0)
+                        new_curve.y_scale = curve_data.get('y_scale', 1.0)
+                        new_ldfile.ld_curves.append(new_curve)
+                    
+                    ld_viewer.panel.ldfiles.ldfiles.append(new_ldfile)
+                
+                logging.info(f'State loaded successfully with {len(ld_viewer.panel.ldfiles.ldfiles)} files')
+            except Exception as err:
+                logging.error(f'Failed to load state: {err}')
+                error(f'Failed to load state:\n{str(err)}', 'Error')
+        else:
+            logging.error(f'State file not found: {args.state}')
+            error(f'State file not found:\n{args.state}', 'Error')
+    
+    # Load files from command line if provided (and no state file)
+    elif args.ld_files:
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = str(pathlib.Path(ld_file).absolute())
@@ -709,6 +1055,16 @@ if __name__ == '__main__':
                 ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].x_values = args.x
             if args.y:
                 ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].y_values = args.y
+            
+            # Apply scale factors
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].x_scale = args.x_scale
+            ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].y_scale = args.y_scale
+    else:
+        # Create one empty LDFile if no files provided via command line
+        if len(ld_viewer.panel.ldfiles.ldfiles) == 0:
+            ld_viewer.panel.ldfiles.ldfiles.append(
+                LDFile(figure=ld_viewer.panel.figure, parent=ld_viewer.panel.ldfiles)
+            )
     
     logging.info(f'Data loaded in {time.time() - start_time:.2f}s')
     ld_viewer.configure_traits()
