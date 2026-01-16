@@ -283,7 +283,7 @@ class LDCurve(HasStrictTraits):
     def draw_line(self, ax, ignore_last_step=False):
         """Draw line on the given axes"""
         if not self._validate_data():
-            return []
+            return {'lines': [], 'markers': []}
         
         x_to_draw = self.ldfile.data[self.x_values] * self.x_scale
         y_to_draw = self.ldfile.data[self.y_values] * self.y_scale
@@ -293,9 +293,16 @@ class LDCurve(HasStrictTraits):
             x_to_draw = x_to_draw[:-1]
             y_to_draw = y_to_draw[:-1]
         
-        return ax.plot(x_to_draw, y_to_draw,
-                       label=f'{self.ldfile.name}-{self.name}', 
-                       marker='o')
+        label = f'{self.ldfile.name}-{self.name}'
+        
+        # Draw line without markers
+        lines = ax.plot(x_to_draw, y_to_draw, label=label)
+        
+        # Draw markers separately (use same color as line)
+        color = lines[0].get_color()
+        markers = ax.plot(x_to_draw, y_to_draw, 'o', color=color, label='_nolegend_', picker=5)
+        
+        return {'lines': lines, 'markers': markers}
 
     def _copy_to_clipboard_fired(self):
         if not self._validate_data():
@@ -556,7 +563,9 @@ class ControlPanel(HasStrictTraits):
     figure_settings = Instance(FigureSettings, ())
     axis_settings = Instance(AxisSettings, ())
     figure = Instance(Figure)
-    cursor = Any()  # mplcursors cursor instance
+    cursor = Any()  # mplcursors cursor instance (legacy)
+    cursor_markers = Any()  # mplcursors cursor for markers
+    cursor_lines = Any()  # mplcursors cursor for lines
     current_file = Str('')  # Track current save file
 
     add_ldfile_button = Button('Add new LD file')
@@ -628,13 +637,20 @@ class ControlPanel(HasStrictTraits):
             error('Figure not properly initialized', 'Error')
             return
         
-        # Remove old cursor to clear any active annotations
+        # Remove old cursors to clear any active annotations
         if self.cursor is not None:
             self.cursor.remove()
             self.cursor = None
+        if hasattr(self, 'cursor_markers') and self.cursor_markers is not None:
+            self.cursor_markers.remove()
+            self.cursor_markers = None
+        if hasattr(self, 'cursor_lines') and self.cursor_lines is not None:
+            self.cursor_lines.remove()
+            self.cursor_lines = None
         
         ax = self.figure.axes[0]
-        lines = []
+        all_markers = []
+        all_lines = []
         
         ignore_last = self.figure_settings.ignore_last_step
         
@@ -644,14 +660,78 @@ class ControlPanel(HasStrictTraits):
             for curve in ldfile.ld_curves:
                 if not curve.active:  # Skip inactive curves
                     continue
-                line_result = curve.draw_line(ax, ignore_last_step=ignore_last)
-                if line_result:
-                    lines.extend(line_result)
+                result = curve.draw_line(ax, ignore_last_step=ignore_last)
+                if result:
+                    if result.get('markers'):
+                        all_markers.extend(result['markers'])
+                    if result.get('lines'):
+                        all_lines.extend(result['lines'])
         
-        # Create cursor for the new lines
-        if lines:
-            self.cursor = mplcursors.cursor(lines, highlight=True)
-            self.cursor.connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
+        # Create cursor for markers (points) - shows full data table
+        if all_markers:
+            self.cursor_markers = mplcursors.cursor(all_markers, highlight=True, hover=False)
+            
+            def on_add_marker(sel):
+                """Custom annotation showing detailed data at the selected point"""
+                try:
+                    # Get the marker artist that was selected
+                    artist = sel.artist
+                    # Find the label by looking at the parent line plot
+                    for ldfile in self.ldfiles.ldfiles:
+                        for curve in ldfile.ld_curves:
+                            label = f'{ldfile.name}-{curve.name}'
+                            
+                            # Check if this artist matches this curve's data
+                            xdata = artist.get_xdata()
+                            ydata = artist.get_ydata()
+                            
+                            if curve._validate_data():
+                                curve_x = curve.ldfile.data[curve.x_values] * curve.x_scale
+                                curve_y = curve.ldfile.data[curve.y_values] * curve.y_scale
+                                
+                                # Check if data matches
+                                if len(xdata) == len(curve_x) and len(ydata) == len(curve_y):
+                                    # Get the index
+                                    index = sel.index
+                                    if isinstance(index, tuple):
+                                        point_index = int(index[0])
+                                    elif index is not None:
+                                        point_index = int(index)
+                                    else:
+                                        continue
+                                    
+                                    # Show detailed table
+                                    if ldfile.data is not None and point_index < len(ldfile.data):
+                                        text_lines = [f"{label}"]
+                                        text_lines.append(f"Point: {point_index}")
+                                        
+                                        # Add all column values from the dataframe
+                                        for col in ldfile.data.columns:
+                                            value = ldfile.data.iloc[point_index][col]
+                                            text_lines.append(f"{col}: {value:.6g}")
+                                        
+                                        sel.annotation.set_text('\n'.join(text_lines))
+                                        return
+                    
+                    # Fallback
+                    sel.annotation.set_text("Point data")
+                    
+                except Exception as e:
+                    # If anything goes wrong, just show basic info
+                    logging.debug(f"Error in cursor annotation: {e}")
+                    sel.annotation.set_text("Point")
+            
+            self.cursor_markers.connect("add", on_add_marker)
+        
+        # Create cursor for lines - shows just the curve label
+        if all_lines:
+            self.cursor_lines = mplcursors.cursor(all_lines, highlight=True, hover=False)
+            
+            def on_add_line(sel):
+                """Simple annotation showing just the curve label"""
+                sel.annotation.set_text(sel.artist.get_label())
+            
+            self.cursor_lines.connect("add", on_add_line)
         
         # Apply axis settings
         if self.axis_settings.title:
@@ -669,7 +749,7 @@ class ControlPanel(HasStrictTraits):
             ax.set_ylim(self.figure_settings.y_limits)
         
         self.figure.canvas.draw()
-        logging.info(f'Drew {len(lines)} curve(s)')
+        logging.info(f'Drew {len(all_lines)} curve(s)')
 
     def _reload_button_fired(self):
         # Iterate over a copy to avoid issues if list is modified during iteration
