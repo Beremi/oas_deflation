@@ -4,26 +4,23 @@ import pathlib
 import argparse
 import logging
 import datetime
-os.environ["ETS_TOOLKIT"] = "qt"
-os.environ["QT_API"] = "pyqt5"
-from traits.api import HasStrictTraits, Instance, File, List, Enum, Button, Str, \
-                        Any, Bool, DelegatesTo, Property, Float, Tuple
-from traitsui.api import Item, Group, View, HSplit, NoButtons, EnumEditor, HGroup,\
-                         Handler, VGroup, Tabbed, TextEditor, Label, ListEditor, TreeEditor, TreeNode
+#os.environ["ETS_TOOLKIT"] = "qt"
+#os.environ["QT_API"] = "pyqt6"
+from traits.api import HasStrictTraits, Instance, List, Enum, Button, Str, \
+                        Any, Bool, Float, Tuple
+from traitsui.api import Item, View, HSplit, NoButtons, HGroup, Group, \
+                         Handler, VGroup, ListEditor, TreeEditor, TreeNode
 from traitsui.menu \
     import Menu, Action, Separator
 from traitsui.qt.tree_editor \
-    import NewAction, CopyAction, CutAction, \
+    import CopyAction, CutAction, \
            PasteAction, DeleteAction, RenameAction
 from traitsui.message import Message
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
-import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import mplcursors
-import asyncio
 from threading import Thread, Event
 
 class TimeFilter(logging.Filter):
@@ -52,27 +49,20 @@ def HItem(value=None, **traits):
     return HGroup(Item(value, **traits, springy=True))
 
 
-def error(message="", title="Message", buttons=["OK", "Cancel"], parent=None):
-    """ Displays a message to the user as a modal window with the specified
-    title and buttons.
-
-    If *buttons* is not specified, **OK** and **Cancel** buttons are used,
-    which is appropriate for confirmations, where the user must decide whether
-    to proceed. Be sure to word the message so that it is clear that clicking
-    **OK** continues the operation.
-    """
+def error(message="", title="Error", parent=None):
+    """Displays an error message to the user as a modal window."""
     msg = Message(message=message)
-    ui = msg.edit_traits(
+    msg.edit_traits(
         parent=parent,
         view=View(
-            ["message~", "|<>"], title=title, buttons=buttons, kind="modal",
+            ["message~", "|<>"], 
+            title=title, 
+            buttons=["OK"], 
+            kind="modal",
             resizable=True,
-            #height=150,
-            #width=300,
             scrollable=True
         ),
     )
-    return ui.result
 
 
 class LDFile(HasStrictTraits):
@@ -86,15 +76,45 @@ class LDFile(HasStrictTraits):
     ld_file = Str('', changed=True, enter_set=True, auto_set=False)
     open_button = Button('Open...')
     reload_button = Button('Reload')
-    data = Any()
+    data = Any(None)
     labels = List([], changed=True)
 
     add_ldcurve = Button('Add new LD curve')
     ld_curves = List
     figure = Instance(Figure)
+    parent = Any()  # Reference to parent LDFiles object
 
     def _add_ldcurve_fired(self):
-        self.ld_curves.append(LDCurve(ldfile=self, labels=self.labels, figure=self.figure))
+        if self.figure is None:
+            logging.error("Figure not initialized in LDFile, cannot add LD curve")
+            error("Figure not initialized. Please restart the application.", "Error")
+            return
+        self.ld_curves.append(LDCurve(ldfile=self, labels=self.labels))
+    
+    def duplicate(self):
+        """Duplicate this LDFile with all its curves"""
+        if self.parent is None:
+            logging.error("Cannot duplicate: no parent reference")
+            return
+        
+        new_file = LDFile(figure=self.figure, parent=self.parent)
+        new_file.name = f"{self.name}_copy"
+        new_file.ld_file = self.ld_file
+        new_file.data = self.data
+        new_file.labels = self.labels.copy() if self.labels else []
+        
+        # Duplicate all curves
+        for curve in self.ld_curves:
+            new_curve = LDCurve(ldfile=new_file, labels=new_file.labels)
+            new_curve.name = curve.name
+            new_curve.x_values = curve.x_values
+            new_curve.y_values = curve.y_values
+            new_curve.x_scale = curve.x_scale
+            new_curve.y_scale = curve.y_scale
+            new_file.ld_curves.append(new_curve)
+        
+        self.parent.ldfiles.append(new_file)
+        logging.info(f'Duplicated {self.name} with {len(new_file.ld_curves)} curves')
 
     def _name_default(self):
         return 'F{}'.format(self.ldfile_num)
@@ -115,16 +135,28 @@ class LDFile(HasStrictTraits):
         self.labels = self.__load_data()
 
     def __load_data(self):
+        """Load data from LD file"""
+        if not self.ld_file:
+            logging.debug('No file specified yet')
+            self.data = None
+            return []
+        
+        if not pathlib.Path(self.ld_file).exists():
+            logging.error(f'File does not exist: {self.ld_file}')
+            error(f'File does not exist:\n{self.ld_file}', 'Error')
+            self.data = None
+            return []
+        
         try:
             logging.debug(f'Loading: {self.ld_file}')
             self.data = pd.read_csv(self.ld_file, sep='\t', header=0, index_col=False)
-        except BaseException as err:
-            # https://stackoverflow.com/questions/1483429/how-to-print-an-exception-in-python
-            message = 'The file {} cannot be loaded\n'.format(self.ld_file)
-            message += str(err)
-            error(message, 'Error')
-            self.data = np.array([])
-        return list(self.data)
+            logging.info(f'Loaded {len(self.data)} rows from {pathlib.Path(self.ld_file).name}')
+            return list(self.data.columns)
+        except Exception as err:
+            logging.error(f'Failed to load {self.ld_file}: {err}')
+            error(f'The file cannot be loaded:\n{self.ld_file}\n\n{str(err)}', 'Error')
+            self.data = None
+            return []
 
     def _labels_changed(self):
         for curve in self.ld_curves:
@@ -132,7 +164,7 @@ class LDFile(HasStrictTraits):
 
     view = View(VGroup(HGroup(Item('open_button', show_label=False, id='ld_open'),
                        Item('reload_button', show_label=False),
-                       Item('ld_file', id='ld_file'),#, style='readonly')
+                       Item('ld_file', id='ld_file'),
                         ),
                 Item('name'),
                 Item('add_ldcurve', show_label=False),
@@ -161,48 +193,97 @@ class LDCurve(HasStrictTraits):
     x_scale = Float(1)
     y_scale = Float(1)
 
-    figure = Instance(Figure)
     draw_this_button = Button('Draw this one')
     copy_to_clipboard = Button('Copy to clipboard')
     save_to_txt = Button('Save to txt')
 
+    @property
+    def figure(self):
+        """Get figure from parent LDFile"""
+        return self.ldfile.figure if self.ldfile else None
+
     def _draw_this_button_fired(self):
+        if not self._validate_figure():
+            return
         ax = self.figure.axes[0]
         self._draw_this(ax)
         self.figure.canvas.draw()
 
+    def _validate_figure(self):
+        """Validate that figure is properly initialized"""
+        if self.figure is None:
+            logging.error("Figure not initialized")
+            error("Figure not initialized. Cannot draw curve.", "Error")
+            return False
+        if not self.figure.axes:
+            logging.error("Figure has no axes")
+            error("Figure has no axes. Cannot draw curve.", "Error")
+            return False
+        return True
+
     def _draw_this(self, ax):
-        #if self.clear_axis:
-        #   ax.cla()
+        """Draw this curve on the given axes"""
         self.draw_line(ax)
-        # if self.figure_settings.show_legend:
-        #     ax.legend()
-        # if self.figure_settings.set_xlim:
-        #     ax.set_xlim(self.figure_settings.x_limits)
-        # if self.figure_settings.set_ylim:
-        #     ax.set_ylim(self.figure_settings.y_limits)
+
+    def _validate_data(self):
+        """Validate that data is available and contains required columns"""
+        if self.ldfile.data is None:
+            logging.warning(f"No data available for {self.ldfile.name}-{self.name}")
+            return False
+        if not isinstance(self.ldfile.data, pd.DataFrame) or len(self.ldfile.data) == 0:
+            logging.warning(f"Invalid or empty data for {self.ldfile.name}-{self.name}")
+            return False
+        if self.x_values not in self.ldfile.data.columns or self.y_values not in self.ldfile.data.columns:
+            logging.error(f"Column {self.x_values} or {self.y_values} not found in data")
+            return False
+        return True
 
     def draw_line(self, ax):
-        x_to_draw = self.ldfile.data[self.x_values]
-        y_to_draw = self.ldfile.data[self.y_values]
-        # if self.figure_settings.ignore_last_step:
-        #     x_to_draw = x_to_draw.iloc[:-1]
-        #     y_to_draw = y_to_draw.iloc[:-1]
-        return ax.plot(x_to_draw * self.x_scale, y_to_draw * self.y_scale,
-                label='{}-{}'.format(self.ldfile.name, self.name), marker='o')
+        """Draw line on the given axes"""
+        if not self._validate_data():
+            return []
+        
+        x_to_draw = self.ldfile.data[self.x_values] * self.x_scale
+        y_to_draw = self.ldfile.data[self.y_values] * self.y_scale
+        
+        return ax.plot(x_to_draw, y_to_draw,
+                       label=f'{self.ldfile.name}-{self.name}', 
+                       marker='o')
 
     def _copy_to_clipboard_fired(self):
-        data = np.vstack((self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale)).T
-        df = pd.DataFrame({self.x_values: data[:, 0], self.y_values: data[:, 1]})
-        df.to_clipboard(excel=True, index=False)
+        if not self._validate_data():
+            error("No data available to copy.", "Error")
+            return
+        
+        try:
+            x_data = self.ldfile.data[self.x_values] * self.x_scale
+            y_data = self.ldfile.data[self.y_values] * self.y_scale
+            df = pd.DataFrame({self.x_values: x_data, self.y_values: y_data})
+            df.to_clipboard(excel=True, index=False)
+            logging.info('Data copied to clipboard')
+        except Exception as err:
+            logging.error(f"Clipboard copy failed: {err}")
+            error(f"Failed to copy to clipboard: {str(err)}", "Error")
 
     def _save_to_txt_fired(self):
+        if not self._validate_data():
+            error("No data available to save.", "Error")
+            return
+        
         file_name = save_file(extensions=FileInfo(), id='savefile')
-        if file_name == '':
-            print('No filename.')
-        data = np.vstack((self.ldfile.data[self.x_values] * self.x_scale, self.ldfile.data[self.y_values] * self.y_scale)).T
-        df = pd.DataFrame({self.x_values: data[:, 0], self.y_values: data[:, 1]})
-        df.to_csv(file_name, sep='\t', index=False)
+        if not file_name:
+            logging.info('Save cancelled - no filename provided.')
+            return
+        
+        try:
+            x_data = self.ldfile.data[self.x_values] * self.x_scale
+            y_data = self.ldfile.data[self.y_values] * self.y_scale
+            df = pd.DataFrame({self.x_values: x_data, self.y_values: y_data})
+            df.to_csv(file_name, sep='\t', index=False)
+            logging.info(f'Data saved to {file_name}')
+        except Exception as err:
+            logging.error(f"File save failed: {err}")
+            error(f"Failed to save file: {str(err)}", "Error")
 
     def _name_default(self):
         return 'LD {}'.format(self.ld_num)
@@ -222,10 +303,47 @@ class LDFiles(HasStrictTraits):
     name = 'ldfiles'
     figure = Instance(Figure)
     add_ldfile = Button('Add new LD file')
-    ldfiles = List(LDFile) #(Instance('LDFile'))
+    ldfiles = List(LDFile)
 
     def _add_ldfile_fired(self):
-        self.ldfiles.append(LDFile(figure=self.figure))
+        if self.figure is None:
+            logging.error("Figure not initialized, cannot add LD file")
+            error("Figure not initialized. Please restart the application.", "Error")
+            return
+        new_file = LDFile(figure=self.figure, parent=self)
+        self.ldfiles.append(new_file)
+    
+    def _ldfiles_items_changed(self, event):
+        """Ensure parent is set when items are added to ldfiles list"""
+        for item in event.added:
+            if item.parent is None:
+                item.parent = self
+            if item.figure is None:
+                item.figure = self.figure
+    
+    def duplicate_ldfile(self, ldfile):
+        """Duplicate an LDFile with all its curves"""
+        if not isinstance(ldfile, LDFile):
+            return
+        
+        new_file = LDFile(figure=self.figure)
+        new_file.name = f"{ldfile.name}_copy"
+        new_file.ld_file = ldfile.ld_file
+        new_file.data = ldfile.data
+        new_file.labels = ldfile.labels.copy() if ldfile.labels else []
+        
+        # Duplicate all curves
+        for curve in ldfile.ld_curves:
+            new_curve = LDCurve(ldfile=new_file, labels=new_file.labels)
+            new_curve.name = curve.name
+            new_curve.x_values = curve.x_values
+            new_curve.y_values = curve.y_values
+            new_curve.x_scale = curve.x_scale
+            new_curve.y_scale = curve.y_scale
+            new_file.ld_curves.append(new_curve)
+        
+        self.ldfiles.append(new_file)
+        logging.info(f'Duplicated {ldfile.name} with {len(new_file.ld_curves)} curves')
 
     view = View(
         Item('add_ldfile', show_label=False),
@@ -242,9 +360,9 @@ class FigureSettings(HasStrictTraits):
     ignore_last_step = Bool(False)
     show_legend = Bool()
     set_xlim = Bool()
-    x_limits = Tuple(np.nan, np.nan)
+    x_limits = Tuple(float('nan'), float('nan'))
     set_ylim = Bool()
-    y_limits = Tuple(np.nan, np.nan)
+    y_limits = Tuple(float('nan'), float('nan'))
     view = View(
         Item('ignore_last_step', show_label=True),
         Item('show_legend', show_label=True),
@@ -254,18 +372,37 @@ class FigureSettings(HasStrictTraits):
                Item('y_limits', show_label=True)),
         resizable=True
     )
+
+
+class AxisSettings(HasStrictTraits):
+    title = Str('')
+    xlabel = Str('')
+    ylabel = Str('')
+    
+    view = View(
+        Item('title', show_label=True),
+        Item('xlabel', show_label=True),
+        Item('ylabel', show_label=True),
+        resizable=True
+    )
         
 
 class ReloadingThread(Thread):
+    """Background thread for auto-reloading data at intervals"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.daemon = True  # Thread dies when main program exits
 
     def run(self):
         while not self.event.is_set():
-            self.controler._reload_button_fired()
-            self.controler._clear_button_fired()
-            self.controler._draw_button_fired()
+            try:
+                self.controler._reload_button_fired()
+                self.controler._clear_button_fired()
+                self.controler._draw_button_fired()
+            except Exception as e:
+                logging.error(f"Error in reloading thread: {e}")
             self.event.wait(timeout=self.controler.time_to_sleep)
-            #time.sleep(self.controler.time_to_sleep)
-        return
 
 
 
@@ -282,6 +419,18 @@ ldfile_view = View(VGroup(HGroup(Item('open_button', show_label=False, id='ld_op
                                page_name='.name')),
                 ))
                 
+# Custom action for adding new LD file with proper figure initialization
+add_ldfile_action = Action(
+    name='New LD File',
+    action='object._add_ldfile_fired'
+)
+
+# Custom action for duplicating an LD file
+duplicate_ldfile_action = Action(
+    name='Duplicate',
+    action='object.duplicate'
+)
+
 # Tree editor
 tree_editor = TreeEditor(
     nodes = [
@@ -289,29 +438,24 @@ tree_editor = TreeEditor(
                   auto_open = True,
                   children = 'ldfiles',
                   label     = '=LD Files',
-                  add = [ LDFile ],
-                  # menu=Menu( NewAction,
-                  #            Separator(),
-                  #            #def_title_action,
-                  #            #dept_action,
-                  #            Separator(),
-                  #            CopyAction,
-                  #            CutAction,
-                  #            PasteAction,
-                  #            Separator(),
-                  #            DeleteAction,
-                  #            Separator(),
-                  #            RenameAction),
+                  add       = [ LDFile ],
+                  move      = [ LDFile ],
+                  menu=Menu( add_ldfile_action,
+                             Separator(),
+                             CopyAction,
+                             CutAction,
+                             PasteAction,
+                             Separator(),
+                             DeleteAction),
                   view =  View()),
         TreeNode( node_for  = [ LDFile ],
                   auto_open = True,
                   label     = 'name',
-                  menu=Menu( NewAction,
-                             Separator(),
-                             #def_title_action,
-                             #dept_action,
+                  copy       = True,
+                  menu=Menu( add_ldfile_action,
                              Separator(),
                              CopyAction,
+                             duplicate_ldfile_action,
                              CutAction,
                              PasteAction,
                              Separator(),
@@ -320,7 +464,7 @@ tree_editor = TreeEditor(
                              RenameAction),
                   view =  ldfile_view)
     ],
-    #hide_root=True,
+    hide_root=False,
     orientation="vertical",
 )
                   
@@ -328,11 +472,15 @@ tree_editor = TreeEditor(
 class ControlPanel(HasStrictTraits):
     ldfiles = Instance(LDFiles)
     figure_settings = Instance(FigureSettings, ())
+    axis_settings = Instance(AxisSettings, ())
     figure = Instance(Figure)
+    cursor = Any()  # mplcursors cursor instance
 
+    add_ldfile_button = Button('Add new LD file')
     draw_button = Button('Draw all')
     reload_button = Button('Reload all')
     clear_button = Button('Clear')
+    update_axis_labels = Button('Update default labels')
     
     get_current_limits = Button('Get current limits')
         
@@ -353,54 +501,120 @@ class ControlPanel(HasStrictTraits):
             self.reloading_thread.event.clear()
             self.reloading_thread.start()
 
-    #clear_axis = Bool(True)
-
     def _ldfiles_default(self):
-        print(self.figure)
-        return LDFiles(figure=self.figure)
+        logging.debug(f'Initializing LDFiles with figure: {self.figure}')
+        ldfiles = LDFiles(figure=self.figure)
+        # Create one empty LDFile on startup
+        ldfiles.ldfiles.append(LDFile(figure=self.figure, parent=ldfiles))
+        return ldfiles
+
+    def _add_ldfile_button_fired(self):
+        self.ldfiles.add_ldfile = True
+    
+    def _update_axis_labels_fired(self):
+        """Generate default axis labels from all curves"""
+        x_values_set = set()
+        y_values_set = set()
+        
+        for ldfile in self.ldfiles.ldfiles:
+            for curve in ldfile.ld_curves:
+                if curve.x_values:
+                    x_values_set.add(curve.x_values)
+                if curve.y_values:
+                    y_values_set.add(curve.y_values)
+        
+        if x_values_set:
+            self.axis_settings.xlabel = ', '.join(sorted(x_values_set))
+        if y_values_set:
+            self.axis_settings.ylabel = ', '.join(sorted(y_values_set))
+        
+        logging.info(f'Updated axis labels: x="{self.axis_settings.xlabel}", y="{self.axis_settings.ylabel}"')
 
     def _clear_button_fired(self):
+        # Remove old cursor if exists
+        if self.cursor is not None:
+            self.cursor.remove()
+            self.cursor = None
         ax = self.figure.axes[0]
         ax.cla()
         self.figure.canvas.draw()
 
     def _draw_button_fired(self):
+        if not self.figure or not self.figure.axes:
+            logging.error('Figure not properly initialized')
+            error('Figure not properly initialized', 'Error')
+            return
+        
+        # Remove old cursor to clear any active annotations
+        if self.cursor is not None:
+            self.cursor.remove()
+            self.cursor = None
+        
         ax = self.figure.axes[0]
         lines = []
-        for lds in self.ldfiles.ldfiles:
-            for ld in lds.ld_curves:
-                lines.extend(ld.draw_line(ax))
-        cursor = mplcursors.cursor(lines, highlight=True)
-        cursor.connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
+        
+        for ldfile in self.ldfiles.ldfiles:
+            for curve in ldfile.ld_curves:
+                line_result = curve.draw_line(ax)
+                if line_result:
+                    lines.extend(line_result)
+        
+        # Create cursor for the new lines
+        if lines:
+            self.cursor = mplcursors.cursor(lines, highlight=True)
+            self.cursor.connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
+        
+        # Apply axis settings
+        if self.axis_settings.title:
+            ax.set_title(self.axis_settings.title)
+        if self.axis_settings.xlabel:
+            ax.set_xlabel(self.axis_settings.xlabel)
+        if self.axis_settings.ylabel:
+            ax.set_ylabel(self.axis_settings.ylabel)
+        
         if self.figure_settings.show_legend:
             ax.legend()
         if self.figure_settings.set_xlim:
             ax.set_xlim(self.figure_settings.x_limits)
         if self.figure_settings.set_ylim:
             ax.set_ylim(self.figure_settings.y_limits)
+        
         self.figure.canvas.draw()
-        print('redrawn all')
+        logging.info(f'Drew {len(lines)} curve(s)')
 
     def _reload_button_fired(self):
         for lds in self.ldfiles.ldfiles:
             lds.reload_button = True
-        print('reloaded all')
+        logging.info('Reloaded all files')
         
     def _get_current_limits_fired(self):
         ax = self.figure.axes[0]
         self.figure_settings.x_limits = ax.get_xlim()
         self.figure_settings.y_limits = ax.get_ylim()
 
-    view = View(Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
-                '_',
-                Item('@figure_settings', show_label=False),
-                Item('get_current_limits', show_label=False),
-                HGroup(
-                       Item('reload_button', show_label=False, springy=True),
-                       Item('clear_button', show_label=False, springy=True),
-                       Item('draw_button', show_label=False, springy=True)),
-                HGroup(Item('time_to_sleep', enabled_when='reloading_thread.event.is_set()'),
-                       Item('start_stop_reloading', show_label=False)),
+    view = View(VGroup(
+                    Group(
+                        Group(
+                            Item('add_ldfile_button', show_label=False),
+                            Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'), label='LD Files',
+                            id='ld_files_tab'),
+                        Group(
+                            Item('@figure_settings', show_label=False),
+                            Item('get_current_limits', show_label=False),
+                            '_',
+                            Item('@axis_settings', show_label=False),
+                            Item('update_axis_labels', show_label=False), 
+                            label='Figure Settings',
+                            id='figure_settings_tab'),
+                        layout='tabbed',
+                        id='ld_control_tabs',
+                    ),
+                    HGroup(
+                        Item('reload_button', show_label=False, springy=True),
+                        Item('clear_button', show_label=False, springy=True),
+                        Item('draw_button', show_label=False, springy=True)),
+                    HGroup(Item('time_to_sleep', enabled_when='reloading_thread.event.is_set()'),
+                        Item('start_stop_reloading', show_label=False)),),
                 resizable=True,
                 id='control_panel',
             )
@@ -413,11 +627,12 @@ class TC_Handler(Handler):
             info.ui.title = info.object.title
             
     def close(self, info, is_OK):
-        if ( info.object.panel.reloading_thread
-            and info.object.panel.reloading_thread.is_alive() ):
+        """Clean up before closing"""
+        if (info.object.panel.reloading_thread
+            and info.object.panel.reloading_thread.is_alive()):
             info.object.panel.reloading_thread.event.set()
-            while info.object.panel.reloading_thread.is_alive():
-                time.sleep(0.1)
+            # Wait briefly for thread to finish (it's daemon so will die anyway)
+            info.object.panel.reloading_thread.join(timeout=0.5)
         return True
 
 
@@ -436,11 +651,6 @@ class LDViewer(HasStrictTraits):
 
     def _panel_default(self):
         return ControlPanel(figure=self.figure)
-
-   # def __init__(self, **traits):
-   #     super().__init__(**traits)
-   #     if pathlib.Path('LD.out').exists():
-   #         self.panel.ldfilesld_file = 'LD.out'
     
     view = View(Item('title', label='window title'),
                 HSplit('@panel',
@@ -484,36 +694,21 @@ def init_parser():
 
 if __name__ == '__main__':
     args = init_parser()
-    #LDFiles().configure_traits(filename='test.out')
     ld_viewer = LDViewer()
     start_time = time.time()
-    logging.info(f'Loading data')
+    logging.info('Loading data')
+    
     if args.ld_files:
         for ld_idx, ld_file in enumerate(args.ld_files):
             ld_viewer.panel.ldfiles.add_ldfile = True
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_file = str(pathlib.Path(ld_file).absolute())
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].name = pathlib.Path(ld_file).absolute().parts[-3]
             ld_viewer.panel.ldfiles.ldfiles[ld_idx].add_ldcurve = True
-            if args.x:# in ld_viewer.labels:
-                #ld_viewer.x_values = args.x
+            
+            if args.x:
                 ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].x_values = args.x
-            if args.y:# in ld_viewer.labels:
-                #ld_viewer.y_values = args.y
+            if args.y:
                 ld_viewer.panel.ldfiles.ldfiles[ld_idx].ld_curves[0].y_values = args.y
-    logging.info(f'Data loaded {time.time() - start_time}')
-    ld_viewer.configure_traits()
-
-    exit()
-
-
-    args = init_parser()
-
-    if args.ld_file:
-        ld_viewer = LDViewer(ld_file=args.ld_file)
-    else:
-        ld_viewer = LDViewer()
-    if args.x in ld_viewer.labels:
-        ld_viewer.x_values = args.x
-    if args.y in ld_viewer.labels:
-        ld_viewer.y_values = args.y
+    
+    logging.info(f'Data loaded in {time.time() - start_time:.2f}s')
     ld_viewer.configure_traits()
