@@ -1491,51 +1491,64 @@ class ControlPanel(HasStrictTraits):
             error(f'Failed to restore state:\n{str(err)}', 'Error')
             return False
 
+    # Build tab groups list conditionally
+    def _get_view_groups():
+        groups = [
+            Group(
+                HGroup(
+                    Item('add_ldfile_button', show_label=False),
+                    Item('batch_edit_button', show_label=False),),
+                Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
+                label='LD Files',
+                id='ld_files_tab'),
+            Group(
+                VGroup(
+                    Item('add_custom_curve_button', show_label=False),
+                    Item('custom_curves', editor=ListEditor(use_notebook=True,
+                                                            deletable=True,
+                                                            dock_style='tab',
+                                                            page_name='.name'),
+                         style='custom', show_label=False,
+                         height=0.6, resizable=True),
+                ),
+                label='Custom Curves',
+                id='custom_curves_tab'),
+            Group(
+                Item('@figure_settings', show_label=False),
+                Item('get_current_limits', show_label=False),
+                '_',
+                Item('@axis_settings', show_label=False),
+                Item('update_axis_labels', show_label=False),
+                '_',
+                HGroup(
+                    Item('global_x_scale', label='Global X Scale'),
+                    Item('global_y_scale', label='Global Y Scale'),
+                ), 
+                label='Figure Settings',
+                id='figure_settings_tab'),
+            Group(
+                Item('log_text', style='custom', show_label=False,
+                     height=400, width=600, resizable=True),
+                Item('clear_log_button', show_label=False),
+                label='Log',
+                id='log_tab'),
+        ]
+        
+        # Only add IPython Console tab if available
+        if IPYTHON_AVAILABLE:
+            groups.append(
+                Group(
+                    Item('ipython_widget', editor=IPythonEditor(),
+                         show_label=False),
+                    label='IPython Console',
+                    id='ipython_tab')
+            )
+        
+        return groups
+
     view = View(VGroup(
                     Group(
-                        Group(
-                            HGroup(
-                                Item('add_ldfile_button', show_label=False),
-                                Item('batch_edit_button', show_label=False),),
-                            Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
-                            label='LD Files',
-                            id='ld_files_tab'),
-                        Group(
-                            VGroup(
-                                Item('add_custom_curve_button', show_label=False),
-                                Item('custom_curves', editor=ListEditor(use_notebook=True,
-                                                                        deletable=True,
-                                                                        dock_style='tab',
-                                                                        page_name='.name'),
-                                     style='custom', show_label=False,
-                                     height=0.6, resizable=True),
-                            ),
-                            label='Custom Curves',
-                            id='custom_curves_tab'),
-                        Group(
-                            Item('@figure_settings', show_label=False),
-                            Item('get_current_limits', show_label=False),
-                            '_',
-                            Item('@axis_settings', show_label=False),
-                            Item('update_axis_labels', show_label=False),
-                            '_',
-                            HGroup(
-                                Item('global_x_scale', label='Global X Scale'),
-                                Item('global_y_scale', label='Global Y Scale'),
-                            ), 
-                            label='Figure Settings',
-                            id='figure_settings_tab'),
-                        Group(
-                            Item('log_text', style='custom', show_label=False,
-                                 height=400, width=600, resizable=True),
-                            Item('clear_log_button', show_label=False),
-                            label='Log',
-                            id='log_tab'),
-                        Group(
-                            Item('ipython_widget', editor=IPythonEditor() if IPythonEditor else None,
-                                 show_label=False),
-                            label='IPython Console',
-                            id='ipython_tab') if IPYTHON_AVAILABLE else None,
+                        *_get_view_groups(),
                         layout='tabbed',
                         id='ld_control_tabs',
                     ),
