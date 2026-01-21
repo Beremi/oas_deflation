@@ -25,6 +25,14 @@ import mplcursors
 from threading import Thread, Event
 import json
 
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+    IPYTHON_AVAILABLE = True
+except ImportError:
+    IPYTHON_AVAILABLE = False
+    logging.warning('qtconsole not available, IPython console tab will be disabled')
+
 class TimeFilter(logging.Filter):
 
     def filter(self, record):
@@ -45,6 +53,69 @@ fmt = logging.Formatter(fmt="%(asctime)s %(levelname)s (%(relative)ss) - %(messa
 log = logging.getLogger()
 [hndl.addFilter(TimeFilter()) for hndl in log.handlers]
 [hndl.setFormatter(fmt) for hndl in log.handlers]
+
+
+class TraitsLogHandler(logging.Handler):
+    """Custom logging handler that stores logs in a Traits Str attribute"""
+    
+    def __init__(self, traits_object, max_lines=1000):
+        super().__init__()
+        self.traits_object = traits_object
+        self.max_lines = max_lines
+        time_filter = TimeFilter()
+        self.addFilter(time_filter)
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            # Append to log text
+            current = self.traits_object.log_text
+            lines = current.split('\n') if current else []
+            lines.append(msg)
+            # Keep only last max_lines
+            if len(lines) > self.max_lines:
+                lines = lines[-self.max_lines:]
+            self.traits_object.log_text = '\n'.join(lines)
+        except Exception:
+            self.handleError(record)
+
+
+# Custom editor for IPython console
+if IPYTHON_AVAILABLE:
+    from traitsui.qt.editor import Editor
+    from traitsui.basic_editor_factory import BasicEditorFactory
+    
+    class _IPythonEditor(Editor):
+        """Custom editor that embeds IPython console widget"""
+        
+        def init(self, parent):
+            """Initialize the editor"""
+            if self.value is not None:
+                self.control = self.value
+            else:
+                # Create a placeholder widget if IPython widget not yet created
+                from pyface.qt import QtGui
+                self.control = QtGui.QLabel("IPython console initializing...")
+            return
+        
+        def update_editor(self):
+            """Update the editor when the value changes"""
+            if self.value is not None and self.control != self.value:
+                # Replace the control with the actual IPython widget
+                old_control = self.control
+                self.control = self.value
+                if old_control.parent():
+                    layout = old_control.parent().layout()
+                    if layout:
+                        layout.replaceWidget(old_control, self.control)
+                        old_control.deleteLater()
+    
+    class IPythonEditor(BasicEditorFactory):
+        """Factory for IPython console editor"""
+        klass = _IPythonEditor
+else:
+    IPythonEditor = None
+
 
 # HGroup Item hack
 def HItem(value=None, **traits):
@@ -280,13 +351,13 @@ class LDCurve(HasStrictTraits):
             return False
         return True
 
-    def draw_line(self, ax, ignore_last_step=False):
+    def draw_line(self, ax, ignore_last_step=False, global_x_scale=1.0, global_y_scale=1.0):
         """Draw line on the given axes"""
         if not self._validate_data():
             return {'lines': [], 'markers': []}
         
-        x_to_draw = self.ldfile.data[self.x_values] * self.x_scale
-        y_to_draw = self.ldfile.data[self.y_values] * self.y_scale
+        x_to_draw = self.ldfile.data[self.x_values] * self.x_scale * global_x_scale
+        y_to_draw = self.ldfile.data[self.y_values] * self.y_scale * global_y_scale
         
         # Exclude last data point if ignore_last_step is True
         if ignore_last_step and len(x_to_draw) > 1:
@@ -555,8 +626,94 @@ tree_editor = TreeEditor(
     ],
     hide_root=False,
     orientation="vertical",
+    selection_mode='extended',  # Enable multi-selection
+    selected='selected',  # Bind selection to 'selected' trait
 )
                   
+
+class BatchEditDialog(HasStrictTraits):
+    """Dialog for batch editing multiple LD curves"""
+    curves = List(Instance(LDCurve))
+    
+    # Parameters to edit
+    change_x_values = Bool(False)
+    x_values = Enum(values='all_labels')
+    all_labels = List([])
+    
+    change_y_values = Bool(False)
+    y_values = Enum(values='all_labels')
+    
+    change_x_scale = Bool(False)
+    x_scale = Float(1.0)
+    
+    change_y_scale = Bool(False)
+    y_scale = Float(1.0)
+    
+    change_active = Bool(False)
+    active = Bool(True)
+    
+    apply_button = Button('Apply to Selected')
+    
+    def _all_labels_default(self):
+        """Collect all unique labels from selected curves"""
+        labels = set()
+        for curve in self.curves:
+            labels.update(curve.labels)
+        return sorted(list(labels))
+    
+    def _apply_button_fired(self):
+        """Apply changes to all selected curves"""
+        count = 0
+        for curve in self.curves:
+            if self.change_x_values:
+                curve.x_values = self.x_values
+                count += 1
+            if self.change_y_values:
+                curve.y_values = self.y_values
+                count += 1
+            if self.change_x_scale:
+                curve.x_scale = self.x_scale
+                count += 1
+            if self.change_y_scale:
+                curve.y_scale = self.y_scale
+                count += 1
+            if self.change_active:
+                curve.active = self.active
+                count += 1
+        logging.info(f'Applied batch changes to {len(self.curves)} curves')
+    
+    view = View(
+        VGroup(
+            '_',
+            HGroup(
+                Item('change_x_values', label='Change X'),
+                Item('x_values', enabled_when='change_x_values'),
+            ),
+            HGroup(
+                Item('change_y_values', label='Change Y'),
+                Item('y_values', enabled_when='change_y_values'),
+            ),
+            HGroup(
+                Item('change_x_scale', label='Change X Scale'),
+                Item('x_scale', enabled_when='change_x_scale'),
+            ),
+            HGroup(
+                Item('change_y_scale', label='Change Y Scale'),
+                Item('y_scale', enabled_when='change_y_scale'),
+            ),
+            HGroup(
+                Item('change_active', label='Change Active'),
+                Item('active', enabled_when='change_active'),
+            ),
+            '_',
+            Item('apply_button', show_label=False),
+        ),
+        title='Batch Edit Curves',
+        buttons=['OK', 'Cancel'],
+        kind='livemodal',
+        resizable=True,
+    )
+
 
 class ControlPanel(HasStrictTraits):
     ldfiles = Instance(LDFiles)
@@ -567,8 +724,21 @@ class ControlPanel(HasStrictTraits):
     cursor_markers = Any()  # mplcursors cursor for markers
     cursor_lines = Any()  # mplcursors cursor for lines
     current_file = Str('')  # Track current save file
+    selected = Any()  # Track selected items in tree
+    
+    # Global scale factors
+    global_x_scale = Float(1.0)
+    global_y_scale = Float(1.0)
+    
+    # Logging
+    log_text = Str('')
+    clear_log_button = Button('Clear Log')
+    
+    # IPython console
+    ipython_widget = Any()  # Will hold the IPython widget
 
     add_ldfile_button = Button('Add new LD file')
+    batch_edit_button = Button('Batch Edit Selected')
     draw_button = Button('Draw all')
     reload_button = Button('Reload all')
     clear_button = Button('Clear')
@@ -599,9 +769,70 @@ class ControlPanel(HasStrictTraits):
         logging.debug(f'Initializing LDFiles with figure: {self.figure}')
         ldfiles = LDFiles(figure=self.figure)
         return ldfiles
+    
+    def _clear_log_button_fired(self):
+        """Clear the log text"""
+        self.log_text = ''
+        logging.info('Log cleared')
+    
+    def create_ipython_widget(self):
+        """Create IPython console widget with access to figure and axes"""
+        if not IPYTHON_AVAILABLE:
+            return None
+        
+        # Create an in-process kernel
+        kernel_manager = QtInProcessKernelManager()
+        kernel_manager.start_kernel(show_banner=False)
+        kernel = kernel_manager.kernel
+        kernel.gui = 'qt'
+        
+        # Add useful objects to kernel namespace
+        kernel.shell.push({
+            'figure': self.figure,
+            'ax': self.figure.axes[0] if self.figure.axes else None,
+            'ldfiles': self.ldfiles,
+            'panel': self,
+            'pd': pd,
+            'np': None,  # Will be imported if user needs it
+        })
+        
+        # Create client
+        kernel_client = kernel_manager.client()
+        kernel_client.start_channels()
+        
+        # Create widget
+        widget = RichJupyterWidget()
+        widget.kernel_manager = kernel_manager
+        widget.kernel_client = kernel_client
+        
+        # Print welcome message
+        widget.execute('print("IPython console initialized.")', hidden=True)
+        widget.execute('print("Available objects: figure, ax, ldfiles, panel, pd")', hidden=True)
+        #widget.execute('print("Example: ax.axhline(0, color=\"red\", linestyle=\"--\")")', hidden=True)
+        widget.execute('print("After changes, call: figure.canvas.draw()")', hidden=True)
+        
+        return widget
 
     def _add_ldfile_button_fired(self):
         self.ldfiles.add_ldfile = True
+    
+    def _batch_edit_button_fired(self):
+        """Open batch edit dialog for selected LD curves"""
+        if not self.selected:
+            error('No items selected. Please select one or more LD curves in the tree.', 'No Selection')
+            return
+        
+        # Filter only LDCurve objects from selection
+        curves = [item for item in (self.selected if isinstance(self.selected, list) else [self.selected])
+                  if isinstance(item, LDCurve)]
+        
+        if not curves:
+            error('No LD curves selected. Please select one or more LD curves (not files).', 'No Curves')
+            return
+        
+        logging.info(f'Opening batch edit for {len(curves)} curves')
+        dialog = BatchEditDialog(curves=curves)
+        dialog.edit_traits()
     
     def _update_axis_labels_fired(self):
         """Generate default axis labels from all curves"""
@@ -660,7 +891,9 @@ class ControlPanel(HasStrictTraits):
             for curve in ldfile.ld_curves:
                 if not curve.active:  # Skip inactive curves
                     continue
-                result = curve.draw_line(ax, ignore_last_step=ignore_last)
+                result = curve.draw_line(ax, ignore_last_step=ignore_last,
+                                        global_x_scale=self.global_x_scale,
+                                        global_y_scale=self.global_y_scale)
                 if result:
                     if result.get('markers'):
                         all_markers.extend(result['markers'])
@@ -899,18 +1132,23 @@ class ControlPanel(HasStrictTraits):
             for ldfile_data in state.get('ldfiles', []):
                 new_ldfile = LDFile(figure=self.figure, parent=self.ldfiles)
                 new_ldfile.name = ldfile_data['name']
-                new_ldfile.active = ldfile_data.get('active', True)
                 new_ldfile.ld_file = ldfile_data['ld_file']
                 
-                # Load data if file exists
+                # Load data if file exists, otherwise deactivate
                 if new_ldfile.ld_file and pathlib.Path(new_ldfile.ld_file).exists():
                     new_ldfile._ld_file_changed()
+                    new_ldfile.active = ldfile_data.get('active', True)
+                else:
+                    # File doesn't exist, deactivate it but keep in tree
+                    new_ldfile.active = False
+                    logging.warning(f'File not found, deactivated: {new_ldfile.ld_file}')
                 
                 # Restore curves
                 for curve_data in ldfile_data.get('curves', []):
                     new_curve = LDCurve(ldfile=new_ldfile, labels=new_ldfile.labels)
                     new_curve.name = curve_data['name']
-                    new_curve.active = curve_data.get('active', True)
+                    # Deactivate curve if parent file is deactivated
+                    new_curve.active = curve_data.get('active', True) if new_ldfile.active else False
                     new_curve.x_values = curve_data.get('x_values', '')
                     new_curve.y_values = curve_data.get('y_values', '')
                     new_curve.x_scale = curve_data.get('x_scale', 1.0)
@@ -931,6 +1169,7 @@ class ControlPanel(HasStrictTraits):
                     Group(
                         Group(
                             Item('add_ldfile_button', show_label=False),
+                            Item('batch_edit_button', show_label=False),
                             Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'), label='LD Files',
                             id='ld_files_tab'),
                         Group(
@@ -938,9 +1177,25 @@ class ControlPanel(HasStrictTraits):
                             Item('get_current_limits', show_label=False),
                             '_',
                             Item('@axis_settings', show_label=False),
-                            Item('update_axis_labels', show_label=False), 
+                            Item('update_axis_labels', show_label=False),
+                            '_',
+                            HGroup(
+                                Item('global_x_scale', label='Global X Scale'),
+                                Item('global_y_scale', label='Global Y Scale'),
+                            ), 
                             label='Figure Settings',
                             id='figure_settings_tab'),
+                        Group(
+                            Item('log_text', style='custom', show_label=False,
+                                 height=400, width=600, resizable=True),
+                            Item('clear_log_button', show_label=False),
+                            label='Log',
+                            id='log_tab'),
+                        Group(
+                            Item('ipython_widget', editor=IPythonEditor() if IPythonEditor else None,
+                                 show_label=False),
+                            label='IPython Console',
+                            id='ipython_tab') if IPYTHON_AVAILABLE else None,
                         layout='tabbed',
                         id='ld_control_tabs',
                     ),
@@ -964,6 +1219,16 @@ class TC_Handler(Handler):
         if info.initialized:
             info.ui.title = info.object.title
     
+    def init(self, info):
+        """Initialize IPython console after UI is created"""
+        if IPYTHON_AVAILABLE and info.object.panel.ipython_widget is None:
+            try:
+                info.object.panel.ipython_widget = info.object.panel.create_ipython_widget()
+                logging.info('IPython console initialized')
+            except Exception as e:
+                logging.warning(f'Failed to initialize IPython console: {e}')
+        return True
+    
     def open_file(self, info):
         """Menu action: Open state file"""
         parent = info.ui.control if hasattr(info.ui, 'control') else None
@@ -981,6 +1246,10 @@ class TC_Handler(Handler):
             
     def close(self, info, is_OK):
         """Clean up before closing"""
+        # Remove logging handler
+        if hasattr(info.object, '_log_handler'):
+            logging.getLogger().removeHandler(info.object._log_handler)
+        
         if (info.object.panel.reloading_thread
             and info.object.panel.reloading_thread.is_alive()):
             info.object.panel.reloading_thread.event.set()
@@ -995,6 +1264,7 @@ class LDViewer(HasStrictTraits):
 
     panel = Instance(ControlPanel)
     figure = Instance(Figure)
+    _log_handler = Any()  # Store logging handler for cleanup
 
     def _figure_default(self):
         figure = Figure()
@@ -1003,7 +1273,16 @@ class LDViewer(HasStrictTraits):
         return figure
 
     def _panel_default(self):
-        return ControlPanel(figure=self.figure)
+        panel = ControlPanel(figure=self.figure)
+        # Add custom logging handler to capture logs in GUI
+        log_handler = TraitsLogHandler(panel)
+        log_handler.setFormatter(logging.Formatter(
+            fmt="%(asctime)s %(levelname)s (%(relative)ss) - %(message)s"
+        ))
+        logging.getLogger().addHandler(log_handler)
+        # Store handler so we can remove it on close
+        self._log_handler = log_handler
+        return panel
     
     view = View(Item('title', label='window title'),
                 HSplit('@panel',
@@ -1103,18 +1382,23 @@ if __name__ == '__main__':
                 for ldfile_data in state.get('ldfiles', []):
                     new_ldfile = LDFile(figure=ld_viewer.panel.figure, parent=ld_viewer.panel.ldfiles)
                     new_ldfile.name = ldfile_data['name']
-                    new_ldfile.active = ldfile_data.get('active', True)
                     new_ldfile.ld_file = ldfile_data['ld_file']
                     
-                    # Load data if file exists
+                    # Load data if file exists, otherwise deactivate
                     if new_ldfile.ld_file and pathlib.Path(new_ldfile.ld_file).exists():
                         new_ldfile._ld_file_changed()
+                        new_ldfile.active = ldfile_data.get('active', True)
+                    else:
+                        # File doesn't exist, deactivate it but keep in tree
+                        new_ldfile.active = False
+                        logging.warning(f'File not found, deactivated: {new_ldfile.ld_file}')
                     
                     # Restore curves
                     for curve_data in ldfile_data.get('curves', []):
                         new_curve = LDCurve(ldfile=new_ldfile, labels=new_ldfile.labels)
                         new_curve.name = curve_data['name']
-                        new_curve.active = curve_data.get('active', True)
+                        # Deactivate curve if parent file is deactivated
+                        new_curve.active = curve_data.get('active', True) if new_ldfile.active else False
                         new_curve.x_values = curve_data.get('x_values', '')
                         new_curve.y_values = curve_data.get('y_values', '')
                         new_curve.x_scale = curve_data.get('x_scale', 1.0)
