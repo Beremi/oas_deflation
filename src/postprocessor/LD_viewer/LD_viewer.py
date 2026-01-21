@@ -7,7 +7,7 @@ import datetime
 #os.environ["ETS_TOOLKIT"] = "qt"
 #os.environ["QT_API"] = "pyqt6"
 from traits.api import HasStrictTraits, Instance, List, Enum, Button, Str, \
-                        Any, Bool, Float, Tuple, Property
+                        Any, Bool, Float, Tuple, Property, Int
 from traitsui.api import Item, View, HSplit, NoButtons, HGroup, Group, \
                          Handler, VGroup, ListEditor, TreeEditor, TreeNode
 from traitsui.menu \
@@ -21,6 +21,7 @@ from pyface.api import FileDialog, OK
 from mpl_qt_editor import MPLFigureEditor
 from matplotlib.figure import Figure
 import pandas as pd
+import numpy as np
 import mplcursors
 from threading import Thread, Event
 import json
@@ -275,8 +276,10 @@ class LDFile(HasStrictTraits):
                 editor=ListEditor(use_notebook=True,
                                deletable=True,
                                dock_style='tab',
-                               page_name='.name')),
-                ))
+                               page_name='.name'),
+                height=0.6, resizable=True),
+                ),
+                resizable=True)
 
 class LDCurve(HasStrictTraits):
     ld_num = 0
@@ -305,6 +308,12 @@ class LDCurve(HasStrictTraits):
 
     x_scale = Float(1)
     y_scale = Float(1)
+    
+    # Line style options
+    line_style = Enum(['-', '--', '-.', ':'])
+    line_width = Float(1.5)
+    marker_style = Enum(['o', 'none', 's', '^', 'v', '<', '>', 'd', 'p', '*'])
+    marker_size = Float(6.0)
 
     draw_this_button = Button('Draw this one')
     copy_to_clipboard = Button('Copy to clipboard')
@@ -366,12 +375,16 @@ class LDCurve(HasStrictTraits):
         
         label = f'{self.ldfile.name}-{self.name}'
         
-        # Draw line without markers
-        lines = ax.plot(x_to_draw, y_to_draw, label=label)
+        # Draw line with custom style
+        lines = ax.plot(x_to_draw, y_to_draw, label=label,
+                       linestyle=self.line_style, linewidth=self.line_width)
         
-        # Draw markers separately (use same color as line)
-        color = lines[0].get_color()
-        markers = ax.plot(x_to_draw, y_to_draw, 'o', color=color, label='_nolegend_', picker=5)
+        # Draw markers separately if marker style is not 'none'
+        markers = []
+        if self.marker_style != 'none':
+            color = lines[0].get_color()
+            markers = ax.plot(x_to_draw, y_to_draw, self.marker_style, color=color,
+                            label='_nolegend_', picker=5, markersize=self.marker_size)
         
         return {'lines': lines, 'markers': markers}
 
@@ -423,6 +436,10 @@ class LDCurve(HasStrictTraits):
                                Item('x_scale', show_label=False)),
                        HGroup(HItem('y_values'),
                                Item('y_scale', show_label=False)),
+                       HGroup(Item('line_style', label='Line Style'),
+                              Item('line_width', label='Width')),
+                       HGroup(Item('marker_style', label='Marker'),
+                              Item('marker_size', label='Size')),
                        Item('draw_this_button', show_label=False),
                        Item('copy_to_clipboard', show_label=False),
                        Item('save_to_txt', show_label=False),
@@ -435,17 +452,166 @@ ldcurve_view = View(VGroup(HGroup(Item('name'),
                                Item('x_scale', show_label=False)),
                        HGroup(HItem('y_values'),
                                Item('y_scale', show_label=False)),
+                       HGroup(Item('line_style', label='Line Style'),
+                              Item('line_width', label='Width')),
+                       HGroup(Item('marker_style', label='Marker'),
+                              Item('marker_size', label='Size')),
                        Item('draw_this_button', show_label=False),
                        Item('copy_to_clipboard', show_label=False),
                        Item('save_to_txt', show_label=False),
                        )
                 )
 
+
+class CustomCurve(HasStrictTraits):
+    """Custom curve defined by mathematical equation"""
+    custom_num = 0
+
+    def __init__(self, **traits):
+        CustomCurve.custom_num += 1
+        super().__init__(**traits)
+
+    name = Str
+    active = Bool(True)
+    
+    tree_label = Property(depends_on='name, active')
+    
+    def _get_tree_label(self):
+        """Return formatted label for tree display"""
+        if self.active:
+            return self.name
+        else:
+            return f"⊘ {self.name}"
+    
+    # Equation parameters
+    equation = Str('np.sin(x)')
+    x_min = Float(0.0)
+    x_max = Float(10.0)
+    num_points = Int(100)
+    
+    # Scaling
+    x_scale = Float(1.0)
+    y_scale = Float(1.0)
+    
+    # Line style options
+    line_style = Enum(['-', '--', '-.', ':'])
+    line_width = Float(1.5)
+    marker_style = Enum(['none', 'o', 's', '^', 'v', '<', '>', 'd', 'p', '*'])
+    marker_size = Float(6.0)
+    
+    # UI
+    draw_this_button = Button('Draw this one')
+    parent = Any()  # Reference to parent (ControlPanel)
+    
+    @property
+    def figure(self):
+        """Get figure from parent"""
+        return self.parent.figure if self.parent else None
+    
+    def _name_default(self):
+        return f'Custom {self.custom_num}'
+    
+    def toggle_active(self):
+        """Toggle the active state"""
+        self.active = not self.active
+    
+    def _draw_this_button_fired(self):
+        if not self._validate_figure():
+            return
+        ax = self.figure.axes[0]
+        self.draw_line(ax)
+        self.figure.canvas.draw()
+    
+    def _validate_figure(self):
+        """Validate that figure is properly initialized"""
+        if self.figure is None:
+            logging.error("Figure not initialized")
+            error("Figure not initialized. Cannot draw curve.", "Error")
+            return False
+        if not self.figure.axes:
+            logging.error("Figure has no axes")
+            error("Figure has no axes. Cannot draw curve.", "Error")
+            return False
+        return True
+    
+    def generate_data(self):
+        """Generate x, y data from equation"""
+        try:
+            x = np.linspace(self.x_min, self.x_max, self.num_points)
+            # Create namespace for eval with numpy functions
+            namespace = {'np': np, 'x': x}
+            y = eval(self.equation, namespace)
+            # Ensure y is an array of the correct shape
+            y = np.asarray(y)
+            if y.shape != x.shape:
+                # If y is scalar, broadcast it to match x
+                if y.size == 1:
+                    y = np.full_like(x, y.item())
+                else:
+                    raise ValueError(f"Equation result has shape {y.shape}, expected {x.shape}")
+            return x, y
+        except Exception as e:
+            logging.error(f"Failed to evaluate equation '{self.equation}': {e}")
+            error(f"Failed to evaluate equation:\n{self.equation}\n\nError: {str(e)}", "Equation Error")
+            return None, None
+    
+    def draw_line(self, ax, ignore_last_step=False, global_x_scale=1.0, global_y_scale=1.0):
+        """Draw line on the given axes"""
+        x, y = self.generate_data()
+        if x is None or y is None:
+            return {'lines': [], 'markers': []}
+        
+        # Apply scaling
+        x_to_draw = x * self.x_scale * global_x_scale
+        y_to_draw = y * self.y_scale * global_y_scale
+        
+        label = self.name
+        
+        # Draw line with custom style
+        lines = ax.plot(x_to_draw, y_to_draw, label=label,
+                       linestyle=self.line_style, linewidth=self.line_width)
+        
+        # Draw markers separately if marker style is not 'none'
+        markers = []
+        if self.marker_style != 'none':
+            color = lines[0].get_color()
+            markers = ax.plot(x_to_draw, y_to_draw, self.marker_style, color=color,
+                            label='_nolegend_', picker=5, markersize=self.marker_size)
+        
+        return {'lines': lines, 'markers': markers}
+    
+    view = View(VGroup(
+        HGroup(Item('name'), Item('active', label='Draw')),
+        Item('equation', label='y ='),
+        HGroup(
+            Item('x_min', label='x min'),
+            Item('x_max', label='x max'),
+            Item('num_points', label='Points'),
+        ),
+        HGroup(
+            Item('x_scale', label='X Scale'),
+            Item('y_scale', label='Y Scale'),
+        ),
+        HGroup(Item('line_style', label='Line Style'),
+               Item('line_width', label='Width')),
+        HGroup(Item('marker_style', label='Marker'),
+               Item('marker_size', label='Size')),
+        Item('draw_this_button', show_label=False),
+    ))
+
+
 class LDFiles(HasStrictTraits):
     name = 'ldfiles'
     figure = Instance(Figure)
     add_ldfile = Button('Add new LD file')
     ldfiles = List(LDFile)
+    add_custom_curve = Button('Add custom curve')
+    custom_curves = List(CustomCurve)
+    
+    @property
+    def all_children(self):
+        """Return combined list of ldfiles and custom_curves for tree editor"""
+        return self.ldfiles + self.custom_curves
 
     def _add_ldfile_fired(self):
         if self.figure is None:
@@ -454,6 +620,14 @@ class LDFiles(HasStrictTraits):
             return
         new_file = LDFile(figure=self.figure, parent=self)
         self.ldfiles.append(new_file)
+    
+    def _add_custom_curve_fired(self):
+        """Add a new custom equation-based curve"""
+        # Note: custom curves need a reference to ControlPanel for figure access
+        # This will be set when creating the curve
+        new_curve = CustomCurve()
+        self.custom_curves.append(new_curve)
+        logging.info(f'Added custom curve: {new_curve.name}')
     
     def _ldfiles_items_changed(self, event):
         """Ensure parent is set when items are added to ldfiles list"""
@@ -575,7 +749,31 @@ toggle_ldcurve_active_action = Action(
     action='object.toggle_active'
 )
 
-# Tree editor
+toggle_customcurve_active_action = Action(
+    name='Toggle Active/Inactive',
+    action='object.toggle_active'
+)
+
+customcurve_view = View(VGroup(
+    HGroup(Item('name'), Item('active', label='Draw')),
+    Item('equation', label='y ='),
+    HGroup(
+        Item('x_min', label='x min'),
+        Item('x_max', label='x max'),
+        Item('num_points', label='Points'),
+    ),
+    HGroup(
+        Item('x_scale', label='X Scale'),
+        Item('y_scale', label='Y Scale'),
+    ),
+    HGroup(Item('line_style', label='Line Style'),
+           Item('line_width', label='Width')),
+    HGroup(Item('marker_style', label='Marker'),
+           Item('marker_size', label='Size')),
+    Item('draw_this_button', show_label=False),
+))
+
+# Tree editor for LD Files
 tree_editor = TreeEditor(
     nodes = [
         TreeNode( node_for  = [ LDFiles ],
@@ -622,12 +820,72 @@ tree_editor = TreeEditor(
                              DeleteAction,
                              Separator(),
                              RenameAction),
-                  view =  ldcurve_view)
+                  view =  ldcurve_view),
+        TreeNode( node_for  = [ CustomCurve ],
+                  auto_open = True,
+                  label     = 'tree_label',
+                  copy      = True,
+                  menu=Menu( toggle_customcurve_active_action,
+                             Separator(),
+                             DeleteAction,
+                             Separator(),
+                             RenameAction),
+                  view =  customcurve_view)
     ],
-    hide_root=False,
+    hide_root=True,
     orientation="vertical",
     selection_mode='extended',  # Enable multi-selection
     selected='selected',  # Bind selection to 'selected' trait
+)
+
+
+class CustomCurves(HasStrictTraits):
+    """Container for custom equation-based curves"""
+    name = 'custom_curves'
+    add_custom_curve = Button('Add new custom curve')
+    custom_curves = List(CustomCurve)
+    parent = Any()  # Reference to ControlPanel
+    
+    def _add_custom_curve_fired(self):
+        if self.parent is None:
+            logging.error("Parent not set for CustomCurves")
+            return
+        new_curve = CustomCurve(parent=self.parent)
+        self.custom_curves.append(new_curve)
+        logging.info(f'Added custom curve: {new_curve.name}')
+    
+    view = View(
+        Item('add_custom_curve', show_label=False),
+        resizable=True
+    )
+
+
+# Tree editor for Custom Curves
+custom_curves_tree_editor = TreeEditor(
+    nodes = [
+        TreeNode( node_for  = [ CustomCurves ],
+                  auto_open = True,
+                  children = 'custom_curves',
+                  label     = '=Custom Curves',
+                  add       = [ CustomCurve ],
+                  menu=Menu( Separator(),
+                             DeleteAction),
+                  view =  View()),
+        TreeNode( node_for  = [ CustomCurve ],
+                  auto_open = True,
+                  label     = 'tree_label',
+                  copy      = True,
+                  menu=Menu( toggle_customcurve_active_action,
+                             Separator(),
+                             DeleteAction,
+                             Separator(),
+                             RenameAction),
+                  view =  customcurve_view),
+    ],
+    hide_root=True,
+    orientation="vertical",
+    selection_mode='extended',
+    selected='selected',
 )
                   
 
@@ -716,10 +974,11 @@ class BatchEditDialog(HasStrictTraits):
 
 
 class ControlPanel(HasStrictTraits):
+    figure = Instance(Figure)
     ldfiles = Instance(LDFiles)
+    custom_curves = List(CustomCurve)
     figure_settings = Instance(FigureSettings, ())
     axis_settings = Instance(AxisSettings, ())
-    figure = Instance(Figure)
     cursor = Any()  # mplcursors cursor instance (legacy)
     cursor_markers = Any()  # mplcursors cursor for markers
     cursor_lines = Any()  # mplcursors cursor for lines
@@ -738,6 +997,7 @@ class ControlPanel(HasStrictTraits):
     ipython_widget = Any()  # Will hold the IPython widget
 
     add_ldfile_button = Button('Add new LD file')
+    add_custom_curve_button = Button('Add custom curve')
     batch_edit_button = Button('Batch Edit Selected')
     draw_button = Button('Draw all')
     reload_button = Button('Reload all')
@@ -767,8 +1027,7 @@ class ControlPanel(HasStrictTraits):
 
     def _ldfiles_default(self):
         logging.debug(f'Initializing LDFiles with figure: {self.figure}')
-        ldfiles = LDFiles(figure=self.figure)
-        return ldfiles
+        return LDFiles(figure=self.figure)
     
     def _clear_log_button_fired(self):
         """Clear the log text"""
@@ -815,6 +1074,12 @@ class ControlPanel(HasStrictTraits):
 
     def _add_ldfile_button_fired(self):
         self.ldfiles.add_ldfile = True
+    
+    def _add_custom_curve_button_fired(self):
+        """Add a new custom equation-based curve"""
+        new_curve = CustomCurve(parent=self)
+        self.custom_curves.append(new_curve)
+        logging.info(f'Added custom curve: {new_curve.name}')
     
     def _batch_edit_button_fired(self):
         """Open batch edit dialog for selected LD curves"""
@@ -885,6 +1150,7 @@ class ControlPanel(HasStrictTraits):
         
         ignore_last = self.figure_settings.ignore_last_step
         
+        # Draw LD file curves
         for ldfile in self.ldfiles.ldfiles:
             if not ldfile.active:  # Skip inactive files
                 continue
@@ -899,6 +1165,19 @@ class ControlPanel(HasStrictTraits):
                         all_markers.extend(result['markers'])
                     if result.get('lines'):
                         all_lines.extend(result['lines'])
+        
+        # Draw custom curves
+        for custom_curve in self.custom_curves:
+            if not custom_curve.active:
+                continue
+            result = custom_curve.draw_line(ax,
+                                          global_x_scale=self.global_x_scale,
+                                          global_y_scale=self.global_y_scale)
+            if result:
+                if result.get('markers'):
+                    all_markers.extend(result['markers'])
+                if result.get('lines'):
+                    all_lines.extend(result['lines'])
         
         # Create cursor for markers (points) - shows full data table
         if all_markers:
@@ -1003,6 +1282,7 @@ class ControlPanel(HasStrictTraits):
         try:
             state = {
                 'ldfiles': [],
+                'custom_curves': [],
                 'figure_settings': {
                     'ignore_last_step': self.figure_settings.ignore_last_step,
                     'show_legend': self.figure_settings.show_legend,
@@ -1034,10 +1314,32 @@ class ControlPanel(HasStrictTraits):
                         'y_values': curve.y_values,
                         'x_scale': curve.x_scale,
                         'y_scale': curve.y_scale,
+                        'line_style': curve.line_style,
+                        'line_width': curve.line_width,
+                        'marker_style': curve.marker_style,
+                        'marker_size': curve.marker_size,
                     }
                     ldfile_data['curves'].append(curve_data)
                 
                 state['ldfiles'].append(ldfile_data)
+            
+            # Save custom curves
+            for custom_curve in self.custom_curves:
+                custom_curve_data = {
+                    'name': custom_curve.name,
+                    'active': custom_curve.active,
+                    'equation': custom_curve.equation,
+                    'x_min': custom_curve.x_min,
+                    'x_max': custom_curve.x_max,
+                    'num_points': custom_curve.num_points,
+                    'x_scale': custom_curve.x_scale,
+                    'y_scale': custom_curve.y_scale,
+                    'line_style': custom_curve.line_style,
+                    'line_width': custom_curve.line_width,
+                    'marker_style': custom_curve.marker_style,
+                    'marker_size': custom_curve.marker_size,
+                }
+                state['custom_curves'].append(custom_curve_data)
             
             with open(file_name, 'w') as f:
                 json.dump(state, f, indent=2)
@@ -1128,6 +1430,9 @@ class ControlPanel(HasStrictTraits):
             self.axis_settings.xlabel = ax.get('xlabel', '')
             self.axis_settings.ylabel = ax.get('ylabel', '')
             
+            # Clear custom curves
+            self.custom_curves = []
+            
             # Restore ldfiles
             for ldfile_data in state.get('ldfiles', []):
                 new_ldfile = LDFile(figure=self.figure, parent=self.ldfiles)
@@ -1153,9 +1458,30 @@ class ControlPanel(HasStrictTraits):
                     new_curve.y_values = curve_data.get('y_values', '')
                     new_curve.x_scale = curve_data.get('x_scale', 1.0)
                     new_curve.y_scale = curve_data.get('y_scale', 1.0)
+                    new_curve.line_style = curve_data.get('line_style', '-')
+                    new_curve.line_width = curve_data.get('line_width', 1.5)
+                    new_curve.marker_style = curve_data.get('marker_style', 'o')
+                    new_curve.marker_size = curve_data.get('marker_size', 6.0)
                     new_ldfile.ld_curves.append(new_curve)
                 
                 self.ldfiles.ldfiles.append(new_ldfile)
+            
+            # Restore custom curves
+            for custom_curve_data in state.get('custom_curves', []):
+                new_custom_curve = CustomCurve(parent=self)
+                new_custom_curve.name = custom_curve_data.get('name', 'Custom')
+                new_custom_curve.active = custom_curve_data.get('active', True)
+                new_custom_curve.equation = custom_curve_data.get('equation', 'x')
+                new_custom_curve.x_min = custom_curve_data.get('x_min', 0.0)
+                new_custom_curve.x_max = custom_curve_data.get('x_max', 1.0)
+                new_custom_curve.num_points = custom_curve_data.get('num_points', 100)
+                new_custom_curve.x_scale = custom_curve_data.get('x_scale', 1.0)
+                new_custom_curve.y_scale = custom_curve_data.get('y_scale', 1.0)
+                new_custom_curve.line_style = custom_curve_data.get('line_style', '-')
+                new_custom_curve.line_width = custom_curve_data.get('line_width', 1.5)
+                new_custom_curve.marker_style = custom_curve_data.get('marker_style', 'none')
+                new_custom_curve.marker_size = custom_curve_data.get('marker_size', 6.0)
+                self.custom_curves.append(new_custom_curve)
             
             self.current_file = file_name
             logging.info(f'State restored from {file_name}')
@@ -1168,10 +1494,24 @@ class ControlPanel(HasStrictTraits):
     view = View(VGroup(
                     Group(
                         Group(
-                            Item('add_ldfile_button', show_label=False),
-                            Item('batch_edit_button', show_label=False),
-                            Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'), label='LD Files',
+                            HGroup(
+                                Item('add_ldfile_button', show_label=False),
+                                Item('batch_edit_button', show_label=False),),
+                            Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
+                            label='LD Files',
                             id='ld_files_tab'),
+                        Group(
+                            VGroup(
+                                Item('add_custom_curve_button', show_label=False),
+                                Item('custom_curves', editor=ListEditor(use_notebook=True,
+                                                                        deletable=True,
+                                                                        dock_style='tab',
+                                                                        page_name='.name'),
+                                     style='custom', show_label=False,
+                                     height=0.6, resizable=True),
+                            ),
+                            label='Custom Curves',
+                            id='custom_curves_tab'),
                         Group(
                             Item('@figure_settings', show_label=False),
                             Item('get_current_limits', show_label=False),
@@ -1274,6 +1614,8 @@ class LDViewer(HasStrictTraits):
 
     def _panel_default(self):
         panel = ControlPanel(figure=self.figure)
+        # Force ldfiles initialization before view is created
+        _ = panel.ldfiles
         # Add custom logging handler to capture logs in GUI
         log_handler = TraitsLogHandler(panel)
         log_handler.setFormatter(logging.Formatter(
