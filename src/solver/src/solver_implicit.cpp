@@ -36,7 +36,7 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     }
     elems->prepareStiffnessMatrix(K);
 
-    updateSystemMatrices(0, 1);
+    updateSystemMatrices(0, 0, 1);
 }
 
 
@@ -60,7 +60,7 @@ void SteadyStateLinearSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
-    factorizeLinearSystem();
+    factorizeLinearSystem(); 
 }
 
 //////////////////////////////////////////////////////////
@@ -141,6 +141,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: solve() {
+
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     updateFieldVariables();      //with ddr=0
@@ -156,6 +157,7 @@ void SteadyStateLinearSolver :: solve() {
      *  return;
      * }
      */
+
     linalgsolver->solve(ddr, f);
 
     /*
@@ -173,8 +175,8 @@ void SteadyStateLinearSolver :: solve() {
 
 
 //////////////////////////////////////////////////////////
-bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
-    if ( enforce || (iteration==0 && (stiffnessMatrixStepUpdate == 0 || (stiffnessMatrixStepUpdate > 0 && step % abs(stiffnessMatrixStepUpdate) == 0) )) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % abs(stiffnessMatrixIterUpdate) == 0 ) ) {
+bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
+    if ( enforce || (iteration==0 && (stiffnessMatrixStepUpdate == 0 || (stiffnessMatrixStepUpdate > 0 && step % stiffnessMatrixStepUpdate == 0) )) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % stiffnessMatrixIterUpdate == 0 ) || ( stiffnessMatrixCumulIterUpdate > 0 && cumul_iteration % stiffnessMatrixCumulIterUpdate == 0 ) ) {
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
             elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
         } else {
@@ -220,7 +222,7 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
         } else if  ( symsolver_type == "EigenLLT" ) {
             linalgsolver = std :: make_unique< LLTSolver >();
             linalgsolver->analyzePattern(Keff);
-        } else if  ( symsolver_type == "EigenSparseLU" ) {
+        } else if  ( symsolver_type == "EigenLU" || symsolver_type == "EigenSparseLU" ) {
             linalgsolver = std :: make_unique< LUSolver >();
             linalgsolver->analyzePattern(Keff);
 #ifdef SUPERLU_FOUND
@@ -268,7 +270,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
 
     EPS2.resize(4);
     EPS2 [ 0 ] = 1e-20; //mechanics
-    EPS2 [ 1 ] = 1e-12; //transport
+    EPS2 [ 1 ] = 1e-10; //transport
     EPS2 [ 2 ] = 1e-17; //temperature
     EPS2 [ 3 ] = 1e-18; //humidity
 
@@ -280,12 +282,19 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     step_increase = 1.25;
     step_decrease = 0.8;
     critical_step_decrease = 0.5;
-    stiffnessMatrixIterUpdate = 1e3;
-    stiffnessMatrixStepUpdate = -1;
+    stiffnessMatrixIterUpdate = -1;
+    stiffnessMatrixCumulIterUpdate = -1;
+    stiffnessMatrixStepUpdate = -1;    
 
     it = 0;
     restarts = 0;
+    cumul_it = 0;
     stiffMatType = "secant";
+    
+    //eigen error fields
+    eigen_trial_rPF = Vector :: Zero(numPhysicalFields);
+    eigen_f_extPF = Vector :: Zero(numPhysicalFields);
+    eigen_WextPF = Vector :: Zero(numPhysicalFields);    
 }
 
 //////////////////////////////////////////////////////////
@@ -314,7 +323,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
-
+  
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
 
@@ -356,6 +365,9 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             } else if ( param.compare("stiffness_matrix_update") == 0 || param.compare("stiffness_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
                 stiffnessMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("stiffness_matrix_cumul_iter_update") == 0  ) {
+                iss >> valueIN;
+                stiffnessMatrixCumulIterUpdate = int( valueIN );                
             } else if ( param.compare("stiffness_matrix_step_update") == 0  ) {
                 iss >> valueIN;
                 stiffnessMatrixStepUpdate = int( valueIN );                
@@ -519,17 +531,47 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
     }
-
+    
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
+        trial_rPF [ i ] += eigen_trial_rPF[ i ] + 2*sqrt(eigen_trial_rPF[ i ]*trial_rPF [ i ]);
+        f_extPF [ i ] += eigen_f_extPF[ i ] + 2*sqrt(eigen_f_extPF[ i ]*f_extPF [ i ]);      
+
         resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]), abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]) + eigen_WextPF[ i ], abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
     eneErr = sqrt(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_rPF(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }
+    eigen_trial_rPF[pf] = value;
+}    
+    
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_fext(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }    
+    eigen_f_extPF[pf] = value;    
+}    
+    
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: setEigenErrorValue_Wext(unsigned pf, double value){
+    if(pf>=numPhysicalFields){
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+        exit(1);
+    }    
+    eigen_WextPF[pf] = value;    
 }
 
 //////////////////////////////////////////////////////////
@@ -552,7 +594,7 @@ void SteadyStateNonLinearSolver :: reset() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( updateSystemMatrices(it, false) ) {
+            if ( updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);   // NOTE JK when IDC applied and step reset, residuals from the last iteration are used here //JE: no, they are actually computed again here
@@ -617,6 +659,7 @@ void SteadyStateNonLinearSolver :: reset() {
                 converged = false;
             }
             it++;
+            cumul_it++;
         }
 
         if ( converged ) {
@@ -665,7 +708,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( (step>0 || it>0) && updateSystemMatrices(it, false) ) {
+            if ( (step>0 || it>0) && updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);
@@ -780,6 +823,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
 
             it++;
+            cumul_it++;            
             if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it >= minIt ) {
                 converged = true;
             } else {
@@ -976,6 +1020,7 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     setDefaultIntegrationParams();
     check_time_integr_params = true;
     dampingMatrixIterUpdate = -1;
+    dampingMatrixCumulIterUpdate = -1;    
     dampingMatrixStepUpdate = -1;
     stiffMatType = "elastic";
 }
@@ -1180,6 +1225,9 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
             } else if ( param.compare("damping_matrix_update") == 0 || param.compare("damping_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
                 dampingMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("damping_matrix_cumul_iter_update") == 0  ) {
+                iss >> valueIN;
+                dampingMatrixCumulIterUpdate = int( valueIN );                
             } else if ( param.compare("damping_matrix_step_update") == 0  ) {
                 iss >> valueIN;
                 dampingMatrixStepUpdate = int( valueIN );                
@@ -1191,10 +1239,10 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 };
 
 //////////////////////////////////////////////////////////
-bool TransientLinearTransportSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
-    bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(iteration, enforce);
+bool TransientLinearTransportSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
+    bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(iteration, cumul_iteration, enforce);
     bool updated1 = false;
-    if ( enforce || (iteration==0 && (dampingMatrixStepUpdate == 0 || (dampingMatrixStepUpdate > 0 && step % abs(dampingMatrixStepUpdate) == 0) )) || dampingMatrixIterUpdate == 0 || ( dampingMatrixIterUpdate > 0 && iteration % abs(dampingMatrixIterUpdate) == 0 ) ) {
+    if ( enforce || (iteration==0 && (dampingMatrixStepUpdate == 0 || (dampingMatrixStepUpdate > 0 && step % dampingMatrixStepUpdate == 0) )) || dampingMatrixIterUpdate == 0 || ( dampingMatrixIterUpdate > 0 && iteration % dampingMatrixIterUpdate == 0 ) || ( dampingMatrixCumulIterUpdate > 0 && cumul_iteration % dampingMatrixCumulIterUpdate == 0 )) {
         elems->updateDampingMatrix(C);
         updated1 = true;
     }
@@ -1242,6 +1290,7 @@ TransientLinearMechanicalSolver :: TransientLinearMechanicalSolver() {
     setDefaultIntegrationParams(); //this always call method from TransientLinearMechanicalSolver
     lumpMassM = false;
     massMatrixIterUpdate = -1;
+    massMatrixCumulIterUpdate = -1;
     massMatrixStepUpdate = -1;
     stiffMatType = "elastic";
 }
@@ -1273,6 +1322,9 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
             } else if ( param.compare("mass_matrix_update") == 0 || param.compare("mass_matrix_iter_update") == 0  ) {
                 iss >> valueIN;
                 massMatrixIterUpdate = int( valueIN );
+            } else if ( param.compare("mass_matrix_cumul_iter_update") == 0  ) {
+                iss >> valueIN;
+                massMatrixCumulIterUpdate = int( valueIN );                
             } else if ( param.compare("mass_matrix_step_update") == 0  ) {
                 iss >> valueIN;
                 massMatrixStepUpdate = int( valueIN );  
@@ -1474,10 +1526,10 @@ void TransientLinearMechanicalSolver :: runAfterEachStep() {
 
 
 //////////////////////////////////////////////////////////
-bool TransientLinearMechanicalSolver :: updateSystemMatrices(unsigned iteration, bool enforce) {
-    bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(iteration, enforce);
+bool TransientLinearMechanicalSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
+    bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(iteration, cumul_iteration, enforce);
     bool updated1 = false;
-    if ( enforce || (iteration==0 && (massMatrixStepUpdate == 0 || (massMatrixStepUpdate > 0 && step % abs(massMatrixStepUpdate) == 0) ))  || massMatrixIterUpdate == 0 || ( massMatrixIterUpdate > 0 && iteration % abs(massMatrixIterUpdate) == 0 ) ) {
+    if ( enforce || (iteration==0 && (massMatrixStepUpdate == 0 || (massMatrixStepUpdate > 0 && step % massMatrixStepUpdate == 0) ))  || massMatrixIterUpdate == 0 || ( massMatrixIterUpdate > 0 && iteration % massMatrixIterUpdate == 0 ) || ( massMatrixCumulIterUpdate > 0 && cumul_iteration % massMatrixCumulIterUpdate == 0 ) ) {
         elems->updateMassMatrix(M, lumpMassM);
         if ( lumpMassM ) {
             elems->replaceTrueMassMatricesByLumpedOnes();

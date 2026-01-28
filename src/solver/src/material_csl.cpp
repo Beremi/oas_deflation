@@ -16,7 +16,7 @@ CSLMaterialStatus :: CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnu
 
 //////////////////////////////////////////////////////////
 bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
-    if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
+    if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 || code.compare("normal_crack_opening") == 0) {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
         return true;
@@ -56,6 +56,19 @@ bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
         return true;
+    } else if ( code.compare("normal_dissipation_density") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = normalEnergyDensity - 0.5*temp_stress[0]*temp_strain[0];
+        return true;
+    } else if ( code.compare("shear_dissipation_density") == 0 ) {
+        VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );     
+        result.resize(1);
+        if (m->giveDimension()==2){
+            result [ 0 ] = shearEnergyDensity  - 0.5*temp_stress[1]*temp_strain[1];
+        }else{
+            result [ 0 ] = shearEnergyDensity - 0.5*(temp_stress[1]*temp_strain[1]+temp_stress[2]*temp_strain[2]);                
+        }
+        return true;        
     } else {
         return VectMechMaterialStatus :: giveValues(code, result);
     }
@@ -197,7 +210,8 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
             S0 = giveS0tension(omega);
 
             unsigned dim = element->giveDimension();
-            double flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
+            double flam = 1.;
+            if (m->giveLam0()>0) flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
             K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
 
             if ( omega < 0.0 ) {
@@ -630,9 +644,6 @@ void CoupledCSLMaterialStatus :: updateStressByBiotEffect(double timeStep) {
     ( void ) timeStep;
     CoupledCSLMaterial *m = static_cast< CoupledCSLMaterial * >( mat );
     temp_stress [ 0 ] -= m->giveBiotCoeff() * avgPressure;
-    if ( element->giveID() == 0 && idx == 0 ) {
-        cout << 0 << " " << 0 << " " << temp_stress [ 0 ] << " " << avgPressure << endl;
-    }
 }
 
 //////////////////////////////////////////////////////////

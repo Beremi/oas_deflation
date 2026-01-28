@@ -44,6 +44,7 @@ public:
     virtual bool isElastic(const bool &now = false) const;
     virtual void initializeStressAndStrainVector(unsigned num);
     double giveSigmaBCDiff(double relt, double *transSigmaBC);
+    virtual double giveNormalCrackOpening()const {return temp_crackOpening;};     
 };
 
 //////////////////////////////////////////////////////////
@@ -83,6 +84,7 @@ public:
     double giveMuinf() { return muinf; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
+    virtual bool requestTetrahedralBackgroundMesh()const{return true;} //for volumetric strain    
 };
 
 //////////////////////////////////////////////////////////

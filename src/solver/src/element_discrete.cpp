@@ -18,6 +18,7 @@ RigidBodyContact :: RigidBodyContact(const unsigned dim) : Element(dim) {
     vtk_cell_type = 3;
     shafunc = new Linear1DLineShapeF();
     inttype = new IntegrDiscrete1();
+    areIPLocsInNaturalCoords = false;    
     projectArea = true;
     intPoints = "centroid";
     userDefinedCentroid = false;
@@ -65,6 +66,22 @@ void RigidBodyContact :: giveValues(string code, Vector &result) const {
             for ( unsigned i = 0; i < ndim; i++ ) {
                 result [ i ] = R(2, i);
             }
+        }
+    } else  if ( code.compare("normal_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("normal_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;
+        }
+    } else  if ( code.compare("shear_dissipation") == 0 ) {
+        result.resize(1);
+        result[0] = 0;
+        Vector r;
+        for(unsigned i=0; i<inttype->giveNumIP(); i++){
+            stats[i]->giveValues("shear_dissipation_density", r);
+            result [ 0 ] += r[0]*inttype->giveIPWeight(i)*ndim;
         }
     } else if ( code.compare("volume") == 0 ) {
         result.resize(1);
@@ -273,7 +290,7 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             ais [ i ] *= ni.dot(normal);
             if ( ais [ i ] < 1e-15 ) {
                 if ( !ignoreNegativeAreas ) {
-                    cout << "RigidBodyContact Warning: negative area " << ais [ i ] << ", incorrect orientation of verices, corrected automatically" << endl;
+                    //cout << "RigidBodyContact Warning: negative area " << ais [ i ] << ", incorrect orientation of verices, corrected automatically" << endl;
                     ais [ i ] = std :: abs(ais [ i ]);
                 } else {
                     ais [ i ] = 0.;
@@ -1283,7 +1300,7 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
             ai *= ni.dot(normal);
             if ( ai < 1e-15 ) {
                 if ( !ignoreNegativeAreas ) {
-                    cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
+                    //cout << "DiscreteTrsprtElem Warning: negative area " << ai << ", incorrect orientation of verices, corrected automatically" << endl;
                     ai = std :: abs(ai);
                 } else {
                     ai = 0.;
@@ -1450,7 +1467,6 @@ Vector DiscreteTrsprtElem :: giveStrain(unsigned i, const Vector &DoFs) {
     return Element :: giveStrain(i, DoFs);
 };
 
-
 //////////////////////////////////////////////////////////
 Matrix DiscreteTrsprtElem :: giveStiffnessMatrix(string matrixType) const {
     return Element :: giveStiffnessMatrix(matrixType) * ndim; //ndim needs to be included here for discrete elements
@@ -1592,7 +1608,7 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
         }
         m++;
     }
-    stats [ 0 ]->setParameterValue("crack_opening", crackInNeighborhood);
+    stats [ 0 ]->setParameterValue("crack_param", crackInNeighborhood);
     stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
 
     //Biot effect
@@ -1706,11 +1722,9 @@ Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
             B(j, i + p + 1) = RB(j, i + p);
         }
     }
-    //transport
+    //temperature
     B(ndim, p) = -1. / length;
-    ;
     B(ndim, 2 * p + 1) = 1. / length;
-    ;
     return B;
 }
 
@@ -1718,7 +1732,7 @@ Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
 //////////////////////////////////////////////////////////
 Vector RigidBodyContactWithHeatConduction :: giveStrain(unsigned i, const Vector &DoFs) {
     unsigned p = 3 * ( ndim - 1 );
-    stats [ 0 ]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
+    stats[i]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
     return RigidBodyContact :: giveStrain(i, DoFs);
 }
 

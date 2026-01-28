@@ -130,14 +130,7 @@ bool JointDoF :: replaceDependentMasters(vector< unsigned > &depms, vector< Join
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Lagrange multiplier
-LagrangeMultiplier :: LagrangeMultiplier(const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult) {
-    slaveNode = nullptr;
-    direction = -1;
-    masters = m;
-    directions = dirs;
-    multipliers = mult;
-    time_fns = fns;
-    time_mults = time_mult;
+LagrangeMultiplier :: LagrangeMultiplier(Node *s, const unsigned &dir, const std :: vector< Node * > &m, const std :: vector< unsigned > &dirs, const std :: vector< double > &mult, const std :: vector< Function * > &fns, const std :: vector< double > &time_mult): JointDoF(s, dir, m, dirs, mult, fns, time_mult){  
 }
 
 //////////////////////////////////////////////////////////
@@ -364,6 +357,13 @@ void ConstraintContainer :: clear() {
     }
 }
 
+//////////////////////////////////////////////////////////
+bool ConstraintContainer :: isDependent(const Node *n)const{
+  for ( auto const &jD : constraints ) {
+        if (jD->giveSlaveNode()==n) return true;
+  }
+  return false;
+}
 
 //////////////////////////////////////////////////////////
 void ConstraintContainer :: checkInternalDependencies() {
@@ -379,7 +379,7 @@ void ConstraintContainer :: checkInternalDependencies() {
     for ( auto const &jD : constraints ) {
         prev = find( allDependents.begin(), allDependents.begin() + i + 1, jD->giveSlaveDoF() );
         if ( prev - allDependents.begin() < i ) {
-            cerr << "Error in constraints, DoF " << jD->giveSlaveDoF() << " (node " << jD->giveSlaveNode()->giveID() << " direction " << jD->giveSlaveDir() << " ) is contrained twice" << endl;
+            cerr << "Error in constraints, DoF " << jD->giveSlaveDoF() << " (node " << jD->giveSlaveNode()->giveID() << ": " << jD->giveSlaveNode()->giveName() << " direction " << jD->giveSlaveDir() << " ) is contrained twice" << endl;
             exit(1);
         }
         allDependents [ i ] = jD->giveSlaveDoF();
@@ -693,6 +693,9 @@ void ConstraintContainer :: addHangingNodeConstraint(Node *dependent, Element *p
         }
         JointDoF *newJD = new JointDoF(dependent, i, masters, dirs, mults);
         addConstraint(newJD);
+        //needs completely new DoF for lagrange mult.
+        //LagrangeMultiplier *newJD = new LagrangeMultiplier(dependent, i, masters, dirs, mults);   
+        //addLagrangeMult(newJD);
     }
     /*
      * //rotations

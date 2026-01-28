@@ -72,8 +72,12 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     LDPMTetra *newelem = new LDPMTetra(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LDPMCoupledTetra") == 0 ) {
-                    LDPMCoupledTetra *newelem = new LDPMCoupledTetra();
+                } else if ( elemType.compare("LDPMTetraWithHeatConduction") == 0 ) {
+                    LDPMTetraWithHeatConduction *newelem = new LDPMTetraWithHeatConduction(ndim);
+                    newelem->readFromLine(iss, nodes, matrs);
+                    elems.push_back(newelem);
+                } else if ( elemType.compare("LDPMCoupledTranspTetra") == 0 ) {
+                    LDPMCoupledTranspTetra *newelem = new LDPMCoupledTranspTetra();
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("LDPMCoupledTransport") == 0 ) {
@@ -448,7 +452,7 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                     tripletList.push_back(Ttripletd(DoFi, DoFj, 0.0) );
                     tripletList.push_back(Ttripletd(DoFj, DoFi, 0.0) );
                 }
-            }
+            }          
         }
     }
 
@@ -736,6 +740,7 @@ void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &f
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: findElementFriends() {
+    cout << "building background tetra mesh for volumetric strain calculation" << endl;
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         ( * e )->findElementFriends(this);
     }

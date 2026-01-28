@@ -55,10 +55,11 @@ protected:
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
     bool start_from_precomputed;
 
-    std :: vector< bool >is_elem_discrete;
+    std :: vector< bool >is_elem_discrete;    
+    bool add_macro_components;
 
 public:
-    RVEMaterial(unsigned dimension) : Material(dimension)  { name = "generic RVE material"; nonlinear = true; elastic_sol_is_Voigt = false; start_from_precomputed = true; };
+    RVEMaterial(unsigned dimension);
     virtual ~RVEMaterial() {};
     virtual void init(MaterialContainer *matcont);
     virtual void readFromLine(std :: istringstream &iss);
@@ -72,6 +73,7 @@ public:
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
     void setElemDiscreteness(std :: vector< bool >is_discrete) { is_elem_discrete = is_discrete; };
     std :: vector< bool > *giveElemDiscreteness() { return & is_elem_discrete; };
+    bool addMacroComponents() { return add_macro_components; };    
 };
 
 
@@ -177,8 +179,7 @@ public:
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
-    virtual Matrix giveInertiaTensor() const;
-    //virtual unsigned giveStrainSize() const;
+    virtual Matrix giveInertiaTensor() const;  
     virtual double giveCrackVolume() const;
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; };
@@ -225,7 +226,8 @@ public:
     Matrix matrixToCauchy(Matrix matrix);
     bool isConvertingFromCauchy() const { return convert_from_cauchy; };
     void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
-    bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };
+    bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };   
+    unsigned giveExternalStrainSize() const;    
 };
 
 //////////////////////////////////////////////////////////

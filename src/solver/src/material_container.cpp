@@ -233,3 +233,11 @@ void MaterialContainer :: runPreparationForStressEvaluation(ElementContainer *el
         m->prepareForStressEvaluation(elems);
     }
 }
+
+//////////////////////////////////////////////////////////
+bool MaterialContainer :: requestTetrahedralBackgroundMesh() const {
+    for ( auto &m : matrs ) {
+        if (m->requestTetrahedralBackgroundMesh()) return true;
+    }
+    return false;
+}

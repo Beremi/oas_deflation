@@ -49,6 +49,9 @@ public:
     double giveDissipatedEnergyDensity() const {return dissipEnergyDensity;};  
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();
+    virtual MaterialStatus* giveMechanicalMaterialStatus() {return nullptr;};
+    virtual MaterialStatus* giveTransportMaterialStatus() {return nullptr;};
+    virtual MaterialStatus* giveHeatConductionMaterialStatus() {return nullptr;};    
 protected:
     Vector addEigenStrain(const Vector &totalStrain) const;
     Element *element;
@@ -91,6 +94,10 @@ public:
     virtual void prepareForStressEvaluation(ElementContainer *elems) { ( void ) elems; };
     bool requiresMassMatrixUpdate() const { return massMatUpdate; };
     bool requiresDampingsMatrixUpdate() const { return dampMatUpdate; };
+    virtual bool requestTetrahedralBackgroundMesh()const{return false;} //for volumetric strain
+    virtual Material* giveMechanicalMaterial() {return nullptr;};
+    virtual Material* giveTransportMaterial() {return nullptr;};
+    virtual Material* giveHeatConductionMaterial() {return nullptr;};
 };
 
 
@@ -107,12 +114,17 @@ protected:
 public:
     CoupledMaterialStatus(Material *m, Element *e, unsigned ipnum);
     virtual ~CoupledMaterialStatus();
+    virtual void init();    
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Vector giveStress(const Vector &strain, double timeStep);
     virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
     virtual void setParameterValue(std :: string code, double value);
+    virtual MaterialStatus* giveMechanicalMaterialStatus();
+    virtual MaterialStatus* giveTransportMaterialStatus();
+    virtual MaterialStatus* giveHeatConductionMaterialStatus();    
+    virtual void initializeStressAndStrainVector(unsigned num);    
 };
 
 //////////////////////////////////////////////////////////
@@ -130,6 +142,9 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     std :: vector< Material * >giveMaterials() const { return mats; };
     Material *giveMaterial(unsigned i) const;
+    virtual Material* giveMechanicalMaterial();
+    virtual Material* giveTransportMaterial();
+    virtual Material* giveHeatConductionMaterial();  
 };
 
 

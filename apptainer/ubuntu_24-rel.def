@@ -1,0 +1,156 @@
+# ==============================================================================
+# OAS (Open Academic Solver) - Release Apptainer/Singularity Container Definition
+# ==============================================================================
+# Ubuntu 24.04 LTS minimal runtime image for running OAS
+# This is a minimal release image with only runtime dependencies
+# 
+# Build command:
+#   apptainer build oas_ubuntu24_release.sif ubuntu_24-rel.def
+#
+# Run command:
+#   apptainer exec oas_ubuntu24_release.sif OAS [arguments]
+# ==============================================================================
+
+Bootstrap: docker
+From: ubuntu:24.04
+
+# ==============================================================================
+# Labels - Container Metadata
+# ==============================================================================
+
+%labels
+    Author OAS Development Team
+    Version 0.2.0
+    Description Open Academic Solver - Runtime Release Environment
+    Distribution Ubuntu 24.04 LTS
+    BuildDate 2025-10-15
+
+# ==============================================================================
+# Help Section
+# ==============================================================================
+
+%help
+    OAS - Open Academic Solver (Release Environment)
+    
+    This container provides a minimal runtime environment for OAS with:
+    - Intel MKL (Math Kernel Library) - runtime only
+    - VTK 9.x (visualization) - runtime only
+    - Python 3.x runtime
+    - OpenMP runtime
+    
+    No development tools are included in this image.
+    
+    Run OAS:
+        apptainer exec oas_ubuntu24_release.sif OAS [arguments]
+    
+    Interactive shell:
+        apptainer shell oas_ubuntu24_release.sif
+    
+    For more information: https://kelidas.gitlab.io/OAS-site
+
+# ==============================================================================
+# Environment Variables
+# ==============================================================================
+
+%environment    
+    # Runtime settings
+    export OMP_NUM_THREADS=4
+    
+    # Path settings
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
+    
+    # Locale settings
+    export LC_ALL=C
+    export LANG=C.UTF-8
+
+# ==============================================================================
+# Post-Installation - Install runtime dependencies only
+# ==============================================================================
+
+%post
+    # Prevent interactive prompts during package installation
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=Europe/Prague
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+    
+    # Update package index
+    echo "=== Updating package lists ==="
+    apt-get update
+    
+    # Install minimal tools for package management
+    echo "=== Installing essential tools ==="
+    apt-get install -y --no-install-recommends \
+        ca-certificates
+    
+    # Install runtime libraries required by OAS (based on ldd output)
+    echo "=== Installing essential runtime libraries ==="
+    apt-get install -y --no-install-recommends \
+        libstdc++6 \
+        libgomp1 \
+        libopenblas0 \
+        libgcc-s1 \
+        libgfortran5
+    
+    # Clean up package cache to reduce image size
+    echo "=== Cleaning up package cache ==="
+    apt-get clean
+    apt-get autoremove -y
+    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/cache/apt/archives/*.deb
+    
+    # Remove documentation and locales to reduce size (safe - container paths only)
+    rm -rf /usr/share/doc/*
+    rm -rf /usr/share/man/*
+    rm -rf /usr/share/info/*
+    rm -rf /usr/share/locale/*
+    
+    # DO NOT USE: rm -rf /tmp/* - This can delete host /tmp during build!
+    # Apptainer handles temporary file cleanup automatically
+    
+    echo "=== Release container build complete ==="
+    echo "Intel MKL runtime installed at: /opt/intel/oneapi/mkl"
+    echo "Ready to run OAS"
+
+# ==============================================================================
+# Copy OAS binary to /bin
+# ==============================================================================
+
+%files
+    /home/t7610/workspace_git/OAS-build/bin/OAS /bin/OAS
+
+# ==============================================================================
+# Testing - Verify installation
+# ==============================================================================
+
+%test
+    echo "=== Testing release environment installation ==="
+    
+    # Check Python
+    python3 --version || {
+        echo "ERROR: Python3 not found"
+        exit 1
+    }
+    
+    echo "=== Release container tests passed successfully! ==="
+
+# ==============================================================================
+# Runscript - Default execution
+# ==============================================================================
+
+%runscript
+    #!/bin/bash
+    if [ -f /bin/OAS ]; then
+        exec /bin/OAS "$@"
+    else
+        echo "OAS - Open Academic Solver (Release Environment)"
+        echo "Ubuntu 24.04 with Intel MKL runtime"
+        echo "========================================"
+        echo ""
+        echo "ERROR: OAS binary not found at /bin/OAS"
+        echo ""
+        echo "This is a runtime-only container."
+        echo "To run OAS, make sure the binary is installed."
+        echo ""
+        exec /bin/bash
+    fi

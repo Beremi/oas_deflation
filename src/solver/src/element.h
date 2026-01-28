@@ -40,6 +40,7 @@ protected:
     virtual void initIntegration();
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
+    bool areIPLocsInNaturalCoords;
 
 
     ShapeFunc *shafunc;
@@ -52,7 +53,7 @@ protected:
     std :: vector< bool >physicalFields;
 
 public:
-    Element(unsigned dim) { name = "basic element"; solution_order = 0; volume = 0; ndim = dim; physicalFields.resize(4, false); }  //mechanical, transport, thermal, humidity
+    Element(unsigned dim) { name = "basic element"; solution_order = 0; volume = 0; ndim = dim; physicalFields.resize(4, false); areIPLocsInNaturalCoords = true;}  //mechanical, transport, thermal, humidity
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
@@ -118,6 +119,7 @@ public:
     virtual Vector giveBoundingBox()const;
     virtual Vector findIntersectionsWithLine(Point *A, Point *B)const;
     bool doesMechanics()const { return ( physicalFields [ 0 ] > 0 ); };
+    bool doesTransport()const { return ( physicalFields [ 1 ] > 0 ); };    
     std :: vector< std :: vector< unsigned > >giveTraingulatedFaces()const;
     virtual double giveDissipatedEnergy() const;
 };

@@ -37,45 +37,38 @@ Model :: Model(bool pT) {
 //////////////////////////////////////////////////////////
 void Model :: init(const bool &initial) {     //initialization
     if ( initial ) {
-        cout << "initialization of materials" << endl;
-        cout.flush();
+        cout << "initialization of materials" << endl; cout.flush();
         matrs.init();
     }
-    cout << "initialization of elements" << endl;
-    cout.flush();
+    cout << "initialization of elements" << endl; cout.flush();
     crosssects.init();
     elems.init();
-    cout << "initialization of preprocessing blocks" << endl;
-    cout.flush();
+    cout << "initialization of preprocessing blocks" << endl; cout.flush();
     pblocks.init();
-    cout << "initialization of boundary conditions" << endl;
+    cout << "initialization of boundary conditions" << endl; cout.flush();
     cout.flush();
     bconds.init( solver->giveTime() );
-    cout << "initialization of nodes" << endl;
-    cout.flush();
+    cout << "initialization of nodes" << endl; cout.flush();
     nodes.init();
-    nodes.initSimplices();
-    cout << "initialization of constraints" << endl;
-    cout.flush();
+    if (matrs.requestTetrahedralBackgroundMesh()) nodes.initSimplices();
+    cout << "initialization of constraints" << endl; cout.flush();
     constr.init(& nodes, & bconds, solver);
     elems.assignFibersToElems();
-    elems.findElementFriends();
+    if (matrs.requestTetrahedralBackgroundMesh()) elems.findElementFriends(); //find tetraherons for volumetric strain
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();
     }
     if ( initialTimeDerFieldFile.compare("") != 0 ) {
         initialTimeDerFieldFile = ( baseDir / initialTimeDerFieldFile ).string();
     }
-    cout << "initialization of solver" << endl;
-    cout.flush();
+    cout << "initialization of solver" << endl; cout.flush();
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
-    cout << "initialization of exporters" << endl;
-    cout.flush();
+    cout << "initialization of exporters" << endl; cout.flush();
     exporters.setResultDirectory(resultDir);
     exporters.setSolver(solver);
     exporters.init(initial);
     bconds.setInitialDoFFields(solver);
-    cout << "Model succesfully initialized" << endl;
+    cout << "Model succesfully initialized" << endl; cout.flush();
     // exporters.updateAllTimeAndStepToSave(solver->giveTime(), solver->giveStepNumber());  // needed especially in adaptivity
 }
 

@@ -117,6 +117,19 @@ void BoundaryCondition :: setInitialDoFFields(Solver *solver) {
 }
 
 //////////////////////////////////////////////////////////
+void BoundaryCondition :: setInitialDoFFields(Vector &DoFs) {
+    if(DoFs.size() != blockedDoFNum){
+        cerr << "BC Error: size of initial DoFs do not match number of blocked DoFs" << endl;
+        exit(1);
+    }
+    addInitialDoFVals = true;
+    initialState.resize(blockedDoFNum);
+    for ( unsigned i = 0; i < blockedDoFNum; i++ ) {
+        initialState [ i ] = DoFs [ i ];    
+    }
+}
+
+//////////////////////////////////////////////////////////
 vector< double >BoundaryCondition :: giveLoadedDoFValues(double t) const {
     vector< double >loaded;
     loaded.resize(loadedDoFNum);
@@ -295,6 +308,7 @@ double SelfWeight :: giveValue(const Point *xyz, double t) {
 
 //////////////////////////////////////////////////////////
 void SelfWeight :: init(FunctionContainer *funcs, double time) {
+    (void) funcs;
     if ( time < beginTime || time >= endTime ) {
         active = false;
     } else {
@@ -310,7 +324,6 @@ vector< double >SelfWeight :: giveBodyForceDoFValues(double t) {
     }
     Vector elemLoad;
     unsigned s = 0;
-    double density;
     for ( auto &e: els ) {
         if (! e->doesMechanics()) continue;       
         s = load.size();

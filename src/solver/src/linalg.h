@@ -58,7 +58,7 @@ protected:
 public:
     LinAlgSolver() {};
     virtual ~LinAlgSolver() {};
-    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A){ return false; };
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A){ (void) A; return false; };
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
     virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
     std :: string giveName()const { return name; };

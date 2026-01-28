@@ -832,8 +832,10 @@ bool CholmodLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+#if PRINT_DEBUG_TIME
     auto start = std::chrono::system_clock::now();
-    
+#endif
+
     if (A.rows() > 0) {
 #if PRINT_DEBUG_TIME
         // Print matrix statistics
@@ -1411,7 +1413,7 @@ double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, 
     Point normal = Point( ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) - ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ), ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) - ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ), ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) - ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) );
     normal.normalize();
     double d = -( ( * a ) [ 0 ] * normal [ 0 ] + ( * a ) [ 1 ] * normal [ 1 ] + ( * a ) [ 2 ] * normal [ 2 ] );
-    double t = -( normal [ 0 ] * ( * A ) [ 0 ] + normal [ 1 ] * ( * A ) [ 1 ] + normal [ 2 ] * ( * A ) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] );
+    double t = abs(( normal [ 0 ] * ( * A ) [ 0 ] + normal [ 1 ] * ( * A ) [ 1 ] + normal [ 2 ] * ( * A ) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] ));
     if ( t >= 0 && t <= length ) {
         return t;
     } else {

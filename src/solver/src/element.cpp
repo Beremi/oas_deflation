@@ -142,7 +142,7 @@ void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result)
     if ( code.compare("location") == 0 ) {
         result.resize(ndim);
         fill(result.begin(), result.end(), 0);
-        if ( shafunc->isInNaturalCoords() ) {
+        if ( areIPLocsInNaturalCoords ) {
             Vector phi( this->giveNumOfNodes() );
             shafunc->giveShapeF(inttype->giveIPLocationPointer(ipnum), phi);
             for ( unsigned n = 0; n < this->giveNumOfNodes(); n++ ) {

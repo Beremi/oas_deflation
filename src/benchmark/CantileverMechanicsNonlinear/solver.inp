@@ -1,7 +1,6 @@
 SteadyStateNonLinearSolver
 time_step	0.0001
 total_time	0.003
-tolerance 1e-3
+tolerance 5e-4
+max_iterations 300
 limit_tolerance 1e-0
-conj_grad_relative_maxit 10
-conj_grad_precission 1e-20

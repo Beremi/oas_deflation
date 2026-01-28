@@ -16,7 +16,7 @@ class LDPMTetra : public Element
 {
 protected:
     std :: vector< Node * >vert; //cent, 0-1, 0-2, 0-3, 1-2, 1-3, 2-3, 0-1-2, 0-1-3, 0-2-3, 1-2-3
-    Vector lengths, areas;//, volumes;
+    Vector lengths, surflengths, areas;//, volumes;
     std :: vector< Point >normals, t1s, t2s;
     std :: vector< Matrix >R;
 
@@ -63,6 +63,7 @@ public:
     std :: vector< unsigned >giveFacetNodeCodes(unsigned k) const;
     unsigned giveOppositeSurfaceVertexToNode(unsigned k) const;
     std :: vector< unsigned >giveOppositeFacetsToNode(unsigned k) const;
+    void computeCrackParametersForPoiseuilleFlow(unsigned k, double *crackParam, double *crackVolume)const;
 
     double giveVolumetricStrain() const { return volumetricStrain; };
     bool isPointInside(Point *xn, const Point *x) const;
@@ -78,17 +79,38 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
+// LDPM TEMP ELEMENT
+class LDPMTetraWithHeatConduction : public LDPMTetra
+{
+protected:
+    virtual void computeMassMatrix();
+    virtual void checkNodeType() const;    
+
+public:
+    LDPMTetraWithHeatConduction(unsigned ndim);
+    ~LDPMTetraWithHeatConduction() {};
+    virtual void init();
+    virtual Matrix giveBMatrix(unsigned k) const;
+    virtual Matrix giveHMatrix(const Point *x) const;    
+    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
+    virtual void giveValues(std :: string code, Vector &result) const;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 // LDPM COUPLED ELEMENT
-class LDPMCoupledTetra : public LDPMTetra
+class LDPMCoupledTranspTetra : public LDPMTetra
 {
 protected:
 
 public:
-    LDPMCoupledTetra();
-    ~LDPMCoupledTetra() {};
+    LDPMCoupledTranspTetra();
+    ~LDPMCoupledTranspTetra() {};
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     virtual void giveValues(std :: string code, Vector &result) const;
 };
+
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -101,6 +123,7 @@ protected:
     unsigned LDPMTetraIDA, LDPMTetraIDB;
     ElementContainer *elems;
     unsigned LDPMsideA, LDPMsideB;
+    double g1, g2;
 
 public:
     LDPMCoupledTransport(ElementContainer *allelems);
@@ -108,6 +131,8 @@ public:
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
     virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    LDPMTetra* giveTet(unsigned i) const {if (i==0) return tetA; else if (i==1)  return tetB; else return nullptr;};   
+    void setTet(unsigned i, LDPMTetra* tet) {if (i==0) tetA=tet; else if (i==1)  tetB=tet;};   
 };
 
 //////////////////////////////////////////////////////////

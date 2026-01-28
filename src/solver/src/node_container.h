@@ -68,6 +68,8 @@ public:
     ConstraintContainer *giveConstraints() const { return constr; };
     Vector readInitialConditions(std :: string initfile) const;
 
+    unsigned giveNumOfPhysicalFieldNodes(unsigned i) const;
+
     std :: vector< Node * > :: iterator begin() { return nodes.begin(); }
     std :: vector< Node * > :: iterator end() { return nodes.end(); }
     std :: vector< Node * > :: const_iterator begin() const { return nodes.begin(); }

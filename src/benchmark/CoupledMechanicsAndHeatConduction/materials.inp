@@ -1,3 +1,3 @@
 VectMechMaterial	E0	2.150000e+10	alpha	0.250000	density	2200.000000
-VectTrsprtMaterial		capacity	11.000000	permeability	22e-18 viscosity 1e-5 density	1e3
+VectHeatConductionMaterial		capacity	11.000000	conductivity 2.2e-9 density	1e3
 ThermoMechanicalMaterial 2 0 1 therm_exp_coeff 1.2e-5 initial_temperature 25

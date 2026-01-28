@@ -159,9 +159,7 @@ void Solver :: runAfterEachStep() {
             cout << "applying pertrubation" << endl;
         }
     }
-
     computeTotalInternalAndExternalAndKineticEnergy();
-
     r = trial_r;
     f_int_old = f_int;
     f_ext_old = f_ext;

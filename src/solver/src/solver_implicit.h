@@ -14,10 +14,11 @@ protected:
     std :: string symsolver_type = "EigenConj";
 
     int stiffnessMatrixIterUpdate; //update matrices every X iteration
+    int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively 
     int stiffnessMatrixStepUpdate; //update matrices every X step
     std :: string stiffMatType, stiffMatTypeFirstIT;
 
-    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce);
 
     virtual void computeForcesAtIntegrationTime(const bool frozen)  { computeInternalExternalForces(trial_r, load, frozen, -1); }; //do not use dt as this is quasistatic simulation
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, -1); };
@@ -41,7 +42,7 @@ public:
 class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
-    unsigned it, restarts; //number of iterations, number of restarts
+    unsigned it, restarts, cumul_it; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
     Vector EPS2;
     double disErr, resErr, eneErr;
@@ -57,6 +58,7 @@ protected:
 
     IndirectControl *idc;        //indirect displacement control
     Vector ddf, full_ddf, f_last_iter;
+    Vector eigen_trial_rPF, eigen_f_extPF, eigen_WextPF; //RVE fields to transfer macroscopic data to error evaluation
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
     void printAllVectors();
@@ -75,6 +77,9 @@ public:
     virtual void runAfterEachStep();
     virtual void solve();
     double giveIDCtime(const bool converged = true);
+    void setEigenErrorValue_rPF(unsigned pf, double value);
+    void setEigenErrorValue_fext(unsigned pf, double value);
+    void setEigenErrorValue_Wext(unsigned pf, double value);
 };
 
 //////////////////////////////////////////////////////////
@@ -87,6 +92,7 @@ protected:
     unsigned timeIntM; //0 - generalized alphal; 1 - HHT; 2 - Newmark
     bool check_time_integr_params;
     int dampingMatrixIterUpdate; //update matrices every X iteration
+    int dampingMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
     int dampingMatrixStepUpdate; //update matrices every X step    
 
     virtual void applySpectralRadius(double rhoinfty);
@@ -94,7 +100,7 @@ protected:
     virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
@@ -136,11 +142,12 @@ protected:
     virtual void setDefaultIntegrationParams();
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
-    virtual bool updateSystemMatrices(unsigned iteration, bool enforce);
+    virtual bool updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce);
     virtual void updateFieldVariables();
     virtual void computeForcesAtIntegrationTime(const bool frozen);
     virtual void computeForcesAtStepEnd(const bool frozen);
     int massMatrixIterUpdate; //update matrices every X iteration
+    int massMatrixCumulIterUpdate; //update matrices every X iteration
     int massMatrixStepUpdate; //update matrices every X step
     bool lumpMassM;
 public:
