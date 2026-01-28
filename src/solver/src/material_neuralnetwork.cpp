@@ -33,8 +33,8 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     Vector input_norm = Eigen :: VectorXd :: Zero(10);
 
     input_norm.head(6) = temp_strain;
-    input_norm(6) = m->giveE0() / 1e6;
-    input_norm(7) = m->giveft() / 1e6;
+    input_norm(6) = m->giveE0();
+    input_norm(7) = m->giveft() ;
     input_norm(8) = m->giveGt();
     input_norm(9) = m->giveRVEsize();
 
@@ -412,6 +412,11 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
                 std :: cerr << "Error loading the model: " << e.what() << std :: endl;
                 exit(EXIT_FAILURE);
             }
+
+            if (filepath.find("SUB") != std::string::npos) {
+                use_strain_increment = true;
+            }
+
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
             string filepath;
@@ -509,6 +514,7 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         if (layer.name == "LMSC") {
             use_strain_increment = true;
         }
+        // use_strain_increment = true;
     }
 
     

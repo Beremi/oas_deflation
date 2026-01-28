@@ -252,7 +252,7 @@ bool VonMisesPlasticMaterialStatus :: giveValues(string code, Vector &result) co
         } else { // 3D case
             size = temp_plasticstrain.size();
             result.resize(size);
-            for ( unsigned p = 0; p < size - 1; p++ ) {
+            for ( unsigned p = 0; p < size; p++ ) {
                 result [ p ] = temp_plasticstrain [ p ];
             }
         }
