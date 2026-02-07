@@ -217,8 +217,7 @@ Matrix FiberMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    ( void ) strain;
+void FiberMaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
 
     FiberMaterial *fibMaterial = static_cast< FiberMaterial * >( mat );
@@ -449,7 +448,7 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     // ------------------- STRESS VECTOR --------------------- NOTE: fiberForce is modified bridgingForce due to incline of the fiber
     if ( temp_bridgingForce <= 1e-12 ) {
         temp_fiberForce = 0;
-        temp_stress = Vector :: Zero(strain.size() );
+        temp_stress = Vector :: Zero(temp_strain.size() );
     } else if ( inclineAngle <= 1e-12 or crackOpeningVector [ 0 ] <= 1e-12 ) { // without SNUBBING MODEL - no microeffect at exit points
         temp_fiberForce = temp_bridgingForce;
         temp_stress = temp_fiberForce * crackOpeningVector / temp_crackOpening;
@@ -483,18 +482,13 @@ Vector FiberMaterialStatus :: giveStress(const Vector &strain, double timeStep) 
     double limitFiberStress = ft * exp(-Krup * deflectionAngle);
     if ( temp_fiberStress > limitFiberStress ) {
         temp_bridgingForce = temp_fiberForce = 0;
-        temp_stress = Vector :: Zero(strain.size() );
+        temp_stress = Vector :: Zero(temp_strain.size() );
         temp_rupturedFiber = 1;
     }
-
-    //cout << "FiberMaterialStatus::giveStress" << endl;
-    cout.flush();
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    ( void ) strain;
+void FiberMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
 
     //temp_crackOpening = strain.norm() * contactLength;
@@ -507,13 +501,7 @@ Vector FiberMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, 
     if ( crackOpeningVector [ 0 ] < 0 ) {
         crackOpeningVector [ 0 ] = 0;
     }
-    Vector stressWithFrozenIntVars = giveStiffnessTensor("elastic") * crackOpeningVector;
-
-    //Vector stressWithFrozenIntVars = giveStress( strain, timeStep );
-
-    //cout << "FiberMaterialStatus::giveStressWithFrozenIntVars" << endl;
-    cout.flush();
-    return stressWithFrozenIntVars;
+    temp_stress = giveStiffnessTensor("elastic") * crackOpeningVector;
 }
 
 //////////////////////////////////////////////////////////

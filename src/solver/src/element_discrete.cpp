@@ -590,7 +590,7 @@ double RigidBodyContact :: giveVolumeAssociatedWithNode(unsigned nodenum) const 
 };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
+void RigidBodyContact :: evaluateStrains(const Vector &DoFs) {
     //extract volumetric strains from simplices
     double volumetricStrain = 0;
     unsigned validSnum = 0;
@@ -615,7 +615,7 @@ Vector RigidBodyContact :: giveStrain(unsigned i, const Vector &DoFs) {
         s->setParameterValue("volumetric_strain", volumetricStrain);
     }
 
-    return Element :: giveStrain(i, DoFs);
+    Element :: evaluateStrains(DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -629,8 +629,8 @@ void RigidBodyContact :: computeDampingMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContact :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+Vector RigidBodyContact :: giveInternalForces() {
+    return Element :: giveInternalForces() * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
@@ -836,12 +836,11 @@ void RigidBodyContactCoupled :: extractPressureFromSimplices() {
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContactCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    // TODO put this into a separate fn to make it avaliable separately for derived methods
-    //extract pressure from simplices
+void RigidBodyContactCoupled :: evaluateStrains(const Vector &DoFs) {
+    
     this->extractPressureFromSimplices();
 
-    return RigidBodyContact :: giveStrain(i, DoFs);
+    RigidBodyContact :: evaluateStrains(DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -933,9 +932,7 @@ void RigidBodyBoundary :: extrapolateIPValuesToNodes(string code, vector< Vector
 }
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
-    ( void ) i;
-    ( void ) DoFs;
+void RigidBodyBoundary :: evaluateStrains(const Vector &DoFs) {
     Vector f_ext = masterModel->giveSolver()->giveNodalForces();
     double pressure = 0;
     for ( unsigned k = 0; k < ndim; k++ ) {
@@ -946,9 +943,11 @@ Vector RigidBodyBoundary :: giveStrain(unsigned i, const Vector &DoFs) {
         for ( auto &s:stats ) {
             s->setParameterValue("normal_stress", pressure);
         }
-        return RigidBodyContact :: giveStrain(i, DoFs);
+        RigidBodyContact :: evaluateStrains(DoFs);
     } else {
-        return Vector :: Zero( ( this->ndim - 1 ) * 3 );
+        for (auto &s: stats){ 
+            s->setTotalTempStrain(Vector :: Zero( ( this->ndim - 1 ) * 3 ));
+        }
     }
 };
 
@@ -1074,15 +1073,11 @@ void RigidBodyBoundaryCoupled :: extrapolateIPValuesToNodes(string code, vector<
 // };
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyBoundaryCoupled :: giveStrain(unsigned i, const Vector &DoFs) {
-    // DONE  call only separate fn for update of pressure due to transport
-    // MyVector dummy = RigidBodyContactCoupled :: giveStrain(i, DoFs);
-    ( void ) i;
+void RigidBodyBoundaryCoupled :: evaluateStrains(const Vector &DoFs) {
     ( void ) DoFs;
     this->extractPressureFromSimplices();
-    // std::cout << "gstr DoFs size = " << DoFs.size() << '\n';
-    return Vector :: Zero( ( this->ndim - 1 ) * 3 );
-};
+    for(auto &s:stats) s->setTotalTempStrain(Vector :: Zero( ( this->ndim - 1 ) * 3 ));
+}
 
 //////////////////////////////////////////////////////////
 Matrix RigidBodyBoundaryCoupled :: giveHMatrix(const Point *x) const {
@@ -1433,9 +1428,13 @@ void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vect
 
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtElem :: computeDampingMatrix() {
-    dampC = Matrix :: Zero(2, 2);
-    double s = area * stats [ 0 ]->giveDampingTensor()(0, 0) * length /  ( 2. * ndim );
 
+    double s=0;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        s += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0) * area * length /  ( 2. * ndim );
+    }
+
+    dampC = Matrix :: Zero(2, 2);
     dampC(0, 0) = dampC(1, 1) = s; //finite volume
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
         dampC(0, 0) = dampC(1, 1) = 2. / 3. * s;
@@ -1461,10 +1460,10 @@ double DiscreteTrsprtElem :: giveVolumeAssociatedWithNode(unsigned nodenum) cons
 };
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtElem :: giveStrain(unsigned i, const Vector &DoFs) {
+void DiscreteTrsprtElem :: evaluateStrains(const Vector &DoFs) {
     double averagePressure = ( DoFs [ 0 ] * giveVolumeAssociatedWithNode(0) + DoFs [ 1 ] * giveVolumeAssociatedWithNode(1) ) / volume;
-    stats [ 0 ]->setParameterValue("pressure", averagePressure);
-    return Element :: giveStrain(i, DoFs);
+    for(auto &s:stats) s->setParameterValue("pressure", averagePressure);
+    Element :: evaluateStrains(DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -1474,10 +1473,8 @@ Matrix DiscreteTrsprtElem :: giveStiffnessMatrix(string matrixType) const {
 
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtElem :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    //MyVector Q = Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
-    //for (auto p:Q) cout << " " << p;
-    return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+Vector DiscreteTrsprtElem :: giveInternalForces() {
+    return Element :: giveInternalForces() * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
@@ -1585,7 +1582,7 @@ void DiscreteTrsprtCoupledElem :: addNewFriend(RigidBodyContact *f, double weigh
 }
 
 //////////////////////////////////////////////////////////
-Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
+void DiscreteTrsprtCoupledElem :: evaluateStrains(const Vector &DoFs) {
     //crack opening
     double crackInNeighborhood = 0;
     double crackVolume = 0.;
@@ -1608,9 +1605,7 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
         }
         m++;
     }
-    stats [ 0 ]->setParameterValue("crack_param", crackInNeighborhood);
-    stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
-
+    
     //Biot effect
     double volStrain = 0;
     Simplex *s0 = nodes [ 0 ]->giveSimplex();
@@ -1636,10 +1631,13 @@ Vector DiscreteTrsprtCoupledElem :: giveStrain(unsigned i, const Vector &DoFs) {
         exit(1);
     }
 
-
-    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
-
-    return DiscreteTrsprtElem :: giveStrain(i, DoFs);
+    for (auto &s:stats){
+        s->setParameterValue("crack_param", crackInNeighborhood);
+        s->setParameterValue("crack_volume", crackVolume);
+        s->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
+    }
+    
+    DiscreteTrsprtElem :: evaluateStrains(DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -1730,10 +1728,13 @@ Matrix RigidBodyContactWithHeatConduction :: giveBMatrix(const Point *x) const {
 
 
 //////////////////////////////////////////////////////////
-Vector RigidBodyContactWithHeatConduction :: giveStrain(unsigned i, const Vector &DoFs) {
+void RigidBodyContactWithHeatConduction :: evaluateStrains(const Vector &DoFs) {
+    RigidBodyContact :: evaluateStrains(DoFs);
     unsigned p = 3 * ( ndim - 1 );
-    stats[i]->setParameterValue("temperature", ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.);
-    return RigidBodyContact :: giveStrain(i, DoFs);
+    double temp = ( DoFs [ p ] + DoFs [ 2 * p + 1 ] ) / 2.;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {    
+        stats[i]->setParameterValue("temperature", temp );
+    } 
 }
 
 //////////////////////////////////////////////////////////

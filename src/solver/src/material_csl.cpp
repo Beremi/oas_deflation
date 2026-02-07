@@ -20,10 +20,6 @@ bool CSLMaterialStatus :: giveValues(string code, Vector &result) const {
         result.resize(1);
         result [ 0 ] = temp_crackOpening;
         return true;
-    } else if ( code.compare("volumetric_strain") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = volumetricStrain;
-        return true;
     } else if ( code.rfind("damage", 0) == 0 || code.rfind("damageN", 0) == 0 || code.rfind("damageT", 0) == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_damage;
@@ -84,7 +80,6 @@ void CSLMaterialStatus :: init() {
     temp_maxEpsN = 0;
     temp_maxEpsT = 0;
     temp_crackOpening = 0;
-    volumetricStrain = 0;
 
 
     crackOpening = 0;
@@ -211,7 +206,8 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
 
             unsigned dim = element->giveDimension();
             double flam = 1.;
-            if (m->giveLam0()>0) flam = 1. / ( 1. + max(-( volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
+            temp_volumetricStrain = addEigenVolumetricStrain(temp_volumetricStrain_total);
+            if (m->giveLam0()>0) flam = 1. / ( 1. + max(-( temp_volumetricStrain * dim - epsN ) / ( dim * m->giveLam0() ), 0.) ); //projection of the trace perpendicularly to the connection
             K0 = -flam * Kt * ( 1. - pow( ( omega - 0.5 * M_PI ) / ( omega0 - 0.5 * M_PI ), nt ) );
 
             if ( omega < 0.0 ) {
@@ -323,22 +319,22 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage(addEigenStrain(strain) );
-    return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+void CSLMaterialStatus :: computeStress( double timeStep) {
+    computeDamage( addEigenStrain(temp_strain) );
+    CSLMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    temp_stress = VectMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) * ( 1. - temp_damage );   //without eigen strain, it will be applied later
+void CSLMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+    temp_strain = addEigenStrain(temp_strain);
+    VectMechMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
+    temp_stress *=   1. - temp_damage;
     if ( temp_strain [ 0 ] > 0 ) {
         temp_crackOpening = ( L * temp_damage ) * temp_strain [ 0 ]; //normal opening only
         //temp_crackOpening = l2_norm( ( L * temp_damage ) * temp_strain );  //total opening
     } else {
         temp_crackOpening = 0;
     }
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -352,11 +348,7 @@ std :: string CSLMaterialStatus :: giveLineToSave() const {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("volumetric_strain") == 0 ) {
-        volumetricStrain = value;
-    } else {
-        VectMechMaterialStatus :: setParameterValue(code, value);
-    }
+    VectMechMaterialStatus :: setParameterValue(code, value);
 }
 
 //////////////////////////////////////////////////////////
@@ -520,13 +512,15 @@ Vector CSLMaterialWithTensorialStressUpdateStatus :: giveEigenStrainFromTensoria
 
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStress(const Vector &strain, double timeStep) {
-    return CSLMaterialStatus :: giveStress(strain + giveEigenStrainFromTensorialStress(), timeStep);
+void CSLMaterialWithTensorialStressUpdateStatus :: computeStress( double timeStep) {
+    temp_strain += giveEigenStrainFromTensorialStress();
+    CSLMaterialStatus :: computeStress(timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector CSLMaterialWithTensorialStressUpdateStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    return CSLMaterialStatus :: giveStressWithFrozenIntVars(strain + giveEigenStrainFromTensorialStress(), timeStep);
+void CSLMaterialWithTensorialStressUpdateStatus :: computeStressWithFrozenIntVars( double timeStep) {
+    temp_strain += giveEigenStrainFromTensorialStress();
+    CSLMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 
 //////////////////////////////////////////////////////////
@@ -647,17 +641,15 @@ void CoupledCSLMaterialStatus :: updateStressByBiotEffect(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-Vector CoupledCSLMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    CSLMaterialStatus :: giveStress(strain, timeStep);
+void CoupledCSLMaterialStatus :: computeStress( double timeStep) {
+    CSLMaterialStatus :: computeStress( timeStep);
     updateStressByBiotEffect(timeStep);
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector CoupledCSLMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    CSLMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+void CoupledCSLMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+    CSLMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
     updateStressByBiotEffect(timeStep);
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////

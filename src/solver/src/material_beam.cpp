@@ -81,18 +81,16 @@ Matrix BeamMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector BeamMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void BeamMaterialStatus :: computeStress( double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
-    return BeamMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    BeamMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector BeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void BeamMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;
-    temp_stress = giveStiffnessTensor("elastic") * strain;
-    temp_strain = strain;
-    return temp_stress;
+    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
 }
 
 //////////////////////////////////////////////////////////
@@ -176,9 +174,9 @@ Matrix NormalPlasticBeamMaterialStatus :: giveStiffnessTensor(string type) const
 }
 
 //////////////////////////////////////////////////////////
-Vector NormalPlasticBeamMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void NormalPlasticBeamMaterialStatus :: computeStress( double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)    
-    giveStressWithFrozenIntVars(strain, timeStep);
+    computeStressWithFrozenIntVars(timeStep);
     NormalPlasticBeamMaterial *tm = static_cast< NormalPlasticBeamMaterial * >( mat );         
     double E = tm->giveElasticModulus();
     double normstress = temp_stress[0]/CS->giveArea();
@@ -195,17 +193,15 @@ Vector NormalPlasticBeamMaterialStatus :: giveStress(const Vector &strain, doubl
         
     }
     temp_stress[0] = normstress*CS->giveArea();
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector NormalPlasticBeamMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void NormalPlasticBeamMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;    
-    Vector shiftedstrain = strain;
+    Vector shiftedstrain = temp_strain;
     shiftedstrain[0] -= normalPlasticStrain;
     temp_stress = BeamMaterialStatus::giveStiffnessTensor("elastic") * shiftedstrain;
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////

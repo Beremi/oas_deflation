@@ -17,7 +17,7 @@ public:
     virtual ~TrsprtTriangle() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ public:
     virtual ~TrsprtTemprtrCoupledBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -185,7 +185,7 @@ public:
     virtual ~CoupledCosseratTransportBrick() {};
     virtual Matrix giveBMatrix(const Point *x) const;
     virtual Matrix giveHMatrix(const Point *x) const;
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -202,8 +202,8 @@ public:
     virtual ~CoupledCosseratBrickWithDependentUpperZLayer() {};
     virtual void setIntegrationPointsAndWeights();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveInternalForces();
     virtual Vector integrateInternalSources();
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
 };
 #endif  /* _ELEMENT_CONTINUOUS_H */

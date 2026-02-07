@@ -78,11 +78,12 @@ class VectTrsprtCoupledMaterialStatus : public VectTrsprtMaterialStatus
 {
 protected:
     double temp_volumetricStrain, volumetricStrain, volStrainRate, crackParam, temp_crackVolume, crackVolume, crackVolumeRate, pressure, pressureRate;
+    double temperature;    
 public:
     VectTrsprtCoupledMaterialStatus(VectTrsprtCoupledMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectTrsprtCoupledMaterialStatus() {};
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual double giveEffectiveConductivity(std :: string type) const;
     virtual void update();
     virtual void resetTemporaryVariables();
@@ -119,18 +120,26 @@ class VectMechMaterialStatus : public MaterialStatus
 {
 protected:
     double normalEnergyDensity, shearEnergyDensity;
+    double eigenVolumetricStrain;    
+    double temp_volumetricStrain, volumetricStrain;
+    double temp_volumetricStrain_total, volumetricStrain_total;      
+    
+    virtual double addEigenVolumetricStrain(double x) const {return x+eigenVolumetricStrain;};    
 public:
     VectMechMaterialStatus(VectMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual double giveNormalCrackOpening()const {return 0;};
     virtual void update();    
     virtual MaterialStatus* giveMechanicalMaterialStatus() {return this;};
+    virtual void removeEigenStrain() {MaterialStatus::removeEigenStrain(); eigenVolumetricStrain = 0;};       
+    virtual void addToEigenVolumetricStrain(double x);     
+    virtual void setParameterValue(std::string code, double value);    
 };
 
 //////////////////////////////////////////////////////////
@@ -138,7 +147,6 @@ class VectMechMaterial : public Material
 {
 protected:
     double E0, alpha, density;
-    
 public:
     VectMechMaterial(unsigned dimension);
     ~VectMechMaterial() {};
@@ -148,7 +156,7 @@ public:
     double giveAlpha() const { return alpha; }
     double giveE0() const { return E0; }
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim; }
-    virtual Material* giveMechanicalMaterial() {return this;};
+    virtual Material* giveMechanicalMaterial() {return this;}; 
 };
 
 //////////////////////////////////////////////////////////
@@ -164,7 +172,7 @@ public:
     VectMechVolDevSplitMaterialStatus(VectMechVolDevSplitMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectMechVolDevSplitMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
@@ -195,7 +203,7 @@ public:
     VectMechMaterialWithRotationalStiffnessStatus(VectMechMaterialWithRotationalStiffness *m, Element *e, unsigned ipnum);
     virtual ~VectMechMaterialWithRotationalStiffnessStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     double giveDensity() const;
     virtual bool isElastic(const bool &now = false) const { ( void ) now; return true; };
     virtual bool giveValues(std :: string code, Vector &result) const;

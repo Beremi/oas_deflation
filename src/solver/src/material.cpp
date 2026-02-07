@@ -63,6 +63,7 @@ void MaterialStatus :: computeEnergyDensities(){
 void MaterialStatus :: update() { 
     computeEnergyDensities(); 
     updt_strain = temp_strain;
+    updt_strain_total = temp_strain_total;    
     updt_stress = temp_stress;  
     updt_dissip_energy = dissipEnergyDensity;
 }
@@ -74,8 +75,8 @@ void MaterialStatus :: resetTemporaryVariables() {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: setEigenStrain(Vector &x) {
-    eigenstrain = x;
+void MaterialStatus :: addToEigenStrain(const Vector &x) {
+    eigenstrain += x;
 }
 
 //////////////////////////////////////////////////////////
@@ -102,7 +103,7 @@ void MaterialStatus :: readFromLine(istringstream &iss) {
             for ( unsigned i = 0; i < num; i++ ) {
                 iss >> eigs [ i ];
             }
-            setEigenStrain(eigs);
+            addToEigenStrain(eigs);
         }
     }
 }
@@ -230,48 +231,56 @@ void CoupledMaterialStatus :: setParameterValue(std :: string code, double value
 }
 
 //////////////////////////////////////////////////////////
-Vector CoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    Vector mstrain, mstress;
+void CoupledMaterialStatus :: computeStress(double timeStep) {
+    Vector mstress;
     unsigned k = 0;
     unsigned h, i;
     for ( auto &s:stats ) {
-        h = s->giveMaterial()->giveStrainSize();
-        mstrain.resize(h);
-        for ( i = 0; i < h; i++ ) {
-            mstrain [ i ] = temp_strain [ k + i ];
-        }
-        mstress = s->giveStress(mstrain, timeStep);
+        s->computeStress(timeStep);
+        mstress = s->giveTempStress(); 
+        h = mstress.size();
         for ( i = 0; i < h; i++ ) {
             temp_stress [ k + i ] = mstress [ i ];
         }
         k += h;
     }
-    return temp_stress;
 }
 
 
 //////////////////////////////////////////////////////////
-Vector CoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    temp_strain = strain;
-    Vector mstrain, mstress;
+void CoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
+    Vector mstress;
     unsigned k = 0;
     unsigned h, i;
     for ( auto &s:stats ) {
-        h = s->giveMaterial()->giveStrainSize();
-        mstrain.resize(h);
-        for ( i = 0; i < h; i++ ) {
-            mstrain [ i ] = temp_strain [ k + i ];
-        }
-        mstress = s->giveStressWithFrozenIntVars(mstrain, timeStep);
+        s->computeStressWithFrozenIntVars(timeStep);
+        mstress = s->giveTempStress(); 
+        h = mstress.size();        
         for ( i = 0; i < h; i++ ) {
             temp_stress [ k + i ] = mstress [ i ];
         }
         k += h;
     }
-    return temp_stress;
 }
 
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: setTotalTempStrain(Vector str){
+    unsigned k = 0;
+    unsigned h, i;
+    Vector mstrain;
+    for ( auto &s:stats ) {
+        h = s->giveMaterial()->giveStrainSize();
+        mstrain.resize(h);
+        for ( i = 0; i < h; i++ ) {
+            mstrain [ i ] = str [ k + i ];
+        }
+        s->setTotalTempStrain(mstrain);
+        k += h;
+    }
+    temp_strain_total = str;
+}
+    
 //////////////////////////////////////////////////////////
 bool CoupledMaterialStatus :: giveValues(std :: string code, Vector &result) const {
     bool found = 0;
@@ -322,6 +331,31 @@ void CoupledMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
     for ( auto &s:stats ) {
         s->initializeStressAndStrainVector(s->giveMaterial()->giveStrainSize());
     } 
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: addToEigenVolumetricStrain(double x){
+  MaterialStatus :: addEigenVolumetricStrain(x);
+  for ( auto &s:stats ) {
+      if(s->giveMechanicalMaterialStatus()) s->addToEigenVolumetricStrain(x);
+  }  
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: addToEigenStrain(const Vector &x){
+  MaterialStatus :: addToEigenStrain(x);
+  unsigned k = 0;
+  unsigned h, i;
+  Vector mstrain;
+  for ( auto &s:stats ) {
+      h = s->giveMaterial()->giveStrainSize();
+      mstrain.resize(h);
+      for ( i = 0; i < h; i++ ) {
+          mstrain [ i ] = x [ k + i ];
+      }
+      s->addToEigenStrain(mstrain);
+      k += h;
+  }
 }
 
 //////////////////////////////////////////////////////////
@@ -401,3 +435,5 @@ Material* CoupledMaterial :: giveHeatConductionMaterial(){
     }  
     return nullptr;
 }
+
+

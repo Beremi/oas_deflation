@@ -191,14 +191,11 @@ Matrix MLMechElement :: giveStiffnessMatrix(std :: string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector MLMechElement :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    if ( frozen ) {
-        ( void ) timeStep;
-        return stiffmat_elastic * DoFs;
+Vector MLMechElement :: giveInternalForces() {
+    if ( temp_frozen ) {
+        return stiffmat_elastic * temp_DoFs;
     } else {
-        ( void ) timeStep;
-
-        Vector DoFs_rel = DoFs.cast< double > ();
+        Vector DoFs_rel = temp_DoFs.cast< double > ();
         double c0u = DoFs_rel [ 0 ];
         double c0v = DoFs_rel [ 1 ];
 
@@ -446,14 +443,15 @@ void MLMechElement :: giveValues(std :: string code, Vector &result) const {
  * }
  */
 //////////////////////////////////////////////////////////
-Vector MLMechElement :: giveStrain(unsigned i, const Vector &DoFs) {
-    ( void ) i;
-    ( void ) DoFs;
-    cout << "MLMechElement :: giveStrain should not be called" << endl;
-    exit(1);
-    return Vector :: Zero(0);
+void MLMechElement :: evaluateStrains(const Vector &DoFs) {
+    temp_DoFs = DoFs;
 }
 
+//////////////////////////////////////////////////////////
+void MLMechElement :: evaluateStresses(bool frozen, double timeStep){
+    temp_frozen = frozen;
+    temp_timeStep = timeStep;
+}
 
 //////////////////////////////////////////////////////////
 Matrix MLMechElement :: giveMassMatrix() {

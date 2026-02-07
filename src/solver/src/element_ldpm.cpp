@@ -34,6 +34,8 @@ LDPMTetra :: LDPMTetra(unsigned dim) : Element{dim} {
     t1s.resize(12);
     t2s.resize(12);
     R.resize(12);
+    nodeWeights = Vector::Zero(4);
+    edgeWeights = Vector::Zero(12);
 
     nodecodes = { 0, 1, 0, 1, 0, 2, 0, 2, 0, 3, 0, 3,  1, 2, 1, 2, 1,  3, 1, 3,  2, 3, 2, 3 };
     vertcodes = { 8, 1, 1, 7, 2, 9, 7, 2, 9, 3, 3, 8, 10, 4, 4, 7, 5, 10, 8, 5, 10, 6, 6, 9 }; //last point is always centroid at position 0
@@ -81,7 +83,6 @@ void LDPMTetra :: computeCrackParametersForPoiseuilleFlow(unsigned k, double *cr
     vector< unsigned > IP = giveOppositeFacetsToNode(k);    
     (*crackParam) = 0;
     (*crackVolume) = 0;    
-    double co;    
     for(unsigned ip:IP){
         VectMechMaterialStatus *vm = static_cast<VectMechMaterialStatus *>(stats[ip]->giveMechanicalMaterialStatus());
         (*crackParam) += pow(vm->giveNormalCrackOpening(),3)*surflengths[ip];
@@ -141,6 +142,7 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         inttype->setIPLocation(i, ( vert [ vertcodes [ 2 * i  ] ]->givePoint() + vert [ vertcodes [ 2 * i + 1 ] ]->givePoint() + vert [ 0 ]->givePoint() ) / 3.);
         areas [ i ] = triArea3D( vert [ vertcodes [ 2 * i  ] ]->givePointPointer(), vert [ vertcodes [ 2 * i + 1 ] ]->givePointPointer(), vert [ 0 ]->givePointPointer() );
         surflengths [ i ] = (vert [ vertcodes [ 2 * i  ] ]->givePoint() - vert [ vertcodes [ 2 * i + 1 ] ]->givePoint()).norm();
+                
         if ( n.norm() == n.norm() ) { //NaN test
             areas [ i ] *= abs( n.dot(normals [ i ]) );     //projection of area
         }
@@ -176,6 +178,13 @@ void LDPMTetra :: setIntegrationPointsAndWeights() {
         //volumes [ i ] = areas [ i ] * lengths [ i ] / ndim;
         inttype->setIPWeight(i, lengths [ i ] * areas [ i ] / ndim);
         stats [ i ] = mat->giveNewMaterialStatus(this, i);
+        
+        double edgeA = (inttype->giveIPLocation(i) - nodes [ nodecodes [ 2 * i ] ]->givePoint() ).norm();
+        double edgeB = (inttype->giveIPLocation(i) - nodes [ nodecodes [ 2 * i +1 ] ]->givePoint() ).norm();         
+        edgeWeights [i] = edgeA/(edgeA+edgeB);
+        
+        nodeWeights [nodecodes [ 2 * i ]] += edgeWeights [i] * areas[i] * lengths[i] /3.;
+        nodeWeights [nodecodes [ 2 * i +1 ]] +=  (1.-edgeWeights [i]) * areas[i] * lengths[i] /3.;         
     }
 }
 
@@ -209,6 +218,8 @@ void LDPMTetra :: init() {
         cerr << name << "Error: wrong geometry" << endl;
         exit(1);
     }
+
+    nodeWeights /= volume; 
 
     /*
      * double faceVolume = 0;
@@ -263,23 +274,22 @@ Vector  LDPMTetra :: giveMasterVariables(const Point *x, const Vector &DoFs) con
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMTetra :: giveStrain(unsigned i, const Vector &DoFs) {
+void LDPMTetra :: evaluateStrains( const Vector &DoFs) {
     //compute volumetric strain
 
-    if ( i == 0 ) { //first IP
-        volumetricStrain = 0;
-        unsigned r = 0;
-        for ( unsigned k = 0; k < 4; k++ ) {
-            for ( unsigned p = 0; p < 3; p++ ) {
-                volumetricStrain += DoFs [ r + p ] * volWeights [ 3 * k + p ];
-            }
-            r += nodes [ k ]->giveNumberOfDoFs();
+    volumetricStrain = 0;
+    unsigned r = 0;
+    for ( unsigned k = 0; k < 4; k++ ) {
+        for ( unsigned p = 0; p < 3; p++ ) {
+            volumetricStrain += DoFs [ r + p ] * volWeights [ 3 * k + p ];
         }
-        volumetricStrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
+        r += nodes [ k ]->giveNumberOfDoFs();
     }
-    stats [ i ]->setParameterValue("volumetric_strain", volumetricStrain);
+    volumetricStrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
+    
+    for(auto &s:stats) s->setParameterValue("volumetric_strain", volumetricStrain);
 
-    return Element :: giveStrain(i, DoFs);
+    Element :: evaluateStrains(DoFs);
 };
 
 //////////////////////////////////////////////////////////
@@ -293,8 +303,8 @@ void LDPMTetra :: computeDampingMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMTetra :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    return Element :: giveInternalForces(DoFs, frozen, timeStep) * ndim; //ndim needs to be included here for discrete elements
+Vector LDPMTetra :: giveInternalForces() {
+    return Element :: giveInternalForces() * ndim; //ndim needs to be included here for discrete elements
 }
 
 //////////////////////////////////////////////////////////
@@ -501,15 +511,15 @@ bool LDPMTetra :: isPointInside(Point *xn, const Point *x) const {
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // LDPM COUPLED TEMPERATURE AND TRANSPORT TETRA
-LDPMTetraWithHeatConduction :: LDPMTetraWithHeatConduction(unsigned dim) : LDPMTetra{dim} {
+LDPMTetraWithTransportAndHeatConduction :: LDPMTetraWithTransportAndHeatConduction(unsigned dim) : LDPMTetraWithTransport(dim) {
     physicalFields [ 0 ] = true; //mechanics
     physicalFields [ 2 ] = true; //temperature    
 
-    name = "LDPMTetraWithHeatConduction";  
+    name = "LDPMTetraWithTransportAndHeatConduction";  
 }
 
 //////////////////////////////////////////////////////////
-void LDPMTetraWithHeatConduction :: checkNodeType() const {
+void LDPMTetraWithTransportAndHeatConduction :: checkNodeType() const {
     //check that nodes are particles
     for ( unsigned i = 0; i < 4; i++ ) {
         ParticleWithTemperature *p = dynamic_cast< ParticleWithTemperature * >( nodes [ i ] );
@@ -535,13 +545,13 @@ void LDPMTetraWithHeatConduction :: checkNodeType() const {
 }
 
 //////////////////////////////////////////////////////////
-void LDPMTetraWithHeatConduction :: init() {
+void LDPMTetraWithTransportAndHeatConduction :: init() {
     LDPMTetra :: init(); //calling base class method;
     checkNodeType();
 }
 
 //////////////////////////////////////////////////////////
-Matrix LDPMTetraWithHeatConduction :: giveBMatrix(unsigned k) const {
+Matrix LDPMTetraWithTransportAndHeatConduction :: giveBMatrix(unsigned k) const {
     Matrix B = Matrix :: Zero(4, 28);
     Matrix BMech = LDPMTetra::giveBMatrix(k);
     for (unsigned i=0; i<3; i++){ 
@@ -558,13 +568,13 @@ Matrix LDPMTetraWithHeatConduction :: giveBMatrix(unsigned k) const {
 }
 
 //////////////////////////////////////////////////////////
-Matrix LDPMTetraWithHeatConduction :: giveHMatrix(const Point *x) const {
+Matrix LDPMTetraWithTransportAndHeatConduction :: giveHMatrix(const Point *x) const {
     ( void ) x;
     return Matrix :: Zero(4, 28);  // NOTE JK: this should be based on ndim
 }
 
 //////////////////////////////////////////////////////////
-Vector  LDPMTetraWithHeatConduction :: giveMasterVariables(const Point *x, const Vector &DoFs) const {
+Vector  LDPMTetraWithTransportAndHeatConduction :: giveMasterVariables(const Point *x, const Vector &DoFs) const {
     Vector phi = Vector :: Zero(nodes.size() );
     shafunc->giveShapeF(x, phi);
     Matrix H = Matrix :: Zero(ndim, DoFids.size() );
@@ -577,26 +587,21 @@ Vector  LDPMTetraWithHeatConduction :: giveMasterVariables(const Point *x, const
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMTetraWithHeatConduction :: giveStrain(unsigned i, const Vector &DoFs) {
-    stats [ i ]->setParameterValue("temperature", (DoFs[7*nodecodes[2*i]+6] + DoFs[7*nodecodes[2*i+1]+6])/2.);
+void LDPMTetraWithTransportAndHeatConduction :: evaluateStrains( const Vector &DoFs) {
+    for(unsigned i=0; i<12; i++){
+        stats [ i ]->setParameterValue("temperature", DoFs[7*nodecodes[2*i]+6]*edgeWeights[i] + DoFs[7*nodecodes[2*i+1]+6]*(1.-edgeWeights[i]));
+    }           
+    averageTemperature = DoFs[6]*nodeWeights[0] + DoFs[13]*nodeWeights[1] + DoFs[20]*nodeWeights[2]  + DoFs[27]*nodeWeights[3];  
     
-    Vector res;    
-    vert [ 0 ]->giveValues("pressure", masterModel->giveSolver(), res);
-    double pressure = 0;
-    if ( res.size() == 1 ) {
-        pressure = res [ 0 ];
-    }
-    stats [ i ]->setParameterValue("pressure", pressure);
-    
-    return LDPMTetra :: giveStrain(i, DoFs);
+    LDPMTetraWithTransport :: evaluateStrains( DoFs);
 };
 
 //////////////////////////////////////////////////////////
-void LDPMTetraWithHeatConduction :: computeMassMatrix() {
+void LDPMTetraWithTransportAndHeatConduction :: computeMassMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-void LDPMTetraWithHeatConduction :: giveValues(string code, Vector &result) const {
+void LDPMTetraWithTransportAndHeatConduction :: giveValues(string code, Vector &result) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
         result [ 0 ] = volumetricStrain;
@@ -624,7 +629,7 @@ void LDPMTetraWithHeatConduction :: giveValues(string code, Vector &result) cons
 
 /*
  * //////////////////////////////////////////////////////////
- * void LDPMTetraWithHeatConduction :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
+ * void LDPMTetraWithTransportAndHeatConduction :: extrapolateIPValuesToNodes(string code, vector< Vector > &result, Vector &weights) const {
  *  Vector ipres;
  *  giveIPValues(code, 0, ipres);
  *  Vector A = giveVectorToNode(0, 0);
@@ -685,25 +690,25 @@ void LDPMTetraWithHeatConduction :: giveValues(string code, Vector &result) cons
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // LDPM COUPLED TETRA
-LDPMCoupledTranspTetra :: LDPMCoupledTranspTetra() : LDPMTetra{3} {
-    name = "LDPMCoupledTranspTetra";
+LDPMTetraWithTransport :: LDPMTetraWithTransport(unsigned dim) : LDPMTetra(dim) {
+    name = "LDPMTetraWithTransport";
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMCoupledTranspTetra :: giveStrain(unsigned i, const Vector &DoFs) {
+void LDPMTetraWithTransport :: evaluateStrains( const Vector &DoFs) {
     Vector res;
     vert [ 0 ]->giveValues("pressure", masterModel->giveSolver(), res);
     double pressure = 0;
     if ( res.size() == 1 ) {
         pressure = res [ 0 ];
     }
-    stats [ i ]->setParameterValue("pressure", pressure);
+    for (auto &s:stats) s->setParameterValue("pressure", pressure);
 
-    return LDPMTetra :: giveStrain(i, DoFs);
+    LDPMTetra :: evaluateStrains( DoFs);
 };
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTranspTetra :: giveValues(string code, Vector &result) const {
+void LDPMTetraWithTransport :: giveValues(string code, Vector &result) const {
     LDPMTetra :: giveValues(code, result);
 };
 
@@ -711,13 +716,13 @@ void LDPMCoupledTranspTetra :: giveValues(string code, Vector &result) const {
 //////////////////////////////////////////////////////////
 // LDPM TRANSPORT
 //////////////////////////////////////////////////////////
-LDPMCoupledTransport :: LDPMCoupledTransport(ElementContainer *allelems) : DiscreteTrsprtCoupledElem(3) {
+LDPMEdgeTransport :: LDPMEdgeTransport(ElementContainer *allelems) : DiscreteTrsprtCoupledElem(3) {
     elems = allelems;
-    name = "LDPMCoupledTransport";
+    name = "LDPMEdgeTransport";
 };
 
 //////////////////////////////////////////////////////////
-Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
+void LDPMEdgeTransport :: evaluateStrains( const Vector &DoFs) {
     //crack opening
     
     double crackParam, crackVolume;
@@ -728,21 +733,25 @@ Vector LDPMCoupledTransport :: giveStrain(unsigned i, const Vector &DoFs) {
         crackVolume += crackVolumeB;
         crackParam = 1./(g1/crackParam + g2/crackParamB);
     }
-    stats [ 0 ]->setParameterValue("crack_param", crackParam);
-    stats [ 0 ]->setParameterValue("crack_volume", crackVolume);
-
+    
     //Biot effect
     double volStrain = tetA->giveVolumetricStrain();
     if ( tetB ) {
         volStrain += tetB->giveVolumetricStrain();
         volStrain /= 2.;
     }
-    stats [ 0 ]->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain
-    return DiscreteTrsprtElem :: giveStrain(i, DoFs);
+    
+    for(auto &s:stats){
+        s->setParameterValue("crack_param", crackParam);
+        s->setParameterValue("crack_volume", crackVolume);
+        s->setParameterValue("volumetric_strain", volStrain); //trace divided by dimension to obtain mechanical volumetric strain        
+    }
+   
+    DiscreteTrsprtElem :: evaluateStrains( DoFs);
 };
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransport :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
+void LDPMEdgeTransport :: readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs) {
     ( void ) fullnodes;
     iss >> LDPMTetraIDA;
     iss >> LDPMTetraIDB;
@@ -760,7 +769,7 @@ void LDPMCoupledTransport :: readFromLine(std :: istringstream &iss, NodeContain
 }
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransport :: init() {
+void LDPMEdgeTransport :: init() {
     tetA = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDA) );
     tetB = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDB) );
     if ( ( !tetA ) or ( !tetB ) ) {
@@ -858,14 +867,14 @@ void LDPMCoupledTransport :: init() {
 //////////////////////////////////////////////////////////
 // LDPM TRANSPORT BOUNDARY
 //////////////////////////////////////////////////////////
-LDPMCoupledTransportBoundary :: LDPMCoupledTransportBoundary(ElementContainer *allelems) : LDPMCoupledTransport(allelems) {
-    name = "LDPMCoupledTransportBoundary";
+LDPMEdgeTransportBoundary :: LDPMEdgeTransportBoundary(ElementContainer *allelems) : LDPMEdgeTransport(allelems) {
+    name = "LDPMEdgeTransportBoundary";
     tetB = nullptr;
 };
 
 //////////////////////////////////////////////////////////
-void LDPMCoupledTransportBoundary :: init() {
-    tetA = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDA) );
+void LDPMEdgeTransportBoundary :: init() {
+    tetA = dynamic_cast< LDPMTetra * >( elems->giveElement(LDPMTetraIDA) );        
     LDPMsideA = LDPMTetraIDB;
 
     nodes.resize(2);

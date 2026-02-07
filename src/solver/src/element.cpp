@@ -8,6 +8,18 @@ using namespace std;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // BASIC ELEMENT - MASTER CLASS
+
+//////////////////////////////////////////////////////////
+Element :: Element(unsigned dim) {
+  name = "basic element"; 
+  solution_order = 0; 
+  volume = 0; 
+  ndim = dim; 
+  physicalFields.resize(4, false);   //mechanical, transport, thermal, humidity 
+  areIPLocsInNaturalCoords = true;
+}
+
+//////////////////////////////////////////////////////////
 Element :: ~Element() {
     for ( std :: vector< MaterialStatus * > :: iterator e = stats.begin(); e != stats.end(); ++e ) {
         delete * e;
@@ -132,6 +144,13 @@ void Element :: resetMaterialStatuses() {
     }
 }
 
+//////////////////////////////////////////////////////////
+void Element :: removeEigenStrain(){
+    for ( auto &s: stats ) {
+        s->removeEigenStrain();
+    }
+}
+
 
 //////////////////////////////////////////////////////////
 void Element :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
@@ -244,21 +263,34 @@ Matrix Element :: giveStiffnessMatrix(std :: string matrixType) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveStrain(unsigned i, const Vector &DoFs) {
-    return Bs [ i ] * DoFs;
+void Element :: evaluateStrains(const Vector &DoFs) {
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
+        stats[i]->setTotalTempStrain(Bs [ i ] * DoFs);
+    }
 }
 
+//////////////////////////////////////////////////////////
+void Element :: evaluateStresses(bool frozen, double timeStep) {
+    if(frozen) evaluateStressesWithFrozenIntVars(timeStep);
+    else evaluateStresses(timeStep);
+}
 
 //////////////////////////////////////////////////////////
-Vector Element :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
+void Element :: evaluateStresses(double timeStep) {
+    for ( auto &s: stats) s->computeStress(timeStep);
+}
+
+//////////////////////////////////////////////////////////
+void Element :: evaluateStressesWithFrozenIntVars(double timeStep) {
+    for ( auto &s: stats) s->computeStressWithFrozenIntVars(timeStep);
+}
+
+//////////////////////////////////////////////////////////
+Vector Element :: giveInternalForces() {
     Vector intF = Vector :: Zero(DoFids.size() );
     Vector stress;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        if ( frozen ) {
-            stress = stats [ i ]->giveStressWithFrozenIntVars(giveStrain(i, DoFs), timeStep);  //frozen internal variables
-        } else {
-            stress = stats [ i ]->giveStress(giveStrain(i, DoFs), timeStep); //full evaluation of stress including change of state variables
-        }
+        stress = stats [ i ]->giveTempStress();  //frozen internal variables
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
     // Remove cout
@@ -288,7 +320,7 @@ Vector Element :: integrateInternalSources() {
     Vector intS = Vector :: Zero(DoFids.size() );
     Vector intmats;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        intmats = stats [ i ]->giveInternalSource();
+        intmats = stats[i]->giveInternalSource();
         intS += Hs [ i ].transpose() * ( intmats * inttype->giveIPWeight(i) );
     }
 
@@ -302,7 +334,7 @@ void Element :: computeDampingMatrix() {
     dampC = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        c = stats [ i ]->giveDampingTensor();
+        c = stats[i]->giveDampingTensor();
         dampC += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
 }
@@ -321,7 +353,7 @@ void Element :: computeMassMatrix() {
     massM = Matrix :: Zero(nDoFs, nDoFs);
     Matrix c;
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        c = stats [ i ]->giveMassTensor();
+        c = stats[i]->giveMassTensor();
         massM += Hs [ i ].transpose() * ( c * inttype->giveIPWeight(i) ) * Hs [ i ];
     }
 }

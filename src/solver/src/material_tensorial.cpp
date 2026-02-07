@@ -18,17 +18,15 @@ TensTrsprtMaterialStatus :: TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Elem
 
 
 //////////////////////////////////////////////////////////
-Vector TensTrsprtMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void TensTrsprtMaterialStatus :: computeStress( double timeStep) {
     effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
-    return giveStressWithFrozenIntVars(strain, timeStep);
+    computeStressWithFrozenIntVars( timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector TensTrsprtMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void TensTrsprtMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    temp_strain = strain;
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
-    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -173,17 +171,15 @@ TensHeatConductionMaterialStatus :: TensHeatConductionMaterialStatus(TensHeatCon
 
 
 //////////////////////////////////////////////////////////
-Vector TensHeatConductionMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    return giveStressWithFrozenIntVars(strain, timeStep);
+void TensHeatConductionMaterialStatus :: computeStress( double timeStep) {
+    computeStressWithFrozenIntVars( timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector TensHeatConductionMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
     TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
-    temp_strain = strain;
     temp_stress = m->giveConductivity() * addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
-    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -272,8 +268,8 @@ MaterialStatus *TensHeatConductionMaterial :: giveNewMaterialStatus(Element *e, 
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-Vector TensMechMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    return TensMechMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+void TensMechMaterialStatus :: computeStress( double timeStep) {
+    TensMechMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -292,11 +288,9 @@ double TensMechMaterialStatus :: giveMassConstant() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector TensMechMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void TensMechMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
-    return temp_stress;
+    temp_stress = giveStiffnessTensor("elastic") * addEigenStrain(temp_strain);
 };
 
 //////////////////////////////////////////////////////////
@@ -442,16 +436,14 @@ TensCosseratMechMaterial :: TensCosseratMechMaterial(unsigned dimension) : TensM
 }
 
 //////////////////////////////////////////////////////////
-Vector TensCosseratMechMaterialStatus ::  giveStress(const Vector &strain, double timeStep) {
-    return TensCosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(strain, timeStep);
+void TensCosseratMechMaterialStatus ::  computeStress( double timeStep) {
+    TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars( timeStep);
 };
 
 //////////////////////////////////////////////////////////
-Vector TensCosseratMechMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
-    temp_stress = giveStiffnessTensor("elastic") *  temp_strain;
-    return temp_stress;
+    temp_stress = giveStiffnessTensor("elastic") *  addEigenStrain(temp_strain);
 };
 
 //////////////////////////////////////////////////////////

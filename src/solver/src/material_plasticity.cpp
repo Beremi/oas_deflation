@@ -27,10 +27,10 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
 }
 
 //////////////////////////////////////////////////////////
-Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void VonMisesPlasticMaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
 
-    temp_strain = addEigenStrain(strain);
+    temp_strain = addEigenStrain(temp_strain);
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
 
@@ -144,13 +144,12 @@ Vector VonMisesPlasticMaterialStatus :: giveStress(const Vector &strain, double 
         }
         // cout << "PLASTIC" << "\n";
     }
-    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
-Vector VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void VonMisesPlasticMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(strain);
+    temp_strain = addEigenStrain(temp_strain);
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
 
@@ -175,8 +174,6 @@ Vector VonMisesPlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector
     } else {
         temp_stress = giveStiffnessTensor("elastic") * ( temp_strain - temp_plasticstrain );
     }
-
-    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////

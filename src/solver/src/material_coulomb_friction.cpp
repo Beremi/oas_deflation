@@ -52,16 +52,16 @@ Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector CoulombFrictionMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    return CoulombFrictionMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+void CoulombFrictionMaterialStatus :: computeStress( double timeStep) {
+    CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector CoulombFrictionMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
     CoulombFrictionMaterial *m = static_cast< CoulombFrictionMaterial * >( mat );
     RigidBodyBoundary *rb = static_cast< RigidBodyBoundary * >( element );
-    temp_strain = strain * rb->giveLength();
+    temp_strain = temp_strain * rb->giveLength();
     temp_strain [ 0 ] = 0.;
     Vector strain_inc = temp_strain - updt_strain;
     temp_stress = updt_stress + strain_inc * m->giveInitialStiffness();
@@ -74,7 +74,6 @@ Vector CoulombFrictionMaterialStatus :: giveStressWithFrozenIntVars(const Vector
             temp_stress *= max_stress / eff_stress;
         }
     }
-    return temp_stress;
 }
 
 

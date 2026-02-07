@@ -141,25 +141,23 @@ double get_Lambda(const double &E_b, const double &K, const double &alpha, const
 
 
 //////////////////////////////////////////////////////////
-Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void FatigueShearMaterialStatus :: computeStress( double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
-
-    Vector stress = Vector :: Zero( strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    double eff_stress = stiffN * strain [ 0 ]; //normal stress
+    double eff_stress = stiffN * temp_strain [ 0 ]; //normal stress
 
     double sensititvity_param = ( ( eff_stress < 0.0 ) ? m->giveMC() : m->giveMT() );
 
     //load strains from one or two shear directions, ignore normal strain "strain[0]"
     double x = 0;
-    double y = strain [ 1 ];
-    double z = ( strain.size() == 3 ) ? strain [ 2 ] : 0; // 3D problem has also generally nonzero second component of shear strain
+    double y = temp_strain [ 1 ];
+    double z = ( temp_strain.size() == 3 ) ? temp_strain [ 2 ] : 0; // 3D problem has also generally nonzero second component of shear strain
 
     temp_slip = Point(x, y, z) * strain_slip_multiplier;
     // std::cout << "strain_slip_multiplier = " << strain_slip_multiplier << '\n';
@@ -167,12 +165,10 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
     //kill shear element when excessive tension occur
     if ( m->giveTauBar() - sensititvity_param * eff_stress <= 0 ) {
-        for ( unsigned i = 1; i < stress.size(); i++ ) {
-            stress [ i ] = 0;
-        }
+        temp_stress *= 0;
         temp_damageShear = 1 - 1e-10;
         tang_stiff = 0;
-        return stress;
+        return;
     }
 
     double f_trial;
@@ -276,22 +272,20 @@ Vector FatigueShearMaterialStatus :: giveStress(const Vector &strain, double tim
 
 
     //finally prepare the shear stresses to respond
-    stress [ 1 ] = temp_stressT.y();
-    if ( strain.size() == 3 ) {
-        stress [ 2 ] = temp_stressT.z();
+    temp_stress[0] = eff_stress;
+    temp_stress [ 1 ] = temp_stressT.y();
+    if ( temp_strain.size() == 3 ) {
+        temp_stress [ 2 ] = temp_stressT.z();
     }                                                           //3D problem has two shear stresses
 
-    return stress;
 }
 
 
 //////////////////////////////////////////////////////////
-Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void FatigueShearMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     // TENSORIAL FORM OF CONST LAW ACCORDING TO FRAMCOS PAPER BY ABEDULGADER BAKTHER et al doi.org/10.21012/FC10.233196
     ////////////////////////////////////////////////////////
     ( void ) timeStep;
-
-    Vector stress = Vector :: Zero(strain.size() );
 
     FatigueShearMaterial *m = static_cast< FatigueShearMaterial * >( mat );
     double stiffN = m->giveE0();
@@ -300,34 +294,30 @@ Vector FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(const Vector &s
     double x = 0;
     double y = 0;
     double z = 0;
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         if ( i == 1 ) {
-            y = strain [ i ];
+            y = temp_strain [ i ];
         } else if ( i == 2 ) {
-            z = strain [ i ];
+            z = temp_strain [ i ];
         } else {
             std :: cerr << "should never get here, exit" << '\n';
             exit(1);
         }
     }
 
-    stress [ 0 ] = stiffN * strain [ 0 ]; // elastic normal stress
+    temp_stress [ 0 ] = stiffN * temp_strain [ 0 ]; // elastic normal stress
     Point XstressT = ( Point(x, y, z) - temp_sPi ) * ( this->temporarily_killed ? 0 : 1. - temp_damageShear ) * stiffT;
 
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         if ( i == 1 ) {
-            stress [ i ] = XstressT.y();
+            temp_stress [ i ] = XstressT.y();
         } else if ( i == 2 ) {
-            stress [ i ] = XstressT.z();
+            temp_stress [ i ] = XstressT.z();
         } else {
             std :: cerr << "should never get here, exit" << '\n';
             exit(1);
         }
     }
-
-    this->temp_stress = stress;
-    this->temp_strain = strain;
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -696,24 +686,23 @@ void DamagePlasticMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void DamagePlasticMaterialStatus :: computeStress( double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
     DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    for ( size_t i = 1; i < ( size_t ) stress.size(); i++ ) {
-        stress [ i ] = stiffT * strain [ i ];
+    for ( size_t i = 1; i < ( size_t ) temp_stress.size(); i++ ) {
+        temp_stress [ i ] = stiffT * temp_strain [ i ];
     }
 
     if ( this->symmetric ) {
         // symetric const law can be prescribed on the input
         // this means the same behavior in compression as in tension (according to tensile parameters (positive strain))
-        temp_epsN = abs(strain [ 0 ] * strain_displ_multiplier);
+        temp_epsN = abs(temp_strain [ 0 ] * strain_displ_multiplier);
     } else {
-        temp_epsN = strain [ 0 ] * strain_displ_multiplier;
+        temp_epsN = temp_strain [ 0 ] * strain_displ_multiplier;
     }
 
 
@@ -758,10 +747,10 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
         }
 
         //normal dir
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - epsNP );
+        temp_stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - epsNP );
         // apply damage also in shear direction
-        for ( unsigned i = 1; i < strain.size(); i++ ) {
-            stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiffT * ( strain [ i ] );
+        for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+            temp_stress [ i ] = ( 1 - Heaviside * temp_damage ) * stiffT * ( temp_strain [ i ] );
         }
     } else {
         temp_damage = damage;
@@ -793,39 +782,34 @@ Vector DamagePlasticMaterialStatus :: giveStress(const Vector &strain, double ti
         }
     }
     if ( this->symmetric ) {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(strain [ 0 ]);
-        temp_epsN *= sgn(strain [ 0 ]);
+        temp_stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP ) * sgn(temp_strain [ 0 ]);
+        temp_epsN *= sgn(temp_strain [ 0 ]);
     } else {
-        stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP );
+        temp_stress [ 0 ] = ( 1 - Heaviside * temp_damage ) * stiffN * ( temp_epsN - temp_epsNP );
     }
-    temp_stressN = stress [ 0 ];
-    return stress;
+    temp_stressN = temp_stress [ 0 ];
 }
 
 
 //////////////////////////////////////////////////////////
-Vector DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void DamagePlasticMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
-    DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
+   DamagePlasticMaterial *m = static_cast< DamagePlasticMaterial * >( mat );
     double stiffN = m->giveE0();
     double stiffT = m->giveAlpha() * stiffN;
 
-    double epsN0 = strain [ 0 ] * strain_displ_multiplier;
+    double epsN0 = temp_strain [ 0 ] * strain_displ_multiplier;
     if ( epsN0 - epsNP > 0 ) {
-        stress [ 0 ] = ( 1 - temp_damage ) * stiffN * ( epsN0 - temp_epsNP );
-        for ( unsigned i = 1; i < strain.size(); i++ ) {
-            stress [ i ] = ( 1 - temp_damage ) * stiffT * ( strain [ i ] );
+        temp_stress [ 0 ] = ( 1 - temp_damage ) * stiffN * ( epsN0 - temp_epsNP );
+        for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+            temp_stress [ i ] = ( 1 - temp_damage ) * stiffT * ( temp_strain [ i ] );
         }
     } else {
-        stress [ 0 ] =  stiffN * ( epsN0 - temp_epsNP );
-        for ( unsigned i = 1; i < strain.size(); i++ ) {
-            stress [ i ] = stiffT * ( strain [ i ] );
+        temp_stress [ 0 ] =  stiffN * ( epsN0 - temp_epsNP );
+        for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+            temp_stress [ i ] = stiffT * ( temp_strain [ i ] );
         }
     }
-    this->temp_stress = stress;
-    this->temp_strain = strain;
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -1112,52 +1096,53 @@ void FatigueMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void FatigueMaterialStatus :: computeStress( double timeStep) {
     // TODO transition from compression to tension is very simply done here, should be improved
-    Vector stress = Vector :: Zero(strain.size() );
     Vector res;
-    for ( size_t i = 0; i < ( size_t ) strain.size(); i++ ) {
+    Vector stress = Vector::Zero(FatigueShearMaterialStatus::temp_strain.size());
+    for ( size_t i = 0; i < ( size_t ) FatigueShearMaterialStatus::temp_strain.size(); i++ ) {
         if ( i == 0 ) {//normal direction (damage plastic material)
             if ( fabs(this->coupled_damage) > 0 ) {
                 FatigueShearMaterialStatus :: giveValues("damage", res);
                 DamagePlasticMaterialStatus :: setDamage(res [ 0 ]);
             }
-            stress [ i ] = DamagePlasticMaterialStatus :: giveStress(strain, timeStep) [ i ];
+            DamagePlasticMaterialStatus :: computeStress(timeStep);
+            stress [ i ] = DamagePlasticMaterialStatus :: temp_stress[i];
         } else {//shear directions (FatigueShearMaterial)
             if ( this->coupled_damage > 0 ) {
                 DamagePlasticMaterialStatus :: giveValues("damage", res);
                 FatigueShearMaterialStatus :: setDamage(res [ 0 ]);
             }
-            stress [ i ] = FatigueShearMaterialStatus :: giveStress(strain, timeStep) [ i ];
+            FatigueShearMaterialStatus :: computeStress(timeStep);
+            stress [ i ] = FatigueShearMaterialStatus :: temp_stress[i];
         }
     }
 
     DamagePlasticMaterialStatus :: temp_stress = stress;
-    DamagePlasticMaterialStatus :: temp_strain = strain;
     FatigueShearMaterialStatus :: temp_stress = stress;
-    FatigueShearMaterialStatus :: temp_strain = strain;
-
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector FatigueMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    Vector stress = Vector :: Zero(strain.size() );
+void FatigueMaterialStatus :: setTempStrain( Vector str) {
+    DamagePlasticMaterialStatus :: temp_strain = str;    
+    FatigueShearMaterialStatus :: temp_strain = str;
+}
 
+//////////////////////////////////////////////////////////
+void FatigueMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+    Vector stress = Vector::Zero(FatigueShearMaterialStatus::temp_strain.size()); 
     //Normal stress
-    stress [ 0 ] = DamagePlasticMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ 0 ];
+    DamagePlasticMaterialStatus :: computeStressWithFrozenIntVars(timeStep);    
+    stress [ 0 ] = DamagePlasticMaterialStatus :: temp_stress[0];
 
     //Shear stresses (one or two components in 2D or 3D)
     for ( size_t i = 1; i < ( size_t ) stress.size(); i++ ) {
-        stress [ i ] = FatigueShearMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep) [ i ];
+        FatigueShearMaterialStatus :: computeStressWithFrozenIntVars(timeStep);    
+        stress [ i ] = FatigueShearMaterialStatus :: temp_stress[i];
     }
 
     DamagePlasticMaterialStatus :: temp_stress = stress;
-    DamagePlasticMaterialStatus :: temp_strain = strain;
     FatigueShearMaterialStatus :: temp_stress = stress;
-    FatigueShearMaterialStatus :: temp_strain = strain;
-
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -1346,36 +1331,28 @@ void AllicheMaterialStatus :: calculateDamage(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void AllicheMaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero(strain.size() );
-    calculateDamage(strain);
+    calculateDamage(temp_strain);
 
     // NOTE use of damage as Point makes its calclulation more simple, but here it becomes quite messy
-    stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * strain [ 0 ];
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        stress [ i ] = ( 1 - temp_damage.y() ) * m->giveE0() * m->giveAlpha() * strain [ i ];
+    temp_stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * temp_strain [ 0 ];
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+        temp_stress [ i ] = ( 1 - temp_damage.y() ) * m->giveE0() * m->giveAlpha() * temp_strain [ i ];
     }
-
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector AllicheMaterialStatus ::  giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void AllicheMaterialStatus ::  computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
     AllicheMaterial *m = static_cast< AllicheMaterial * >( mat );
 
-    Vector stress = Vector :: Zero(strain.size() );
-
-    stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * strain [ 0 ];
-    for ( unsigned i = 1; i < strain.size(); i++ ) {
-        stress [ i ] = ( 1 - temp_damage.y() ) * m->giveE0() * m->giveAlpha() * strain [ i ];
+    temp_stress [ 0 ] = ( 1 - temp_damage.x() ) * m->giveE0() * temp_strain [ 0 ];
+    for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
+        temp_stress [ i ] = ( 1 - temp_damage.y() ) * m->giveE0() * m->giveAlpha() * temp_strain [ i ];
     }
-    this->temp_stress = stress;
-    this->temp_strain = strain;
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -1545,18 +1522,16 @@ Matrix DesmoratMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void DesmoratMaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
-
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
-    for ( unsigned i = 0; i < strain.size(); i++ ) {
+    for ( unsigned i = 0; i < temp_strain.size(); i++ ) {
         if ( i == 0 ) {
-            epsN = strain [ i ];
+            epsN = temp_strain [ i ];
         } else if ( i == 1 ) {
-            epsT.y() = ( strain [ i ] );
+            epsT.y() = ( temp_strain [ i ] );
         } else if ( i == 2 ) {
-            epsT.z() = ( strain [ i ] );
+            epsT.z() = ( temp_strain [ i ] );
         }
     }
 
@@ -1580,31 +1555,24 @@ Vector DesmoratMaterialStatus :: giveStress(const Vector &strain, double timeSte
         temp_alphaKin = alphaKin;
     }
 
-    stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
-    stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.y();
-    if ( strain.size() > 1 ) {
-        stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.z();
+    temp_stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
+    temp_stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.y();
+    if ( temp_strain.size() > 1 ) {
+        temp_stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.z();
     }
-
-    return stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector DesmoratMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void DesmoratMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
-
     DesmoratMaterial *m = static_cast< DesmoratMaterial * >( mat );
 
 
-    stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * epsN;
-    stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.y();
-    if ( strain.size() > 2 ) {
-        stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * epsT.z();
+    temp_stress [ 0 ] = m->giveE0() * ( 1 - temp_damage ) * temp_strain [ 0 ];
+    temp_stress [ 1 ] = m->giveE2() * ( 1 - temp_damage ) * temp_strain [ 1 ];
+    if ( temp_strain.size() > 2 ) {
+        temp_stress [ 2 ] = m->giveE2() * ( 1 - temp_damage ) * temp_strain [ 2 ];
     }
-    this->temp_stress = stress;
-    this->temp_strain = strain;
-    return stress; //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////

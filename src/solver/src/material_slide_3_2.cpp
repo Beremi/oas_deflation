@@ -417,15 +417,14 @@ void Slide32MaterialStatus :: check_state_variable_ranges() {
 }
 
 
-Vector Slide32MaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void Slide32MaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
-    Vector stress = Vector :: Zero(strain.size() );
 
     double s_x_n1, s_y_n1, w_n1;
-    w_n1 = strain [ 0 ] * strain_slip_multiplier;
-    s_x_n1 = strain [ 1 ] * strain_slip_multiplier;
-    if ( strain.size() > 2 ) {
-        s_y_n1 =  strain [ 2 ] * strain_slip_multiplier;
+    w_n1 = temp_strain [ 0 ] * strain_slip_multiplier;
+    s_x_n1 = temp_strain [ 1 ] * strain_slip_multiplier;
+    if ( temp_strain.size() > 2 ) {
+        s_y_n1 =  temp_strain [ 2 ] * strain_slip_multiplier;
     } else {
         s_y_n1 = 0.0;
     }
@@ -466,13 +465,12 @@ Vector Slide32MaterialStatus :: giveStress(const Vector &strain, double timeStep
 
     // check_state_variable_ranges();
 
-    stress [ 0 ] = temp_Sig [ 2 ];
-    stress [ 1 ] = temp_Sig [ 0 ];
-    if ( stress.size() > 2 ) {
-        stress [ 2 ] = temp_Sig [ 1 ];
+    temp_stress [ 0 ] = temp_Sig [ 2 ];
+    temp_stress [ 1 ] = temp_Sig [ 0 ];
+    if ( temp_stress.size() > 2 ) {
+        temp_stress [ 2 ] = temp_Sig [ 1 ];
     }
     // std::cout << "num of iterations: " << k << '\n';
-    return stress;
 }
 
 

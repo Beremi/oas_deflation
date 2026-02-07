@@ -231,7 +231,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
 void MaterialContainer :: runPreparationForStressEvaluation(ElementContainer *elems) {
     for ( auto &m : matrs ) {
         m->prepareForStressEvaluation(elems);
-    }
+    }    
 }
 
 //////////////////////////////////////////////////////////

@@ -557,8 +557,8 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
     }
 
 
-    // ****************** node data
-    data.resize(nodes->giveSize() );
+    // ****************** point data
+    data.resize(numOfPoints );
     for ( ; p < node_data_size + cell_data_size; p++ ) {
         if ( codes [ 0 ].compare("displacements") == 0 ) {
             continue;
@@ -573,25 +573,25 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
                 data [ i ].resize(0);
             }
         }
-        vtkSmartPointer< vtkDoubleArray >cellDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
-        cellDataArray->SetName(codes [ p ].c_str() );
-        cellDataArray->SetNumberOfComponents(msize);
-        cellDataArray->SetNumberOfValues(2 * elems->giveSize() * msize);
+        vtkSmartPointer< vtkDoubleArray >pointDataArray = vtkSmartPointer< vtkDoubleArray > :: New();
+        pointDataArray->SetName(codes [ p ].c_str() );
+        pointDataArray->SetNumberOfComponents(msize);
+        pointDataArray->SetNumberOfValues(numOfPoints * msize);
         i = 0;
         for ( vector< RigidBodyContact * > :: const_iterator ee = exportedElemsRBC.begin(); ee != exportedElemsRBC.end(); ++ee, i++ ) {
             dataA = data [ ( * ee )->giveNode(0)->giveID() ];
             dataB = data [ ( * ee )->giveNode(1)->giveID() ];
             for ( j = 0; j < min< size_t >(msize, dataA.size() ); j++ ) {
-                cellDataArray->SetValue(msize * ( i * 2 ) + j, dataA [ j ]);
+                pointDataArray->SetValue(msize * ( i * 2 ) + j, dataA [ j ]);
             }
             for ( ; j < msize; j++ ) {
-                cellDataArray->SetValue(msize * ( i * 2 ) + j, 0);
+                pointDataArray->SetValue(msize * ( i * 2 ) + j, 0);
             }
             for ( j = 0; j < min< size_t >(msize, dataB.size() ); j++ ) {
-                cellDataArray->SetValue(msize * ( i * 2 + 1 ) + j, dataB [ j ]);
+                pointDataArray->SetValue(msize * ( i * 2 + 1 ) + j, dataB [ j ]);
             }
             for ( ; j < msize; j++ ) {
-                cellDataArray->SetValue(msize * ( i * 2 + 1 ) + j, 0);
+                pointDataArray->SetValue(msize * ( i * 2 + 1 ) + j, 0);
             }
         }
         for ( const auto &tet: exportedElemsTET ) {
@@ -602,7 +602,7 @@ void VTKRCExporter :: exportData(unsigned step, int iteration, fs :: path result
                 //TODO 
             }
         }        
-        unstructuredGrid->GetCellData()->AddArray(cellDataArray);
+        unstructuredGrid->GetPointData()->AddArray(pointDataArray);
     }
 
     // ****************** extrapolated node data
@@ -708,7 +708,7 @@ void VTKRebarExporter :: exportData(unsigned step, int iteration, fs :: path res
     }
 
 
-    // ****************** node data
+    // ****************** point data
     data.resize(nodes->giveSize() );
     for ( ; p < node_data_size + cell_data_size; p++ ) {
         msize = 1;

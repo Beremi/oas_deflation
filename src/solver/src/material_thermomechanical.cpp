@@ -11,14 +11,23 @@ ThermoMechanicalMaterialStatus :: ThermoMechanicalMaterialStatus(ThermoMechanica
 
 //////////////////////////////////////////////////////////
 bool ThermoMechanicalMaterialStatus :: giveValues(std :: string code, Vector &result) const {
-    return CoupledMaterialStatus :: giveValues(code, result);
+    if ( code.compare("pressure") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = porePressure;
+        return true;
+    } else if ( code.compare("temperature") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = temperature;
+        return true;
+    } else {
+        return CoupledMaterialStatus :: giveValues(code, result);
+    }
 }
 
 //////////////////////////////////////////////////////////
-Vector ThermoMechanicalMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void ThermoMechanicalMaterialStatus :: computeStress( double timeStep) {
     addTemperatureEffectToMechanics();
-
-    return CoupledMaterialStatus::giveStress(strain, timeStep);
+    CoupledMaterialStatus::computeStress( timeStep);
 }
 
 
@@ -27,14 +36,16 @@ void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, dou
     CoupledMaterialStatus :: setParameterValue(code, value);
     if ( code.compare("temperature") == 0 ) {
         temperature = value;
+    } else if ( code.compare("pressure") == 0 ) {
+        porePressure = value;
     }
 }
 
 //////////////////////////////////////////////////////////
-Vector ThermoMechanicalMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void ThermoMechanicalMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     addTemperatureEffectToMechanics();
 
-    return CoupledMaterialStatus::giveStressWithFrozenIntVars(strain, timeStep);
+    CoupledMaterialStatus::computeStressWithFrozenIntVars( timeStep);
 }
 
 //////////////////////////////////////////////////////////
@@ -93,5 +104,6 @@ void ThermoMechanicalMaterialStatus ::  addTemperatureEffectToMechanics() {
     ThermoMechanicalMaterial *tmm = static_cast< ThermoMechanicalMaterial * >( mat );
     Vector eig = Vector :: Zero(mat->giveDimension());
     eig [ 0 ] = ( temperature - tmm->giveInitialTemperature() ) * tmm->giveThermalExpansionCoeff();
-    stats [ 0 ]->setEigenStrain(eig);
+    stats [ 0 ]->addToEigenStrain(eig);
+    stats [ 0 ]->addToEigenVolumetricStrain(eig [ 0 ]);    
 };

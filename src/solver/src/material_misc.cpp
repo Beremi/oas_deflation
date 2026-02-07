@@ -80,22 +80,21 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector BrittleMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    computeDamage(strain);
+void BrittleMaterialStatus :: computeStress( double timeStep) {
+    computeDamage(temp_strain);
     if ( damage ) {
         Matrix stiff = giveStiffnessTensor("secant");
-        return stiff * strain;
+        temp_stress =  stiff * temp_strain;
     } else {
-        return VectMechMaterialStatus :: giveStress(strain, timeStep);
+        VectMechMaterialStatus :: computeStress( timeStep);
     }
 }
 
 
 //////////////////////////////////////////////////////////
-Vector BrittleMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void BrittleMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    ( void ) strain;
-    return Vector(0);  //TOTO: FIX
+    temp_stress = Vector::Zero(temp_strain.size());  //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////
@@ -185,27 +184,25 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-Vector ContactMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void ContactMaterialStatus :: computeStress( double timeStep) {
     ( void ) timeStep;
-    temp_normal_strain = strain [ 0 ];
-    Vector stress = Vector :: Zero(strain.size() );
+    temp_normal_strain = temp_strain [ 0 ];
+    temp_stress = Vector :: Zero(temp_strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
-        stress [ 0 ] = strain [ 0 ] * m->giveE0();
-        stress [ 1 ] = stress [ 0 ] * m->giveFrictionCoef();
-        if ( strain.size() > 2 ) {
-            stress [ 2 ] = stress [ 0 ] * m->giveFrictionCoef();
+        temp_stress [ 0 ] = temp_strain [ 0 ] * m->giveE0();
+        temp_stress [ 1 ] = temp_stress [ 0 ] * m->giveFrictionCoef();
+        if ( temp_strain.size() > 2 ) {
+            temp_stress [ 2 ] = temp_stress [ 0 ] * m->giveFrictionCoef();
         }
     }
-    return stress;
 }
 
 
 //////////////////////////////////////////////////////////
-Vector ContactMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void ContactMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
-    ( void ) strain;
-    return Vector(0);  //TOTO: FIX
+    temp_stress *= 0;
 }
 
 //////////////////////////////////////////////////////////

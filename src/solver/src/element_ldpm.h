@@ -31,10 +31,12 @@ protected:
 
     Vector volWeights; //factors to caluclate volumetric strain
 
-    double volumetricStrain;
+    double volumetricStrain, eigen_volumetricStrain;
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
-
+    
+    Vector nodeWeights; //relative volume weight of nodes (relative fraction of tetra volume)
+    Vector edgeWeights; //relative length weights of nodes for each facet, only the first weight is saved, the other one is 1-first
 public:
     LDPMTetra(unsigned ndim);
     ~LDPMTetra() {};
@@ -52,9 +54,9 @@ public:
     Node *giveCentroid() const { return vert [ 0 ]; };
     unsigned giveNumOfVertices() const { return vert.size(); };
 
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveInternalForces();
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     virtual Vector integrateInternalSources();
 
@@ -67,6 +69,8 @@ public:
 
     double giveVolumetricStrain() const { return volumetricStrain; };
     bool isPointInside(Point *xn, const Point *x) const;
+    
+    virtual double giveAverageTemperature() const {return 0;};
 
     virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
@@ -79,43 +83,44 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// LDPM TEMP ELEMENT
-class LDPMTetraWithHeatConduction : public LDPMTetra
+// LDPM COUPLED ELEMENT
+class LDPMTetraWithTransport : public LDPMTetra
 {
 protected:
-    virtual void computeMassMatrix();
-    virtual void checkNodeType() const;    
 
 public:
-    LDPMTetraWithHeatConduction(unsigned ndim);
-    ~LDPMTetraWithHeatConduction() {};
-    virtual void init();
-    virtual Matrix giveBMatrix(unsigned k) const;
-    virtual Matrix giveHMatrix(const Point *x) const;    
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
-    virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
+    LDPMTetraWithTransport(unsigned ndim);
+    ~LDPMTetraWithTransport() {};
+    virtual void evaluateStrains(const Vector &DoFs);
     virtual void giveValues(std :: string code, Vector &result) const;
 };
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// LDPM COUPLED ELEMENT
-class LDPMCoupledTranspTetra : public LDPMTetra
+// LDPM TEMP ELEMENT
+class LDPMTetraWithTransportAndHeatConduction : public LDPMTetraWithTransport
 {
 protected:
-
+    virtual void computeMassMatrix();
+    virtual void checkNodeType() const;    
+    double averageTemperature;
 public:
-    LDPMCoupledTranspTetra();
-    ~LDPMCoupledTranspTetra() {};
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    LDPMTetraWithTransportAndHeatConduction(unsigned ndim);
+    ~LDPMTetraWithTransportAndHeatConduction() {};
+    virtual void init();
+    virtual Matrix giveBMatrix(unsigned k) const;
+    virtual Matrix giveHMatrix(const Point *x) const;    
+    virtual void evaluateStrains(const Vector &DoFs);
+    virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
+    virtual double giveAverageTemperature() const {return averageTemperature;};    
 };
 
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Discrete LDPM TRANSPORT ELEMENT
-class LDPMCoupledTransport : public DiscreteTrsprtCoupledElem
+class LDPMEdgeTransport : public DiscreteTrsprtCoupledElem
 {
 protected:
     LDPMTetra *tetA;
@@ -126,11 +131,11 @@ protected:
     double g1, g2;
 
 public:
-    LDPMCoupledTransport(ElementContainer *allelems);
-    ~LDPMCoupledTransport() {};
+    LDPMEdgeTransport(ElementContainer *allelems);
+    ~LDPMEdgeTransport() {};
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
+    virtual void evaluateStrains(const Vector &DoFs);
     LDPMTetra* giveTet(unsigned i) const {if (i==0) return tetA; else if (i==1)  return tetB; else return nullptr;};   
     void setTet(unsigned i, LDPMTetra* tet) {if (i==0) tetA=tet; else if (i==1)  tetB=tet;};   
 };
@@ -138,13 +143,13 @@ public:
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Discrete LDPM TRANSPORT BOUNDARY ELEMENT
-class LDPMCoupledTransportBoundary : public LDPMCoupledTransport
+class LDPMEdgeTransportBoundary : public LDPMEdgeTransport
 {
 protected:
 
 public:
-    LDPMCoupledTransportBoundary(ElementContainer *allelems);
-    ~LDPMCoupledTransportBoundary() {};
+    LDPMEdgeTransportBoundary(ElementContainer *allelems);
+    ~LDPMEdgeTransportBoundary() {};
     virtual void init();
 };
 #endif  /* _ELEMENT_LDPMTETRA_H */

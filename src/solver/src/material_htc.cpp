@@ -135,21 +135,20 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-Vector HTCMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void HTCMaterialStatus :: computeStress( double timeStep) {
     updateMaterialParameters(timeStep);
-    return HTCMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+    HTCMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
 }
 
 //////////////////////////////////////////////////////////
-Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void HTCMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_strain = strain;
-
+    
     Vector hstrain = Vector :: Zero(3);
     Vector tstrain = Vector :: Zero(3);
     for ( unsigned i = 0; i < 3; i++ ) {
-        hstrain [ i ] = strain [ i ];
-        tstrain [ i ] = strain [ 3 + i ];
+        hstrain [ i ] = temp_strain [ i ];
+        tstrain [ i ] = temp_strain [ 3 + i ];
     }
 
     HTCMaterial *htc = static_cast< HTCMaterial * >( mat );
@@ -162,8 +161,6 @@ Vector HTCMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, do
         temp_stress [ i ] = hstress [ i ];
         temp_stress [ 3 + i ] = tstress [ i ];
     }
-
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////

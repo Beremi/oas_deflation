@@ -16,7 +16,6 @@ protected:
     double Kt, Ks, L, nt;
     double RAND_H;
     double temp_crackOpening;
-    double volumetricStrain;
 
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
@@ -32,8 +31,8 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
@@ -88,8 +87,8 @@ public:
     CSLMaterialWithTensorialStressUpdateStatus(CSLMaterialWithTensorialStressUpdate *m, Element *e, unsigned ipnum);
     virtual ~CSLMaterialWithTensorialStressUpdateStatus() {};
     virtual bool giveValues(std :: string code, Vector &result) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
 private:
     Vector giveEigenStrainFromTensorialStress() const;
 };
@@ -127,8 +126,8 @@ private:
 public:
     CoupledCSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum);
     ~CoupledCSLMaterialStatus() {};
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();

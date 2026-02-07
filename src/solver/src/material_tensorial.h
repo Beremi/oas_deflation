@@ -21,8 +21,8 @@ protected:
 public:
     TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensTrsprtMaterialStatus() {};
-    virtual Vector giveStress(const Vector &strain, double timeStep); //terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep); //terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
@@ -71,8 +71,8 @@ protected:
 public:
     TensHeatConductionMaterialStatus(TensHeatConductionMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensHeatConductionMaterialStatus() {};
-    virtual Vector giveStress(const Vector &strain, double timeStep); //terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep); //terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
@@ -108,8 +108,8 @@ public:
     TensMechMaterialStatus(TensMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual double giveMassConstant() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
@@ -150,8 +150,8 @@ public:
     TensCosseratMechMaterialStatus(TensCosseratMechMaterial *m, Element *e, unsigned ipnum);
     virtual ~TensCosseratMechMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
 };
 
 //////////////////////////////////////////////////////////

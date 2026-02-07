@@ -41,6 +41,9 @@ protected:
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
     bool areIPLocsInNaturalCoords;
+    
+    virtual void evaluateStresses(double timeStep);       
+    virtual void evaluateStressesWithFrozenIntVars(double timeStep);    
 
 
     ShapeFunc *shafunc;
@@ -53,7 +56,7 @@ protected:
     std :: vector< bool >physicalFields;
 
 public:
-    Element(unsigned dim) { name = "basic element"; solution_order = 0; volume = 0; ndim = dim; physicalFields.resize(4, false); areIPLocsInNaturalCoords = true;}  //mechanical, transport, thermal, humidity
+    Element(unsigned dim);
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
     unsigned giveID() const { return idx; };
@@ -67,7 +70,7 @@ public:
     virtual Matrix giveMassMatrix();
     virtual Matrix giveDampingMatrix();
     virtual Matrix giveLumpedMassMatrix();
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveInternalForces();
     double giveKineticEnergy(const Vector &velocity) const;
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
@@ -93,7 +96,6 @@ public:
     virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };        //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
-    virtual Vector giveStrain(unsigned i, const Vector &DoFs);
     unsigned giveDimension() const { return ndim; }
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
     unsigned giveVTKCellType() const { return vtk_cell_type; };
@@ -122,6 +124,9 @@ public:
     bool doesTransport()const { return ( physicalFields [ 1 ] > 0 ); };    
     std :: vector< std :: vector< unsigned > >giveTraingulatedFaces()const;
     virtual double giveDissipatedEnergy() const;
+    virtual void evaluateStrains(const Vector &DoFs);
+    virtual void evaluateStresses(bool frozen, double timeStep);
+    void removeEigenStrain();
 };
 
 

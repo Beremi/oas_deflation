@@ -96,7 +96,7 @@ protected:
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
-    virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
+    virtual void computeStressPrecomputed( double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
     Matrix giveStiffnessTensorLocalExact(std :: string type);
     virtual Matrix giveStiffnessTensorPrecomputedLocal(std :: string type) const;
@@ -110,8 +110,8 @@ public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);//terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual void update();
@@ -162,7 +162,7 @@ protected:
     std :: vector< std :: vector< Matrix > >calculateProjectors(const Point centroid);
     std :: vector< Matrix >calculateVectProjector(const Element *e, const Point centroid);
     std :: vector< Matrix >calculateTensProjector(const Element *e, const Point centroid);
-    virtual Vector giveStressPrecomputed(const Vector &strain, double timeStep);
+    virtual void computeStressPrecomputed( double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
 
     virtual void transformStrain();
@@ -175,8 +175,8 @@ public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
-    virtual Vector giveStress(const Vector &strain, double timeStep);//terminology from mechanics, it returns flux
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);//terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;  
@@ -257,13 +257,13 @@ public:
     virtual void init();
     virtual void update();
 
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual Matrix giveInertiaTensor() const;
-    virtual void setEigenStrain(Vector &x);
+    virtual void addToEigenStrain(Vector &x);
     virtual std :: string giveLineToSave() const;
     virtual Vector giveInternalSource() const;
     virtual void setParameterValue(std :: string code, double value);

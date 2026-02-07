@@ -18,8 +18,6 @@ void LDPMMaterialStatus :: init() {
     maxEpsN = 0;
     temp_maxEpsN = 0;
     temp_maxEpsT = 0;
-    temp_volumetricStrain = 0;
-    volumetricStrain = 0;
     crackOpening = 0;
     temp_crackOpening = 0;
     virtual_damage = 0;
@@ -38,9 +36,9 @@ void LDPMMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 void LDPMMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    updt_mech_strain = Vector :: Zero(num);
+    updt_strain = Vector :: Zero(num);
     updt_mech_stress = Vector :: Zero(num);
-    temp_mech_strain = Vector :: Zero(num);
+    temp_strain = Vector :: Zero(num);
     temp_mech_stress = Vector :: Zero(num);
     VectMechMaterialStatus :: initializeStressAndStrainVector(num);
 }
@@ -55,20 +53,16 @@ bool LDPMMaterialStatus :: giveValues(string code, Vector &result) const {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(1);
         result [ 0 ] = pow(temp_crackOpening, 2);
-        result [ 0 ] += pow( ( temp_mech_strain [ 1 ] - temp_mech_stress [ 1 ] / ( m->giveE0() * m->giveAlpha() ) ) * L, 2 );
-        result [ 0 ] += pow( ( temp_mech_strain [ 2 ] - temp_mech_stress [ 2 ] / ( m->giveE0() * m->giveAlpha() ) ) * L, 2 );
+        result [ 0 ] += pow( ( temp_strain [ 1 ] - temp_mech_stress [ 1 ] / ( m->giveE0() * m->giveAlpha() ) ) * L, 2 );
+        result [ 0 ] += pow( ( temp_strain [ 2 ] - temp_mech_stress [ 2 ] / ( m->giveE0() * m->giveAlpha() ) ) * L, 2 );
         result [ 0 ] = sqrt(result [ 0 ]);
         return true;
     } else if ( code.compare("crack_opening") == 0) {
         LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         result.resize(3);
         result [ 0 ] = temp_crackOpening;
-        result [ 1 ] = ( temp_mech_strain [ 1 ] - temp_mech_stress [ 1 ] / ( m->giveE0() * m->giveAlpha() ) ) * L;
-        result [ 2 ] = ( temp_mech_strain [ 2 ] - temp_mech_stress [ 2 ] / ( m->giveE0() * m->giveAlpha() ) ) * L;
-        return true;        
-    } else if ( code.compare("volumetric_strain") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = temp_volumetricStrain;
+        result [ 1 ] = ( temp_strain [ 1 ] - temp_mech_stress [ 1 ] / ( m->giveE0() * m->giveAlpha() ) ) * L;
+        result [ 2 ] = ( temp_strain [ 2 ] - temp_mech_stress [ 2 ] / ( m->giveE0() * m->giveAlpha() ) ) * L;
         return true;
     } else if ( code.rfind("virtual_damage") == 0 ) {
         result.resize(1);
@@ -437,36 +431,36 @@ Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
+void LDPMMaterialStatus :: computeStress( double timeStep) {
     
-    temp_strain = addEigenStrain(strain);
-    temp_mech_strain = temp_strain;
+    temp_strain = addEigenStrain(temp_strain_total);
+    temp_volumetricStrain = addEigenVolumetricStrain(temp_volumetricStrain_total);    
+    temp_strain = temp_strain;
 
     //compute differentiations
     deVdt = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
     deNdt = ( temp_strain [ 0 ] - updt_strain [ 0 ] ) / timeStep;
 
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
-    double epsNState = temp_mech_strain [ 0 ] * updt_mech_strain [ 0 ];  // gives information about the evolution of normal strains
+    double epsNState = temp_strain [ 0 ] * updt_strain [ 0 ];  // gives information about the evolution of normal strains
     if ( epsNState < 0 ) {  // change of sign of EpsN
-        temp_mech_stress = passZero(temp_mech_strain);
+        temp_mech_stress = passZero(temp_strain);
     } else {
-        //if ( min(temp_mech_strain [ 0 ], updt_mech_strain[0])<= 0 ) {  // normal evolution in compression
-        if ( temp_mech_strain [ 0 ] > 0 || updt_mech_strain [ 0 ] > 0 ) {     // normal evolution in tension       
-            temp_mech_stress = giveTension(temp_mech_strain, updt_mech_strain, updt_mech_stress);
+        //if ( min(temp_strain [ 0 ], updt_strain[0])<= 0 ) {  // normal evolution in compression
+        if ( temp_strain [ 0 ] > 0 || updt_strain [ 0 ] > 0 ) {     // normal evolution in tension       
+            temp_mech_stress = giveTension(temp_strain, updt_strain, updt_mech_stress);
         } else {
-            temp_mech_stress = giveCompression(temp_mech_strain, updt_mech_strain, updt_mech_stress);
+            temp_mech_stress = giveCompression(temp_strain, updt_strain, updt_mech_stress);
         }
     }
 
-    temp_crackOpening = max( temp_mech_strain [ 0 ] - ( temp_mech_stress [ 0 ] / m->giveE0() ), 0. ) * L;
+    temp_crackOpening = max( temp_strain [ 0 ] - ( temp_mech_stress [ 0 ] / m->giveE0() ), 0. ) * L;
 
     //giveVirtualDamage();
 
     //this is needed because of the rate form, some other physical processes might update the totoal stress
     temp_stress = temp_mech_stress;
     
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -474,14 +468,14 @@ void LDPMMaterialStatus :: giveVirtualDamage() {
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
     double temp_epsEff, temp_strEff;
 
-    double epsN = temp_mech_strain [ 0 ], strN = temp_mech_stress [ 0 ];
+    double epsN = temp_strain [ 0 ], strN = temp_mech_stress [ 0 ];
     double epsT, strT;
 
-    if ( temp_mech_strain.size() == 2 ) {     //2D
-        epsT = abs(temp_mech_strain [ 1 ]);
+    if ( temp_strain.size() == 2 ) {     //2D
+        epsT = abs(temp_strain [ 1 ]);
         strT = abs(temp_mech_stress [ 1 ]);
     } else {    //3D
-        epsT = sqrt(pow(temp_mech_strain [ 1 ], 2) + pow(temp_mech_strain [ 2 ], 2) );
+        epsT = sqrt(pow(temp_strain [ 1 ], 2) + pow(temp_strain [ 2 ], 2) );
         strT = sqrt(pow(temp_mech_stress [ 1 ], 2) + pow(temp_mech_stress [ 2 ], 2) );
     }
 
@@ -509,9 +503,8 @@ void LDPMMaterialStatus :: update() {
     maxEpsT = temp_maxEpsT;
 
     crackOpening = temp_crackOpening;
-    updt_mech_strain = temp_mech_strain;
-    updt_mech_stress = temp_mech_stress;
-    volumetricStrain = temp_volumetricStrain;
+    updt_strain = temp_strain;
+    updt_mech_stress = temp_mech_stress;  
 }
 
 //////////////////////////////////////////////////////////
@@ -558,11 +551,7 @@ std :: string LDPMMaterialStatus :: giveLineToSave() const {
 
 //////////////////////////////////////////////////////////
 void LDPMMaterialStatus :: setParameterValue(string code, double value) {
-    if ( code.compare("volumetric_strain") == 0 ) {
-        temp_volumetricStrain = value;     // volumetric change, cela stopa matice, proto *3
-    } else {
-        VectMechMaterialStatus :: setParameterValue(code, value);
-    }
+    VectMechMaterialStatus :: setParameterValue(code, value);
 }
 
 //////////////////////////////////////////////////////////
@@ -580,33 +569,32 @@ void LDPMMaterialStatus :: readFromLine(istringstream &iss) {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void LDPMMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
-    temp_strain = strain;
-    temp_mech_strain = addEigenStrain(strain);
+    temp_strain = addEigenStrain(temp_strain_total);
 
     // absolute prediction
-    // double strN_tmp = m->giveE0() * temp_mech_strain [ 0 ];
+    // double strN_tmp = m->giveE0() * temp_strain [ 0 ];
     // if ( temp_stress [ 0 ] < m->giveFc0() ) {
-    //     double eps1 = temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp;
-    //     double eps2 = temp_mech_strain [ 0 ] * ( strN_tmp - m->giveFc0() ) / strN_tmp;
+    //     double eps1 = temp_strain [ 0 ] * m->giveFc0() / strN_tmp;
+    //     double eps2 = temp_strain [ 0 ] * ( strN_tmp - m->giveFc0() ) / strN_tmp;
     //     temp_stress [ 0 ] = -eps1 *m->giveE0() - eps2 * m->giveEd();
     // } else {
     //     temp_stress [ 0 ] = strN_tmp;
     // }
-    // temp_stress [ 1 ] = m->giveEt() * temp_mech_strain [ 1 ];
+    // temp_stress [ 1 ] = m->giveEt() * temp_strain [ 1 ];
     // if ( strain.size() == 3 ) {
-    //     temp_stress [ 2 ] = m->giveEt() * temp_mech_strain [ 2 ];
+    //     temp_stress [ 2 ] = m->giveEt() * temp_strain [ 2 ];
     // }
 
     // incremental prediction
-    double strN_tmp = updt_mech_stress [ 0 ] + m->giveE0() * ( temp_mech_strain [ 0 ] - updt_mech_strain [ 0 ] );
+    double strN_tmp = updt_mech_stress [ 0 ] + m->giveE0() * ( temp_strain [ 0 ] - updt_strain [ 0 ] );
 
     // if ( strN_tmp < - m->giveFc0() ) { // Fc0 is positive
-    //     double eps1 = abs( temp_mech_strain [ 0 ] * m->giveFc0() / strN_tmp );
-    //     double eps2 = abs( temp_mech_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
+    //     double eps1 = abs( temp_strain [ 0 ] * m->giveFc0() / strN_tmp );
+    //     double eps2 = abs( temp_strain [ 0 ] * ( strN_tmp + m->giveFc0() ) / strN_tmp );
     //     temp_stress [ 0 ] = - eps1 * m->giveE0() - eps2 * m->giveEd();
     // } else {
     //     temp_stress [ 0 ] = strN_tmp;
@@ -614,14 +602,13 @@ Vector LDPMMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, d
 
     temp_mech_stress [ 0 ] = strN_tmp;
 
-    temp_mech_stress [ 1 ] = updt_mech_stress [ 1 ] + m->giveEt() * ( temp_mech_strain [ 1 ] - updt_mech_strain [ 1 ] );
-    if ( strain.size() == 3 ) {
-        temp_mech_stress [ 2 ] = updt_mech_stress [ 2 ] + m->giveEt() * ( temp_mech_strain [ 2 ] - updt_mech_strain [ 2 ] );
+    temp_mech_stress [ 1 ] = updt_mech_stress [ 1 ] + m->giveEt() * ( temp_strain [ 1 ] - updt_strain [ 1 ] );
+    if ( temp_strain.size() == 3 ) {
+        temp_mech_stress [ 2 ] = updt_mech_stress [ 2 ] + m->giveEt() * ( temp_strain [ 2 ] - updt_strain [ 2 ] );
     }
 
     //this is neede because of the rate form, some other physical processes might update the totoal stress
     temp_stress = temp_mech_stress;
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
@@ -803,17 +790,15 @@ void LDPMCoupledMaterialStatus :: updateStressByBiotEffect(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMCoupledMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    LDPMMaterialStatus :: giveStress(strain, timeStep);
+void LDPMCoupledMaterialStatus :: computeStress( double timeStep) {
+    LDPMMaterialStatus :: computeStress( timeStep);
     updateStressByBiotEffect(timeStep);
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////
-Vector LDPMCoupledMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
-    LDPMMaterialStatus :: giveStressWithFrozenIntVars(strain, timeStep);
+void LDPMCoupledMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+    LDPMMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
     updateStressByBiotEffect(timeStep);
-    return temp_stress;
 }
 
 //////////////////////////////////////////////////////////

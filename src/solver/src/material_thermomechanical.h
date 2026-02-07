@@ -13,15 +13,15 @@ class ThermoMechanicalMaterial;
 class ThermoMechanicalMaterialStatus : public CoupledMaterialStatus
 {
 protected:
-    double temperature;
+    double temperature, porePressure;
     void addTemperatureEffectToMechanics();
 public:
     ThermoMechanicalMaterialStatus(ThermoMechanicalMaterial *m, Element *e, unsigned ipnum);
     virtual ~ThermoMechanicalMaterialStatus() {};
     bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
 };
 
 //////////////////////////////////////////////////////////

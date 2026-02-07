@@ -14,10 +14,8 @@ protected:
     double Kt, Ks, L, nt;
     double RAND_H;
     double crackOpening, temp_crackOpening;
-    double temp_volumetricStrain, volumetricStrain, deVdt, deNdt;
+    double deVdt, deNdt;
     double virtual_damage;
-    Vector updt_mech_strain; //last strain without eigenstrain
-    Vector temp_mech_strain; //current strain without eigenstrain
     Vector updt_mech_stress; //last stress without other physical processes, solid stress
     Vector temp_mech_stress; //current stress without other physical processes, solid stress
 
@@ -33,8 +31,8 @@ public:
     virtual ~LDPMMaterialStatus() {};
     virtual void init();
     virtual bool giveValues(std :: string code, Vector &result) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
@@ -99,8 +97,8 @@ private:
 public:
     LDPMCoupledMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     ~LDPMCoupledMaterialStatus() {};
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();

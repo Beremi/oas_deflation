@@ -72,20 +72,20 @@ void ElementContainer :: readFromFile(const string filename, const unsigned ndim
                     LDPMTetra *newelem = new LDPMTetra(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LDPMTetraWithHeatConduction") == 0 ) {
-                    LDPMTetraWithHeatConduction *newelem = new LDPMTetraWithHeatConduction(ndim);
+                } else if ( elemType.compare("LDPMTetraWithTransportAndHeatConduction") == 0 ) {
+                    LDPMTetraWithTransportAndHeatConduction *newelem = new LDPMTetraWithTransportAndHeatConduction(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LDPMCoupledTranspTetra") == 0 ) {
-                    LDPMCoupledTranspTetra *newelem = new LDPMCoupledTranspTetra();
+                } else if ( elemType.compare("LDPMTetraWithTransport") == 0 ) {
+                    LDPMTetraWithTransport *newelem = new LDPMTetraWithTransport(ndim);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LDPMCoupledTransport") == 0 ) {
-                    LDPMCoupledTransport *newelem = new LDPMCoupledTransport(this);
+                } else if ( elemType.compare("LDPMEdgeTransport") == 0 ) {
+                    LDPMEdgeTransport *newelem = new LDPMEdgeTransport(this);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
-                } else if ( elemType.compare("LDPMCoupledTransportBoundary") == 0 ) {
-                    LDPMCoupledTransportBoundary *newelem = new LDPMCoupledTransportBoundary(this);
+                } else if ( elemType.compare("LDPMEdgeTransportBoundary") == 0 ) {
+                    LDPMEdgeTransportBoundary *newelem = new LDPMEdgeTransportBoundary(this);
                     newelem->readFromLine(iss, nodes, matrs);
                     elems.push_back(newelem);
                 } else if ( elemType.compare("CLSBoundaryElem") == 0 || elemType.compare("LTCBoundary") == 0 ) {
@@ -649,9 +649,14 @@ CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(Co
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
+
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
+
+    for ( auto &e : elems ) {
+        e->removeEigenStrain();
+    }
 
     materials->runPreparationForStressEvaluation(this);
 
@@ -666,11 +671,17 @@ void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &f
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
                 elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
             }
-            elForces = ( * e )->giveInternalForces(elDoFvalues, frozen, timeStep);
-            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                full_f [ elDoFs [ i ] ] += elForces [ i ];
-            }
+            ( * e )->evaluateStrains(elDoFvalues);
+            ( * e )->evaluateStresses(frozen, timeStep);
         }
+    }
+
+    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+        elForces = ( * e )->giveInternalForces(); 
+        elDoFs = ( * e )->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            full_f [ elDoFs [ i ] ] += elForces [ i ];
+        }  
     }
 }
 

@@ -56,8 +56,8 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     double isDamageCoupled() const { return coup_dam; }
     virtual std :: string giveLineToSave() const;
@@ -150,8 +150,8 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
@@ -216,11 +216,12 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
+    virtual void setTempStrain( Vector str);
 };
 
 
@@ -262,8 +263,8 @@ public:
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     // virtual MyVector giveStressWrong(const MyVector &strain);
     void calculateDamage(const Vector &strain);
     virtual bool giveValues(std :: string code, Vector &result) const;
@@ -323,8 +324,8 @@ public:
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
 };
 

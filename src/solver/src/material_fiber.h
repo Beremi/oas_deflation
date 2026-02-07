@@ -46,8 +46,8 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual Vector giveStress(const Vector &strain, double timeStep);
-    virtual Vector giveStressWithFrozenIntVars(const Vector &strain, double timeStep);
+    virtual void computeStress( double timeStep);
+    virtual void computeStressWithFrozenIntVars( double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
 };

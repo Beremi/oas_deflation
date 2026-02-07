@@ -39,12 +39,14 @@ class TranspVirtPolygonal : public TranspPolygonal
 protected:
     Matrix V1, V2, W1, W2;
     virtual void computeDampingMatrix();
+    Vector temp_DoFs;
 public:
     TranspVirtPolygonal(const unsigned dim);
     ~TranspVirtPolygonal() {};
     virtual void setIntegrationPointsAndWeights();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
-    virtual Vector giveInternalForces(const Vector &DoFs, bool frozen, double timeStep);
+    virtual Vector giveInternalForces();
+    virtual void evaluateStrains(const Vector &DoFs);    
 };
 
 

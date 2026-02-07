@@ -288,11 +288,15 @@ void TranspVirtPolygonal :: computeDampingMatrix() {
 }
 
 //////////////////////////////////////////////////////////
-Vector TranspVirtPolygonal :: giveInternalForces(const Vector &DoFs, bool frozen, double timeStep) {
-    ( void ) frozen;
-    ( void ) timeStep;
+Vector TranspVirtPolygonal :: giveInternalForces() {
     //return Element::giveInternalForces(DoFs, frozen); //incorrect integration
-    return giveStiffnessMatrix("elastic") * DoFs;  //using VEM integration, only elastic material!
+    return giveStiffnessMatrix("elastic") * temp_DoFs;  //using VEM integration, only elastic material!
+}
+
+//////////////////////////////////////////////////////////
+void TranspVirtPolygonal :: evaluateStrains(const Vector &DoFs) {
+    temp_DoFs = DoFs;
+    TranspPolygonal :: evaluateStrains(DoFs);
 }
 
 
