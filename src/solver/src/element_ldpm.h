@@ -34,7 +34,7 @@ protected:
     double volumetricStrain, eigen_volumetricStrain;
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
-    
+
     Vector nodeWeights; //relative volume weight of nodes (relative fraction of tetra volume)
     Vector edgeWeights; //relative length weights of nodes for each facet, only the first weight is saved, the other one is 1-first
 public:
@@ -69,8 +69,8 @@ public:
 
     double giveVolumetricStrain() const { return volumetricStrain; };
     bool isPointInside(Point *xn, const Point *x) const;
-    
-    virtual double giveAverageTemperature() const {return 0;};
+
+    virtual double giveAverageTemperature() const { return 0; };
 
     virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
@@ -102,18 +102,18 @@ class LDPMTetraWithTransportAndHeatConduction : public LDPMTetraWithTransport
 {
 protected:
     virtual void computeMassMatrix();
-    virtual void checkNodeType() const;    
+    virtual void checkNodeType() const;
     double averageTemperature;
 public:
     LDPMTetraWithTransportAndHeatConduction(unsigned ndim);
     ~LDPMTetraWithTransportAndHeatConduction() {};
     virtual void init();
     virtual Matrix giveBMatrix(unsigned k) const;
-    virtual Matrix giveHMatrix(const Point *x) const;    
+    virtual Matrix giveHMatrix(const Point *x) const;
     virtual void evaluateStrains(const Vector &DoFs);
     virtual Vector  giveMasterVariables(const Point *x, const Vector &DoFs) const;
     virtual void giveValues(std :: string code, Vector &result) const;
-    virtual double giveAverageTemperature() const {return averageTemperature;};    
+    virtual double giveAverageTemperature() const { return averageTemperature; };
 };
 
 
@@ -136,8 +136,8 @@ public:
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
     virtual void evaluateStrains(const Vector &DoFs);
-    LDPMTetra* giveTet(unsigned i) const {if (i==0) return tetA; else if (i==1)  return tetB; else return nullptr;};   
-    void setTet(unsigned i, LDPMTetra* tet) {if (i==0) tetA=tet; else if (i==1)  tetB=tet;};   
+    LDPMTetra * giveTet(unsigned i) const { if ( i == 0 ) { return tetA; } else if ( i == 1 ) { return tetB; } else { return nullptr; } };
+    void setTet(unsigned i, LDPMTetra *tet) { if ( i == 0 ) { tetA = tet; } else if ( i == 1 ) { tetB = tet; } };
 };
 
 //////////////////////////////////////////////////////////

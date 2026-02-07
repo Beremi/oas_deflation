@@ -37,8 +37,8 @@ void Simplex :: init(unsigned ndim) {
         valid = true;
 
         //calculate DoF array
-        DoFs.resize(ndim * nodes.size() );
-        DoFweights.resize(ndim * nodes.size() );
+        DoFs.resize( ndim * nodes.size() );
+        DoFweights.resize( ndim * nodes.size() );
         unsigned initDoF;
         unsigned pos = 0;
         Point volumeChangeWeights;
@@ -50,7 +50,7 @@ void Simplex :: init(unsigned ndim) {
             k = ( i + 2 ) % ( ndim + 1 );
             l = ( i + 3 ) % ( ndim + 1 );
             averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-            volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross(nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
+            volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
             volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
             sign = volume / abs(volume);
             initDoF = nodes [ i ]->giveStartingDoF();

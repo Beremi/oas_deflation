@@ -60,7 +60,7 @@ void SteadyStateLinearSolver :: computeKeff() {
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Keff);
     }
-    factorizeLinearSystem(); 
+    factorizeLinearSystem();
 }
 
 //////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
     string param, line;
     bool bdt, bttime;
     bdt = bttime = false;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -141,7 +141,6 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: solve() {
-
     nodes->addRHS_nodalLoad(load, time);  //add nodal load
     nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
     updateFieldVariables();      //with ddr=0
@@ -176,7 +175,7 @@ void SteadyStateLinearSolver :: solve() {
 
 //////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
-    if ( enforce || (iteration==0 && (stiffnessMatrixStepUpdate == 0 || (stiffnessMatrixStepUpdate > 0 && step % stiffnessMatrixStepUpdate == 0) )) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % stiffnessMatrixIterUpdate == 0 ) || ( stiffnessMatrixCumulIterUpdate > 0 && cumul_iteration % stiffnessMatrixCumulIterUpdate == 0 ) ) {
+    if ( enforce || ( iteration == 0 && ( stiffnessMatrixStepUpdate == 0 || ( stiffnessMatrixStepUpdate > 0 && step % stiffnessMatrixStepUpdate == 0 ) ) ) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % stiffnessMatrixIterUpdate == 0 ) || ( stiffnessMatrixCumulIterUpdate > 0 && cumul_iteration % stiffnessMatrixCumulIterUpdate == 0 ) ) {
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
             elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
         } else {
@@ -284,17 +283,17 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     critical_step_decrease = 0.5;
     stiffnessMatrixIterUpdate = -1;
     stiffnessMatrixCumulIterUpdate = -1;
-    stiffnessMatrixStepUpdate = -1;    
+    stiffnessMatrixStepUpdate = -1;
 
     it = 0;
     restarts = 0;
     cumul_it = 0;
     stiffMatType = "secant";
-    
+
     //eigen error fields
     eigen_trial_rPF = Vector :: Zero(numPhysicalFields);
     eigen_f_extPF = Vector :: Zero(numPhysicalFields);
-    eigen_WextPF = Vector :: Zero(numPhysicalFields);    
+    eigen_WextPF = Vector :: Zero(numPhysicalFields);
 }
 
 //////////////////////////////////////////////////////////
@@ -323,7 +322,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
-  
+
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
 
@@ -367,10 +366,10 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 stiffnessMatrixIterUpdate = int( valueIN );
             } else if ( param.compare("stiffness_matrix_cumul_iter_update") == 0  ) {
                 iss >> valueIN;
-                stiffnessMatrixCumulIterUpdate = int( valueIN );                
+                stiffnessMatrixCumulIterUpdate = int( valueIN );
             } else if ( param.compare("stiffness_matrix_step_update") == 0  ) {
                 iss >> valueIN;
-                stiffnessMatrixStepUpdate = int( valueIN );                
+                stiffnessMatrixStepUpdate = int( valueIN );
             } else if ( param.compare("limit_tolerance") == 0 ) {
                 iss >> valueIN;
                 limitEneErr = limitResErr = limitDisErr = valueIN;
@@ -531,15 +530,15 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
     }
-    
+
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
-        trial_rPF [ i ] += eigen_trial_rPF[ i ] + 2*sqrt(eigen_trial_rPF[ i ]*trial_rPF [ i ]);
-        f_extPF [ i ] += eigen_f_extPF[ i ] + 2*sqrt(eigen_f_extPF[ i ]*f_extPF [ i ]);      
+        trial_rPF [ i ] += eigen_trial_rPF [ i ] + 2 * sqrt(eigen_trial_rPF [ i ] * trial_rPF [ i ]);
+        f_extPF [ i ] += eigen_f_extPF [ i ] + 2 * sqrt(eigen_f_extPF [ i ] * f_extPF [ i ]);
 
-        resErr += residualPF [ i ] / max(max(max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
+        resErr += residualPF [ i ] / max(max( max(f_extPF [ i ], f_intPF [ i ]), max(f_damPF [ i ], f_accPF [ i ]) ), EPS2 [ i ]);
         disErr += full_ddrPF [ i ] / max(trial_rPF [ i ], EPS2 [ i ]);
-        eneErr += abs(energyPF [ i ]) / max(max( max( abs(W_ext [ i ]) + eigen_WextPF[ i ], abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
+        eneErr += abs(energyPF [ i ]) / max(max(max(abs(W_ext [ i ]) + eigen_WextPF [ i ], abs(W_int [ i ]) ), abs(W_kin [ i ]) ), EPS2 [ i ]);
         //cout << energyPF [ i ] << " "  << W_ext [ i ] << " "  << W_int [ i ] << " "  << EPS2 << endl;
     }
     resErr = sqrt(resErr);
@@ -548,30 +547,30 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: setEigenErrorValue_rPF(unsigned pf, double value){
-    if(pf>=numPhysicalFields){
-        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+void SteadyStateNonLinearSolver :: setEigenErrorValue_rPF(unsigned pf, double value) {
+    if ( pf >= numPhysicalFields ) {
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl;
         exit(1);
     }
-    eigen_trial_rPF[pf] = value;
-}    
-    
+    eigen_trial_rPF [ pf ] = value;
+}
+
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: setEigenErrorValue_fext(unsigned pf, double value){
-    if(pf>=numPhysicalFields){
-        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+void SteadyStateNonLinearSolver :: setEigenErrorValue_fext(unsigned pf, double value) {
+    if ( pf >= numPhysicalFields ) {
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl;
         exit(1);
-    }    
-    eigen_f_extPF[pf] = value;    
-}    
-    
+    }
+    eigen_f_extPF [ pf ] = value;
+}
+
 //////////////////////////////////////////////////////////
-void SteadyStateNonLinearSolver :: setEigenErrorValue_Wext(unsigned pf, double value){
-    if(pf>=numPhysicalFields){
-        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl; 
+void SteadyStateNonLinearSolver :: setEigenErrorValue_Wext(unsigned pf, double value) {
+    if ( pf >= numPhysicalFields ) {
+        cout << "SteadyStateNonLinearSolver Error: value " << pf << " larger than number of physical fields " << numPhysicalFields << endl;
         exit(1);
-    }    
-    eigen_WextPF[pf] = value;    
+    }
+    eigen_WextPF [ pf ] = value;
 }
 
 //////////////////////////////////////////////////////////
@@ -708,7 +707,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( (step>0 || it>0) && updateSystemMatrices(it, cumul_it, false) ) {
+            if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
             nodes->giveReducedForceArray(residuals, f);
@@ -823,7 +822,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
 
             it++;
-            cumul_it++;            
+            cumul_it++;
             if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it >= minIt ) {
                 converged = true;
             } else {
@@ -1020,7 +1019,7 @@ TransientLinearTransportSolver :: TransientLinearTransportSolver() {
     setDefaultIntegrationParams();
     check_time_integr_params = true;
     dampingMatrixIterUpdate = -1;
-    dampingMatrixCumulIterUpdate = -1;    
+    dampingMatrixCumulIterUpdate = -1;
     dampingMatrixStepUpdate = -1;
     stiffMatType = "elastic";
 }
@@ -1129,7 +1128,7 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
@@ -1186,7 +1185,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
     double num;
     int valueIN;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1227,10 +1226,10 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
                 dampingMatrixIterUpdate = int( valueIN );
             } else if ( param.compare("damping_matrix_cumul_iter_update") == 0  ) {
                 iss >> valueIN;
-                dampingMatrixCumulIterUpdate = int( valueIN );                
+                dampingMatrixCumulIterUpdate = int( valueIN );
             } else if ( param.compare("damping_matrix_step_update") == 0  ) {
                 iss >> valueIN;
-                dampingMatrixStepUpdate = int( valueIN );                
+                dampingMatrixStepUpdate = int( valueIN );
             }
         }
         inputfile.close();
@@ -1242,7 +1241,7 @@ Solver *TransientLinearTransportSolver :: readFromFile(const string filename) {
 bool TransientLinearTransportSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
     bool updated0 = SteadyStateNonLinearSolver :: updateSystemMatrices(iteration, cumul_iteration, enforce);
     bool updated1 = false;
-    if ( enforce || (iteration==0 && (dampingMatrixStepUpdate == 0 || (dampingMatrixStepUpdate > 0 && step % dampingMatrixStepUpdate == 0) )) || dampingMatrixIterUpdate == 0 || ( dampingMatrixIterUpdate > 0 && iteration % dampingMatrixIterUpdate == 0 ) || ( dampingMatrixCumulIterUpdate > 0 && cumul_iteration % dampingMatrixCumulIterUpdate == 0 )) {
+    if ( enforce || ( iteration == 0 && ( dampingMatrixStepUpdate == 0 || ( dampingMatrixStepUpdate > 0 && step % dampingMatrixStepUpdate == 0 ) ) ) || dampingMatrixIterUpdate == 0 || ( dampingMatrixIterUpdate > 0 && iteration % dampingMatrixIterUpdate == 0 ) || ( dampingMatrixCumulIterUpdate > 0 && cumul_iteration % dampingMatrixCumulIterUpdate == 0 ) ) {
         elems->updateDampingMatrix(C);
         updated1 = true;
     }
@@ -1309,7 +1308,7 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
 
     int valueIN;
     string param, line;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {
@@ -1324,10 +1323,10 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
                 massMatrixIterUpdate = int( valueIN );
             } else if ( param.compare("mass_matrix_cumul_iter_update") == 0  ) {
                 iss >> valueIN;
-                massMatrixCumulIterUpdate = int( valueIN );                
+                massMatrixCumulIterUpdate = int( valueIN );
             } else if ( param.compare("mass_matrix_step_update") == 0  ) {
                 iss >> valueIN;
-                massMatrixStepUpdate = int( valueIN );  
+                massMatrixStepUpdate = int( valueIN );
             }
         }
         inputfile.close();
@@ -1501,7 +1500,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces(r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1529,7 +1528,7 @@ void TransientLinearMechanicalSolver :: runAfterEachStep() {
 bool TransientLinearMechanicalSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
     bool updated0 = TransientLinearTransportSolver :: updateSystemMatrices(iteration, cumul_iteration, enforce);
     bool updated1 = false;
-    if ( enforce || (iteration==0 && (massMatrixStepUpdate == 0 || (massMatrixStepUpdate > 0 && step % massMatrixStepUpdate == 0) ))  || massMatrixIterUpdate == 0 || ( massMatrixIterUpdate > 0 && iteration % massMatrixIterUpdate == 0 ) || ( massMatrixCumulIterUpdate > 0 && cumul_iteration % massMatrixCumulIterUpdate == 0 ) ) {
+    if ( enforce || ( iteration == 0 && ( massMatrixStepUpdate == 0 || ( massMatrixStepUpdate > 0 && step % massMatrixStepUpdate == 0 ) ) )  || massMatrixIterUpdate == 0 || ( massMatrixIterUpdate > 0 && iteration % massMatrixIterUpdate == 0 ) || ( massMatrixCumulIterUpdate > 0 && cumul_iteration % massMatrixCumulIterUpdate == 0 ) ) {
         elems->updateMassMatrix(M, lumpMassM);
         if ( lumpMassM ) {
             elems->replaceTrueMassMatricesByLumpedOnes();

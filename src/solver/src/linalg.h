@@ -22,13 +22,13 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/SparseCore>
 #ifdef SUPERLU_FOUND
-    #include <Eigen/SuperLUSupport>
+ #include <Eigen/SuperLUSupport>
 #endif
 #ifdef PARDISO_FOUND
-    #include <Eigen/PardisoSupport>
+ #include <Eigen/PardisoSupport>
 #endif
 #ifdef CHOLMOD_FOUND
-    #include <Eigen/CholmodSupport>
+ #include <Eigen/CholmodSupport>
 #endif
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/SymGEigsSolver.h>
@@ -58,7 +58,7 @@ protected:
 public:
     LinAlgSolver() {};
     virtual ~LinAlgSolver() {};
-    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A){ (void) A; return false; };
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A) { ( void ) A; return false; };
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
     virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
     std :: string giveName()const { return name; };

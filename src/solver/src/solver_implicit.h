@@ -14,7 +14,7 @@ protected:
     std :: string symsolver_type = "EigenConj";
 
     int stiffnessMatrixIterUpdate; //update matrices every X iteration
-    int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively 
+    int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
     int stiffnessMatrixStepUpdate; //update matrices every X step
     std :: string stiffMatType, stiffMatTypeFirstIT;
 
@@ -93,7 +93,7 @@ protected:
     bool check_time_integr_params;
     int dampingMatrixIterUpdate; //update matrices every X iteration
     int dampingMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
-    int dampingMatrixStepUpdate; //update matrices every X step    
+    int dampingMatrixStepUpdate; //update matrices every X step
 
     virtual void applySpectralRadius(double rhoinfty);
     virtual void checkIntegrationParams();

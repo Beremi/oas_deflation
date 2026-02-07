@@ -52,12 +52,12 @@ Matrix CoulombFrictionMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterialStatus :: computeStress( double timeStep) {
-    CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
+void CoulombFrictionMaterialStatus :: computeStress(double timeStep) {
+    CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     CoulombFrictionMaterial *m = static_cast< CoulombFrictionMaterial * >( mat );
     RigidBodyBoundary *rb = static_cast< RigidBodyBoundary * >( element );

@@ -31,8 +31,8 @@ public:
     virtual ~LDPMMaterialStatus() {};
     virtual void init();
     virtual bool giveValues(std :: string code, Vector &result) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
@@ -42,7 +42,7 @@ public:
     virtual bool isElastic(const bool &now = false) const;
     virtual void initializeStressAndStrainVector(unsigned num);
     double giveSigmaBCDiff(double relt, double *transSigmaBC);
-    virtual double giveNormalCrackOpening()const {return temp_crackOpening;};     
+    virtual double giveNormalCrackOpening()const { return temp_crackOpening; };
 };
 
 //////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ public:
     double giveMuinf() { return muinf; }
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
-    virtual bool requestTetrahedralBackgroundMesh()const{return true;} //for volumetric strain    
+    virtual bool requestTetrahedralBackgroundMesh()const { return true; } //for volumetric strain
 };
 
 //////////////////////////////////////////////////////////
@@ -97,8 +97,8 @@ private:
 public:
     LDPMCoupledMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     ~LDPMCoupledMaterialStatus() {};
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();

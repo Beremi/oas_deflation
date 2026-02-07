@@ -31,17 +31,17 @@ public:
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual std :: string giveLineToSave() const;
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value);
     virtual double giveEnergyDissipationIncrement() const;
-    virtual void computeEnergyDensities();    
+    virtual void computeEnergyDensities();
     Vector giveCrackOpeningVector() const;
-    virtual double giveNormalCrackOpening()const {return temp_crackOpening;};
+    virtual double giveNormalCrackOpening()const { return temp_crackOpening; };
 };
 
 //////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ public:
     double giveDamageResiduum() { return damage_residuum; }
     double giveStressResiduum() { return ft * stress_residuum_fraction; }
     virtual double giveAlphaForDamage() const { return VectMechMaterial :: giveAlpha(); }
-    virtual bool requestTetrahedralBackgroundMesh()const{return (lam0>0);} //for volumetric strain
+    virtual bool requestTetrahedralBackgroundMesh()const { return ( lam0 > 0 ); } //for volumetric strain
     virtual void init(MaterialContainer *matcont);
 };
 
@@ -87,8 +87,8 @@ public:
     CSLMaterialWithTensorialStressUpdateStatus(CSLMaterialWithTensorialStressUpdate *m, Element *e, unsigned ipnum);
     virtual ~CSLMaterialWithTensorialStressUpdateStatus() {};
     virtual bool giveValues(std :: string code, Vector &result) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
 private:
     Vector giveEigenStrainFromTensorialStress() const;
 };
@@ -126,8 +126,8 @@ private:
 public:
     CoupledCSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum);
     ~CoupledCSLMaterialStatus() {};
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void init();
     virtual void update();

@@ -80,21 +80,21 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-void BrittleMaterialStatus :: computeStress( double timeStep) {
+void BrittleMaterialStatus :: computeStress(double timeStep) {
     computeDamage(temp_strain);
     if ( damage ) {
         Matrix stiff = giveStiffnessTensor("secant");
         temp_stress =  stiff * temp_strain;
     } else {
-        VectMechMaterialStatus :: computeStress( timeStep);
+        VectMechMaterialStatus :: computeStress(timeStep);
     }
 }
 
 
 //////////////////////////////////////////////////////////
-void BrittleMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void BrittleMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_stress = Vector::Zero(temp_strain.size());  //TOTO: FIX
+    temp_stress = Vector :: Zero( temp_strain.size() );  //TOTO: FIX
 }
 
 //////////////////////////////////////////////////////////
@@ -184,10 +184,10 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-void ContactMaterialStatus :: computeStress( double timeStep) {
+void ContactMaterialStatus :: computeStress(double timeStep) {
     ( void ) timeStep;
     temp_normal_strain = temp_strain [ 0 ];
-    temp_stress = Vector :: Zero(temp_strain.size() );
+    temp_stress = Vector :: Zero( temp_strain.size() );
     if ( temp_normal_strain < 0 ) {
         ContactMaterial *m = static_cast< ContactMaterial * >( mat );
         temp_stress [ 0 ] = temp_strain [ 0 ] * m->giveE0();
@@ -200,7 +200,7 @@ void ContactMaterialStatus :: computeStress( double timeStep) {
 
 
 //////////////////////////////////////////////////////////
-void ContactMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void ContactMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_stress *= 0;
 }

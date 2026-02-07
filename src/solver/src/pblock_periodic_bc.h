@@ -36,11 +36,11 @@ public:
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
     double giveVolume() const;
-    std :: vector< double > giveSize() const {return PUCsize;};
+    std :: vector< double >giveSize() const { return PUCsize; };
     virtual void calculateVolume(ElementContainer *elems);
     std :: vector< unsigned >giveMasters() const { return masters; };
     std :: vector< unsigned >giveSlaves() const { return slaves; };
-    void setEigenStrain(Vector &eigstr); 
+    void setEigenStrain(Vector &eigstr);
 };
 
 //////////////////////////////////////////////////////////

@@ -37,7 +37,7 @@ public:
     MLMechElement(unsigned dim);
     virtual ~MLMechElement() {};
     virtual void evaluateStrains(const Vector &DoFs);
-    virtual void evaluateStresses(bool frozen, double timeStep);       
+    virtual void evaluateStresses(bool frozen, double timeStep);
     virtual void readFromLine(std :: istringstream &iss, NodeContainer *fullnodes, MaterialContainer *fullmatrs);
     virtual void init();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;

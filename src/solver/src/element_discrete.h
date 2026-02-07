@@ -55,7 +55,7 @@ public:
     Point giveT1() const { return t1; };
     Point giveT2() const { return t2; };
     virtual double giveVolumeAssociatedWithNode(unsigned nodenum) const;
-    virtual void evaluateStrains(const Vector &DoFs);    
+    virtual void evaluateStrains(const Vector &DoFs);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Vector giveInternalForces();
     virtual Vector integrateLoad(BodyLoad *vl, double time) const;
@@ -120,7 +120,7 @@ class RigidBodyBoundary : public RigidBodyContact
 protected:
     virtual void checkNodeType() const;
     bool active;
-    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
 public:
     RigidBodyBoundary(const unsigned dim);
     ~RigidBodyBoundary() {};
@@ -143,8 +143,8 @@ class RigidBodyBoundaryCoupled : public RigidBodyContactCoupled
 {
 protected:
     virtual void checkNodeType() const;
-    virtual void computeMassMatrix() { massM = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
-    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3 ); };
+    virtual void computeMassMatrix() { massM = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
+    virtual void computeDampingMatrix() { dampC = Matrix :: Zero( ( this->ndim - 1 ) * 3, ( this->ndim - 1 ) * 3); };
 public:
     RigidBodyBoundaryCoupled(const unsigned dim);
     ~RigidBodyBoundaryCoupled() {};

@@ -55,7 +55,7 @@ protected:
     bool elastic_sol_is_Voigt;  //distinguish whether the solution in initial precomputed state is really solved elastically or using Voigt constraint
     bool start_from_precomputed;
 
-    std :: vector< bool >is_elem_discrete;    
+    std :: vector< bool >is_elem_discrete;
     bool add_macro_components;
 
 public:
@@ -73,7 +73,7 @@ public:
     void setStartFromPrecomputed(bool s) { start_from_precomputed = s; };
     void setElemDiscreteness(std :: vector< bool >is_discrete) { is_elem_discrete = is_discrete; };
     std :: vector< bool > *giveElemDiscreteness() { return & is_elem_discrete; };
-    bool addMacroComponents() { return add_macro_components; };    
+    bool addMacroComponents() { return add_macro_components; };
 };
 
 
@@ -96,7 +96,7 @@ protected:
     virtual void generateVolumetricAverageBC();
     virtual void applyEigenStrains();
     virtual void collectStresses();
-    virtual void computeStressPrecomputed( double timeStep);
+    virtual void computeStressPrecomputed(double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
     Matrix giveStiffnessTensorLocalExact(std :: string type);
     virtual Matrix giveStiffnessTensorPrecomputedLocal(std :: string type) const;
@@ -110,8 +110,8 @@ public:
     DiscreteTransportRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteTransportRVEMaterialStatus() {};
     virtual void init();
-    virtual void computeStress( double timeStep);//terminology from mechanics, it returns flux
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep); //terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
     virtual void update();
@@ -162,7 +162,7 @@ protected:
     std :: vector< std :: vector< Matrix > >calculateProjectors(const Point centroid);
     std :: vector< Matrix >calculateVectProjector(const Element *e, const Point centroid);
     std :: vector< Matrix >calculateTensProjector(const Element *e, const Point centroid);
-    virtual void computeStressPrecomputed( double timeStep);
+    virtual void computeStressPrecomputed(double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
 
     virtual void transformStrain();
@@ -175,11 +175,11 @@ public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
     virtual void init();
-    virtual void computeStress( double timeStep);//terminology from mechanics, it returns flux
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep); //terminology from mechanics, it returns flux
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;
-    virtual Matrix giveInertiaTensor() const;  
+    virtual Matrix giveInertiaTensor() const;
     virtual double giveCrackVolume() const;
     void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; };
@@ -226,8 +226,8 @@ public:
     Matrix matrixToCauchy(Matrix matrix);
     bool isConvertingFromCauchy() const { return convert_from_cauchy; };
     void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
-    bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };   
-    unsigned giveExternalStrainSize() const;    
+    bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };
+    unsigned giveExternalStrainSize() const;
 };
 
 //////////////////////////////////////////////////////////
@@ -257,8 +257,8 @@ public:
     virtual void init();
     virtual void update();
 
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual Matrix giveDampingTensor() const;

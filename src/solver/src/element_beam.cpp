@@ -39,7 +39,7 @@ TimoshenkoBeam3D :: TimoshenkoBeam3D(Node *a, Node *b, Material *m, CrossSection
 void TimoshenkoBeam3D :: setIntegrationPointsAndWeights() {
     IntegrLine *it = static_cast< IntegrLine * >( inttype );
     it->setNumIP(3);
-    stats.resize( inttype->giveNumIP() );
+    stats.resize(inttype->giveNumIP() );
     for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
         stats [ k ] = mat->giveNewMaterialStatus(this, k);
         BeamMaterialStatus *tm = dynamic_cast< BeamMaterialStatus * >( stats [ k ] );
@@ -53,7 +53,7 @@ void TimoshenkoBeam3D :: setIntegrationPointsAndWeights() {
 
 /////////////////////////////////////////////////////////
 void TimoshenkoBeam3D :: computeDampingMatrix() {
-    dampC = Matrix :: Zero( DoFids.size(), DoFids.size() );
+    dampC = Matrix :: Zero(DoFids.size(), DoFids.size() );
 }
 
 /////////////////////////////////////////////////////////
@@ -246,22 +246,22 @@ void TimoshenkoBeam3D :: giveValues(std :: string code, Vector &result) const {
         for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
             IF += stats [ k ]->giveTempStress() * inttype->giveIPWeight(k);
         }
-        result.resize( IF.size() );
+        result.resize(IF.size() );
         for (unsigned i = 0; i < IF.size(); i++) {
             result [ i ] = IF [ i ] / length;
         }
     } else if ( code.compare("normal_stress") == 0 ) {
         result.resize(1);
         for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
-            result[0] += stats [ k ]->giveTempStress()[0] * inttype->giveIPWeight(k);
-        }        
-        result[0] /= CS->giveArea()*length; 
+            result [ 0 ] += stats [ k ]->giveTempStress() [ 0 ] * inttype->giveIPWeight(k);
+        }
+        result [ 0 ] /= CS->giveArea() * length;
     } else if ( code.compare("normal_strain") == 0 ) {
         result.resize(1);
         for ( unsigned k = 0; k < inttype->giveNumIP(); k++ ) {
-            result[0] += stats [ k ]->giveTempStrain()[0] * inttype->giveIPWeight(k);
-        }        
-        result[0] /= length; 
+            result [ 0 ] += stats [ k ]->giveTempStrain() [ 0 ] * inttype->giveIPWeight(k);
+        }
+        result [ 0 ] /= length;
     } else if ( code.compare("diameter") == 0 ) {
         CircularCrossSection *circ = dynamic_cast< CircularCrossSection * >( CS );
         if ( circ ) {
@@ -275,10 +275,10 @@ void TimoshenkoBeam3D :: giveValues(std :: string code, Vector &result) const {
 Vector TimoshenkoBeam3D :: integrateLoad(BodyLoad *vl, double time) const {
     ( void ) vl;
     ( void ) time;
-    return Vector :: Zero(DoFids.size() );
+    return Vector :: Zero( DoFids.size() );
 }
 
 /////////////////////////////////////////////////////////
 Vector TimoshenkoBeam3D :: integrateInternalSources() {
-    return Vector :: Zero(DoFids.size() );
+    return Vector :: Zero( DoFids.size() );
 }

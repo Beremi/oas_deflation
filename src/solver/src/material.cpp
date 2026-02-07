@@ -11,16 +11,17 @@ using namespace std;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 MaterialStatus :: MaterialStatus(Material *m, Element *e, unsigned ipnum) {
-    name = "basic mat. status"; 
-    mat = m; element = e; 
-    idx = ipnum; 
-    totalEnergyDensity = 0; 
-    strainEnergyDensity = 0; 
-    dissipEnergyDensity = 0; 
+    name = "basic mat. status";
+    mat = m;
+    element = e;
+    idx = ipnum;
+    totalEnergyDensity = 0;
+    strainEnergyDensity = 0;
+    dissipEnergyDensity = 0;
     updt_dissip_energy = 0;
-  }
-    
-//////////////////////////////////////////////////////////    
+}
+
+//////////////////////////////////////////////////////////
 MaterialStatus :: ~MaterialStatus() {
     for ( vector< MaterialStatus * > :: iterator n = matStatComponents.begin(); n != matStatComponents.end(); ++n ) {
         if ( * n != nullptr ) {
@@ -49,22 +50,22 @@ double MaterialStatus :: giveEnergyDissipationIncrement() const {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: computeEnergyDensities(){
+void MaterialStatus :: computeEnergyDensities() {
     totalEnergyDensity += ( ( temp_stress + updt_stress ).dot(temp_strain - updt_strain) ) / 2.;
-    dissipEnergyDensity = updt_dissip_energy + giveEnergyDissipationIncrement();    
+    dissipEnergyDensity = updt_dissip_energy + giveEnergyDissipationIncrement();
     strainEnergyDensity = totalEnergyDensity - dissipEnergyDensity;
     //unsigned ndim = element->giveDimension();
     //totalEnergyDensity *= ndim;     //TODO: fix, this works only for discrete material
-    //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material    
+    //strainEnergyDensity *= ndim;    //TODO: fix, this works only for discrete material
 }
 
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: update() { 
-    computeEnergyDensities(); 
+void MaterialStatus :: update() {
+    computeEnergyDensities();
     updt_strain = temp_strain;
-    updt_strain_total = temp_strain_total;    
-    updt_stress = temp_stress;  
+    updt_strain_total = temp_strain_total;
+    updt_stress = temp_stress;
     updt_dissip_energy = dissipEnergyDensity;
 }
 
@@ -111,13 +112,13 @@ void MaterialStatus :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
     if ( code.compare("stress") == 0 || code.compare("stresses") == 0 ) {
-        result.resize( temp_strain.size() );
+        result.resize(temp_strain.size() );
         for ( unsigned i = 0; i < result.size(); i++ ) {
             result [ i ] = temp_stress [ i ];
         }
         return true;
     } else if ( code.compare("strain") == 0  || code.compare("strains") == 0 ) {
-        result.resize( temp_strain.size() );
+        result.resize(temp_strain.size() );
         for ( unsigned i = 0; i < result.size(); i++ ) {
             result [ i ] = temp_strain [ i ];
         }
@@ -146,8 +147,8 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    if (num!=giveMaterial()->giveStrainSize()) {
-        cerr <<"Error in " << giveName() << ": strain size does not match" << endl;
+    if ( num != giveMaterial()->giveStrainSize() ) {
+        cerr << "Error in " << giveName() << ": strain size does not match" << endl;
         exit(1);
     }
     temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(num);
@@ -178,7 +179,7 @@ CoupledMaterialStatus :: CoupledMaterialStatus(Material *m, Element *e, unsigned
 
 
     vector< Material * >mats = cm->giveMaterials();
-    stats.resize(mats.size() );
+    stats.resize( mats.size() );
     for ( unsigned i = 0; i < mats.size(); i++ ) {
         stats [ i ] = mats [ i ]->giveNewMaterialStatus(e, ipnum);
     }
@@ -198,7 +199,7 @@ CoupledMaterialStatus :: ~CoupledMaterialStatus() {
 void CoupledMaterialStatus :: init() {
     for ( auto &s:stats ) {
         s->init();
-    }    
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -237,7 +238,7 @@ void CoupledMaterialStatus :: computeStress(double timeStep) {
     unsigned h, i;
     for ( auto &s:stats ) {
         s->computeStress(timeStep);
-        mstress = s->giveTempStress(); 
+        mstress = s->giveTempStress();
         h = mstress.size();
         for ( i = 0; i < h; i++ ) {
             temp_stress [ k + i ] = mstress [ i ];
@@ -254,8 +255,8 @@ void CoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     unsigned h, i;
     for ( auto &s:stats ) {
         s->computeStressWithFrozenIntVars(timeStep);
-        mstress = s->giveTempStress(); 
-        h = mstress.size();        
+        mstress = s->giveTempStress();
+        h = mstress.size();
         for ( i = 0; i < h; i++ ) {
             temp_stress [ k + i ] = mstress [ i ];
         }
@@ -265,7 +266,7 @@ void CoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
 
 
 //////////////////////////////////////////////////////////
-void CoupledMaterialStatus :: setTotalTempStrain(Vector str){
+void CoupledMaterialStatus :: setTotalTempStrain(Vector str) {
     unsigned k = 0;
     unsigned h, i;
     Vector mstrain;
@@ -280,7 +281,7 @@ void CoupledMaterialStatus :: setTotalTempStrain(Vector str){
     }
     temp_strain_total = str;
 }
-    
+
 //////////////////////////////////////////////////////////
 bool CoupledMaterialStatus :: giveValues(std :: string code, Vector &result) const {
     bool found = 0;
@@ -296,66 +297,74 @@ bool CoupledMaterialStatus :: giveValues(std :: string code, Vector &result) con
 //////////////////////////////////////////////////////////
 void CoupledMaterialStatus :: update() {
     for ( auto &s:stats ) {
-        s->update();      
+        s->update();
     }
     MaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus* CoupledMaterialStatus :: giveMechanicalMaterialStatus(){
+MaterialStatus * CoupledMaterialStatus :: giveMechanicalMaterialStatus() {
     for ( auto &s:stats ) {
-        if(s->giveMechanicalMaterialStatus()) return s;
-    }    
-    return nullptr; 
-}
-
-//////////////////////////////////////////////////////////
-MaterialStatus* CoupledMaterialStatus :: giveTransportMaterialStatus(){
-    for ( auto &s:stats ) {
-        if(s->giveTransportMaterialStatus()) return s;
-    }  
+        if ( s->giveMechanicalMaterialStatus() ) {
+            return s;
+        }
+    }
     return nullptr;
 }
 
 //////////////////////////////////////////////////////////
-MaterialStatus* CoupledMaterialStatus :: giveHeatConductionMaterialStatus(){
+MaterialStatus * CoupledMaterialStatus :: giveTransportMaterialStatus() {
     for ( auto &s:stats ) {
-        if(s->giveHeatConductionMaterialStatus()) return s;
-    }  
+        if ( s->giveTransportMaterialStatus() ) {
+            return s;
+        }
+    }
+    return nullptr;
+}
+
+//////////////////////////////////////////////////////////
+MaterialStatus * CoupledMaterialStatus :: giveHeatConductionMaterialStatus() {
+    for ( auto &s:stats ) {
+        if ( s->giveHeatConductionMaterialStatus() ) {
+            return s;
+        }
+    }
     return nullptr;
 }
 
 //////////////////////////////////////////////////////////
 void CoupledMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    MaterialStatus::initializeStressAndStrainVector(num);    
+    MaterialStatus :: initializeStressAndStrainVector(num);
     for ( auto &s:stats ) {
-        s->initializeStressAndStrainVector(s->giveMaterial()->giveStrainSize());
-    } 
+        s->initializeStressAndStrainVector( s->giveMaterial()->giveStrainSize() );
+    }
 }
 
 //////////////////////////////////////////////////////////
-void CoupledMaterialStatus :: addToEigenVolumetricStrain(double x){
-  MaterialStatus :: addEigenVolumetricStrain(x);
-  for ( auto &s:stats ) {
-      if(s->giveMechanicalMaterialStatus()) s->addToEigenVolumetricStrain(x);
-  }  
+void CoupledMaterialStatus :: addToEigenVolumetricStrain(double x) {
+    MaterialStatus :: addEigenVolumetricStrain(x);
+    for ( auto &s:stats ) {
+        if ( s->giveMechanicalMaterialStatus() ) {
+            s->addToEigenVolumetricStrain(x);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
-void CoupledMaterialStatus :: addToEigenStrain(const Vector &x){
-  MaterialStatus :: addToEigenStrain(x);
-  unsigned k = 0;
-  unsigned h, i;
-  Vector mstrain;
-  for ( auto &s:stats ) {
-      h = s->giveMaterial()->giveStrainSize();
-      mstrain.resize(h);
-      for ( i = 0; i < h; i++ ) {
-          mstrain [ i ] = x [ k + i ];
-      }
-      s->addToEigenStrain(mstrain);
-      k += h;
-  }
+void CoupledMaterialStatus :: addToEigenStrain(const Vector &x) {
+    MaterialStatus :: addToEigenStrain(x);
+    unsigned k = 0;
+    unsigned h, i;
+    Vector mstrain;
+    for ( auto &s:stats ) {
+        h = s->giveMaterial()->giveStrainSize();
+        mstrain.resize(h);
+        for ( i = 0; i < h; i++ ) {
+            mstrain [ i ] = x [ k + i ];
+        }
+        s->addToEigenStrain(mstrain);
+        k += h;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -413,27 +422,31 @@ Material *CoupledMaterial :: giveMaterial(unsigned i) const {
 };
 
 //////////////////////////////////////////////////////////
-Material* CoupledMaterial :: giveMechanicalMaterial(){
+Material * CoupledMaterial :: giveMechanicalMaterial() {
     for ( auto &s:mats ) {
-        if(s->giveMechanicalMaterial()) return s;
-    }    
-    return nullptr; 
-}
-
-//////////////////////////////////////////////////////////
-Material* CoupledMaterial :: giveTransportMaterial(){
-    for ( auto &s:mats ) {
-        if(s->giveTransportMaterial()) return s;
-    }  
+        if ( s->giveMechanicalMaterial() ) {
+            return s;
+        }
+    }
     return nullptr;
 }
 
 //////////////////////////////////////////////////////////
-Material* CoupledMaterial :: giveHeatConductionMaterial(){
+Material * CoupledMaterial :: giveTransportMaterial() {
     for ( auto &s:mats ) {
-        if(s->giveHeatConductionMaterial()) return s;
-    }  
+        if ( s->giveTransportMaterial() ) {
+            return s;
+        }
+    }
     return nullptr;
 }
 
-
+//////////////////////////////////////////////////////////
+Material * CoupledMaterial :: giveHeatConductionMaterial() {
+    for ( auto &s:mats ) {
+        if ( s->giveHeatConductionMaterial() ) {
+            return s;
+        }
+    }
+    return nullptr;
+}

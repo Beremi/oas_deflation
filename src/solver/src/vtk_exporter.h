@@ -15,7 +15,7 @@ public:
     VTKExporter(unsigned dimension) : DataExporter(dimension) { binaryswitch = true;   name = "VTKExporter"; };
     virtual ~VTKExporter() {};
     virtual void readFromLine(std :: istringstream &iss);
-    virtual std::string giveFileName(unsigned step, int iteration) const override;
+    virtual std :: string giveFileName(unsigned step, int iteration) const override;
     virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
 protected:
     unsigned cell_data_size, node_data_size;

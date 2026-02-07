@@ -23,9 +23,9 @@
 using namespace std;
 
 
-Model* MaterialContainer :: giveModel() const {return masterModel;};
-void MaterialContainer :: setModel(Model *m){masterModel = m;};   
-    
+Model * MaterialContainer :: giveModel() const { return masterModel; };
+void MaterialContainer :: setModel(Model *m) { masterModel = m; };
+
 //////////////////////////////////////////////////////////
 MaterialContainer :: ~MaterialContainer() {
     for ( vector< Material * > :: iterator m = matrs.begin(); m != matrs.end(); ++m ) {
@@ -56,7 +56,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
     cout << "Input file '" <<  filename;
     size_t origsize = matrs.size();
     string line, matType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     unsigned id = 0;
     CSLMaterialWithTensorialStressUpdate *CSLMaterialWithTensorialStressUpdateMaster = nullptr;
     if ( inputfile.is_open() ) {
@@ -162,7 +162,7 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
                 } else if ( matType.compare("FatigueMaterial") == 0 ) {
                     FatigueMaterial *newmat = new FatigueMaterial(dim);
                     newmat->readFromLine(iss);
-                    matrs.push_back( ( FatigueShearMaterial * ) newmat );
+                    matrs.push_back( ( FatigueShearMaterial * ) newmat);
                 } else if ( matType.compare("Slide32Material") == 0 ) {
                     Slide32Material *newmat = new Slide32Material(dim);
                     newmat->readFromLine(iss);
@@ -231,13 +231,15 @@ void MaterialContainer :: readFromFile(const string filename, unsigned dim) {
 void MaterialContainer :: runPreparationForStressEvaluation(ElementContainer *elems) {
     for ( auto &m : matrs ) {
         m->prepareForStressEvaluation(elems);
-    }    
+    }
 }
 
 //////////////////////////////////////////////////////////
 bool MaterialContainer :: requestTetrahedralBackgroundMesh() const {
     for ( auto &m : matrs ) {
-        if (m->requestTetrahedralBackgroundMesh()) return true;
+        if ( m->requestTetrahedralBackgroundMesh() ) {
+            return true;
+        }
     }
     return false;
 }

@@ -71,7 +71,7 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
     vector< pair< double, Node * > >intersections;
 
     BeamMaterial *bm = dynamic_cast< BeamMaterial * >( model->giveMaterials()->giveMaterial(material_id) );
-    CircularCrossSection *cs = new CircularCrossSection( radius, bm->givePoissonsRatio() );
+    CircularCrossSection *cs = new CircularCrossSection(radius, bm->givePoissonsRatio() );
     cs->init();
     model->giveCrossSections()->addCrossSection(cs);
 
@@ -93,7 +93,7 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         if ( dynamic_cast< AuxNode * >( model->giveNodes()->giveNode(* nn) ) ) {
             Particle *newp = new Particle(dim, 0, loc);
             model->giveNodes()->addNode(newp);
-            replace( nodes.begin(), nodes.end(), * nn, newp->giveID() );
+            replace(nodes.begin(), nodes.end(), * nn, newp->giveID() );
         }
 
         found = false;
@@ -118,13 +118,13 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 rbc = dynamic_cast< RigidBodyContact * >( * ee );
                 tet = dynamic_cast< LDPMTetra * >( * ee );
                 if ( rbc ) {
-                    model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode( unsigned( coord [ 0 ] + 0.2 ) ), false);
-                } else if (tet) {
-                    Point X = model->giveNodes()->giveNode(* nn)->givePoint();                
+                    model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode(unsigned( coord [ 0 ] + 0.2 ) ), false);
+                } else if ( tet ) {
+                    Point X = model->giveNodes()->giveNode(* nn)->givePoint();
                     vector< double >dist { ( tet->giveNode(0)->givePoint() - X ).squaredNorm(), ( tet->giveNode(1)->givePoint() - X ).squaredNorm(), ( tet->giveNode(2)->givePoint() - X ).squaredNorm(), ( tet->giveNode(3)->givePoint() - X ).squaredNorm() };
-                    unsigned closest = distance( std :: begin(dist), std :: min_element( std :: begin(dist), std :: end(dist) ) );
-                    model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode( closest ) , false);
-                } else  {
+                    unsigned closest = distance(std :: begin(dist), std :: min_element(std :: begin(dist), std :: end(dist) ) );
+                    model->giveConstraints()->addRigidArmConstraint(dim, model->giveNodes()->giveNode(* nn), ( * ee )->giveNode(closest), false);
+                } else {
                     model->giveConstraints()->addHangingNodeConstraint(model->giveNodes()->giveNode(* nn), * ee);
                 }
             }
@@ -144,8 +144,8 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         dirvec = ( b - a );
         length = dirvec.norm();
         dirvec /= length;
-        minp = Point( min(a [ 0 ], b [ 0 ]), min(a [ 1 ], b [ 1 ]), min(a [ 2 ], b [ 2 ]) );
-        maxp = Point( max(a [ 0 ], b [ 0 ]), max(a [ 1 ], b [ 1 ]), max(a [ 2 ], b [ 2 ]) );
+        minp = Point(min(a [ 0 ], b [ 0 ]), min(a [ 1 ], b [ 1 ]), min(a [ 2 ], b [ 2 ]) );
+        maxp = Point(max(a [ 0 ], b [ 0 ]), max(a [ 1 ], b [ 1 ]), max(a [ 2 ], b [ 2 ]) );
         for ( vector< Element * > :: iterator ee = model->giveElements()->begin(); ee != model->giveElements()->end(); ++ee) {
             if ( !( * ee )->doesMechanics() ) {
                 continue;
@@ -179,8 +179,8 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 //check that it is inside the facet
                 //according to https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
                 bintersect = false;
-                auxA = intersec + dirvec * ( 5 * sqrt( rbc->giveArea() ) );
-                auxB = intersec - dirvec * ( 5 * sqrt( rbc->giveArea() ) );
+                auxA = intersec + dirvec * ( 5 * sqrt(rbc->giveArea() ) );
+                auxB = intersec - dirvec * ( 5 * sqrt(rbc->giveArea() ) );
                 verts = rbc->giveVertices();
                 for ( unsigned i = 0; i < verts.size() && !bintersect; i++ ) {
                     s = verts [ i ]->givePointPointer();
@@ -199,12 +199,12 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                 if ( !bintersect ) {
                     continue;
                 }
-                intersections.push_back( pair( t, rbc->giveNode(0) ) );
-                intersections.push_back( pair( t, rbc->giveNode(1) ) );
+                intersections.push_back(pair(t, rbc->giveNode(0) ) );
+                intersections.push_back(pair(t, rbc->giveNode(1) ) );
             } else if ( tet ) {
                 Vector tt = ( * ee )->findIntersectionsWithLine(& a, & b);
                 if ( tt.size() > 1 ) {
-                    sort( tt.begin(), tt.end() );
+                    sort(tt.begin(), tt.end() );
                     Point B = a + dirvec * tt [ 0 ];
                     Point E = a + dirvec * tt [ tt.size() - 1 ];
                     double distB = ( tet->giveNode(0)->givePoint() - B ).squaredNorm();
@@ -221,17 +221,17 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
                             indE = i;
                         }
                     }
-                    intersections.push_back( pair( tt [ 0 ], tet->giveNode(indB) ) );
-                    intersections.push_back( pair( tt [ tt.size() - 1 ], tet->giveNode(indE) ) );
+                    intersections.push_back(pair(tt [ 0 ], tet->giveNode(indB) ) );
+                    intersections.push_back(pair(tt [ tt.size() - 1 ], tet->giveNode(indE) ) );
                     double q = ( tt [ 0 ] + tt [ tt.size() - 1 ] ) / 2;
-                    intersections.push_back( pair( q, tet->giveNode(indB) ) );
-                    intersections.push_back( pair( q, tet->giveNode(indE) ) );
+                    intersections.push_back(pair(q, tet->giveNode(indB) ) );
+                    intersections.push_back(pair(q, tet->giveNode(indE) ) );
                 }
                 //elems that are not RigidBodyContact
             } else {
                 Vector tt = ( * ee )->findIntersectionsWithLine(& a, & b);
                 if ( tt.size() > 1 ) {
-                    sort( tt.begin(), tt.end() );
+                    sort(tt.begin(), tt.end() );
                     primElems.push_back(* ee);
                     newts.push_back({ ( tt [ 0 ] + tt [ tt.size() - 1 ] ) / 2., primElems.size() });
                 }
@@ -273,17 +273,17 @@ void Rebar :: findIntersectionsWithElements(Model *model) {
         for (vector< pair< double, int > > :: const_iterator tt = newts.begin(); tt != newts.end(); ++tt) {
             newp = new Particle(dim, 0, a + dirvec * tt->first);
             model->giveNodes()->addNode(newp);
-            TimoshenkoBeam3D *tb = new TimoshenkoBeam3D( newp, second, bm, cs, Point(100, 100, 100) );
+            TimoshenkoBeam3D *tb = new TimoshenkoBeam3D(newp, second, bm, cs, Point(100, 100, 100) );
             model->giveElements()->addElement(tb);
             second = newp;
             if ( tt->second > 0 ) {
                 model->giveConstraints()->addHangingNodeConstraint(newp, primElems [ tt->second - 1 ]);
                 auto nnn = primElems [ tt->second - 1 ]->giveNodes();
-            } else  {
+            } else {
                 model->giveConstraints()->addRigidArmConstraint(dim, newp, primParticles [ -tt->second - 1 ], false);
             }
         }
-        TimoshenkoBeam3D *tb = new TimoshenkoBeam3D( model->giveNodes()->giveNode(nodes [ k - 1 ]), second, bm, cs, Point(100, 100, 100) );
+        TimoshenkoBeam3D *tb = new TimoshenkoBeam3D(model->giveNodes()->giveNode(nodes [ k - 1 ]), second, bm, cs, Point(100, 100, 100) );
         model->giveElements()->addElement(tb);
     }
 }

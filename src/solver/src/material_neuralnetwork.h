@@ -24,16 +24,16 @@ class NeuralNetworkMaterialStatus : public MaterialStatus
 protected:
     Matrix giveElasticStiffnessTensor3D() const;
 
-    std::vector<std::vector<torch::Tensor>> hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
-    std::vector<std::vector<torch::Tensor>> temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
+    std :: vector< std :: vector< torch :: Tensor > >hc_vectors; // h & c tensors for LSTM or h tensor for GRU layers
+    std :: vector< std :: vector< torch :: Tensor > >temp_hc_vectors; // temp -  h & c tensors for LSTM or h tensor for GRU layers
     Vector prev_strain;
 
 public:
     NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum);
     virtual ~NeuralNetworkMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual double giveMassConstant() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();

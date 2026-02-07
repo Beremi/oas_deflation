@@ -49,7 +49,7 @@ public:
     unsigned giveStartingDoF() const { return firstDoF; };
     std :: string giveName() const { return name; }
     void setName(const std :: string &newName) { this->name = newName; };
-    bool doesPhysicalField(unsigned i) const { return physicalFields [ i ]; };    
+    bool doesPhysicalField(unsigned i) const { return physicalFields [ i ]; };
     bool doesMechanics() const { return physicalFields [ 0 ]; };
     bool doesTransport() const { return physicalFields [ 1 ]; };
     bool doesTemperature() const { return physicalFields [ 2 ]; };

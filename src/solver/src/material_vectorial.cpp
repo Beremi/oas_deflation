@@ -60,7 +60,7 @@ MaterialStatus *VectHeatConductionMaterial :: giveNewMaterialStatus(Element *e, 
 VectTrsprtCoupledMaterialStatus :: VectTrsprtCoupledMaterialStatus(VectTrsprtCoupledMaterial *m, Element *e, unsigned ipnum) : VectTrsprtMaterialStatus(m, e, ipnum) {
     name = "discrete coupled transport mat. status";
     crackParam = 0.;
-    temperature = 0;    
+    temperature = 0;
     temp_volumetricStrain = volumetricStrain = volStrainRate = 0.;
     temp_crackVolume = crackVolume = crackVolumeRate = 0.;
     pressure = pressureRate = 0.;
@@ -84,7 +84,7 @@ double VectTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type)
 double VectTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
     VectTrsprtCoupledMaterial *tmat = static_cast< VectTrsprtCoupledMaterial * >( mat );
     DiscreteTrsprtCoupledElem *tc = static_cast< DiscreteTrsprtCoupledElem * >( element );
-   return ( TensTrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
+    return ( TensTrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
 }
 
 //////////////////////////////////////////////////////////
@@ -101,10 +101,10 @@ void VectTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep) {
 }
 
 //////////////////////////////////////////////////////////
-void VectTrsprtCoupledMaterialStatus :: computeStress( double timeStep) {
+void VectTrsprtCoupledMaterialStatus :: computeStress(double timeStep) {
     updateRateVariables(timeStep);
     effConductivity = updateEffectiveConductivity();
-    computeStressWithFrozenIntVars( timeStep);
+    computeStressWithFrozenIntVars(timeStep);
 };
 
 
@@ -136,7 +136,7 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
     } else if ( code.compare("crack_volume") == 0 ) {
         temp_crackVolume = value;
     } else if ( code.compare("temperature") == 0 ) {
-        temperature = value;        
+        temperature = value;
     } else {
         VectTrsprtMaterialStatus :: setParameterValue(code, value);
     }
@@ -144,7 +144,7 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
 
 
 //////////////////////////////////////////////////////////
-void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     updateRateVariables(timeStep);
     temp_strain  = addEigenStrain(temp_strain_total);
     temp_stress = -effConductivity * temp_strain;
@@ -153,7 +153,7 @@ void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars( double t
 
 
 //////////////////////////////////////////////////////////
-void VectTrsprtCoupledMaterialStatus ::  update() {    
+void VectTrsprtCoupledMaterialStatus ::  update() {
     TensTrsprtMaterialStatus :: update();
     volumetricStrain = temp_volumetricStrain;
     crackVolume = temp_crackVolume;
@@ -166,8 +166,6 @@ void VectTrsprtCoupledMaterialStatus ::  resetTemporaryVariables() {
     temp_volumetricStrain = volumetricStrain;
     temp_crackVolume = crackVolume;
     temp_pressure = pressure;
-    
-    
 }
 
 
@@ -189,7 +187,7 @@ bool VectTrsprtCoupledMaterialStatus ::  giveValues(string code, Vector &result)
     } else if ( code.compare("temperature") == 0 ) {
         result.resize(1);
         result [ 0 ] = temperature;
-        return true;        
+        return true;
     } else if ( code.compare("rel_crack_volume_rate") == 0 ) {
         DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
         double vol = trs->giveVolume();
@@ -250,11 +248,11 @@ VectMechMaterialStatus :: VectMechMaterialStatus(VectMechMaterial *m, Element *e
     name = "discrete mechanical mat. status";
     mat = m;
     normalEnergyDensity = 0;
-    shearEnergyDensity = 0;    
+    shearEnergyDensity = 0;
     temp_volumetricStrain = 0;
     volumetricStrain = 0;
     temp_volumetricStrain_total = 0;
-    volumetricStrain_total = 0;   
+    volumetricStrain_total = 0;
     eigenVolumetricStrain = 0;
 }
 
@@ -278,8 +276,8 @@ double VectMechMaterialStatus :: giveDensity() const {
 }
 
 //////////////////////////////////////////////////////////
-void VectMechMaterialStatus ::  computeStress( double timeStep) {
-    computeStressWithFrozenIntVars( timeStep);
+void VectMechMaterialStatus ::  computeStress(double timeStep) {
+    computeStressWithFrozenIntVars(timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -292,23 +290,25 @@ void VectMechMaterialStatus :: setParameterValue(string code, double value) {
 }
 
 //////////////////////////////////////////////////////////
-void VectMechMaterialStatus ::  update(){
-    normalEnergyDensity += (temp_strain[0] - updt_strain[0])*(updt_stress[0] + temp_stress[0])/2.;
-    shearEnergyDensity += (temp_strain[1] - updt_strain[1])*(updt_stress[1] + temp_stress[1])/2.;
-    if (mat->giveDimension() == 3)  shearEnergyDensity += (temp_strain[2] - updt_strain[2])*(updt_stress[2] + temp_stress[2])/2.;
-    
+void VectMechMaterialStatus ::  update() {
+    normalEnergyDensity += ( temp_strain [ 0 ] - updt_strain [ 0 ] ) * ( updt_stress [ 0 ] + temp_stress [ 0 ] ) / 2.;
+    shearEnergyDensity += ( temp_strain [ 1 ] - updt_strain [ 1 ] ) * ( updt_stress [ 1 ] + temp_stress [ 1 ] ) / 2.;
+    if ( mat->giveDimension() == 3 ) {
+        shearEnergyDensity += ( temp_strain [ 2 ] - updt_strain [ 2 ] ) * ( updt_stress [ 2 ] + temp_stress [ 2 ] ) / 2.;
+    }
+
     volumetricStrain = temp_volumetricStrain;
-    volumetricStrain_total = temp_volumetricStrain_total;  
-    
+    volumetricStrain_total = temp_volumetricStrain_total;
+
     MaterialStatus :: update();
 }
-    
+
 //////////////////////////////////////////////////////////
-void VectMechMaterialStatus ::  computeStressWithFrozenIntVars( double timeStep) {
+void VectMechMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(temp_strain_total);
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
-    temp_stress.resize(temp_strain.size() );
+    temp_stress.resize( temp_strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     for ( unsigned i = 1; i < temp_strain.size(); i++ ) {
         temp_stress [ i ] = m->giveAlpha() * m->giveE0() * temp_strain [ i ];
@@ -344,7 +344,7 @@ bool VectMechMaterialStatus ::  giveValues(string code, Vector &result) const {
     } else if ( code.compare("total_volumetric_strain") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_volumetricStrain_total;
-        return true;        
+        return true;
     } else if ( code.compare("E0") == 0 ) {
         result.resize(1);
         VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
@@ -380,11 +380,11 @@ bool VectMechMaterialStatus ::  giveValues(string code, Vector &result) const {
     }
 }
 
-  
+
 //////////////////////////////////////////////////////////
 void VectMechMaterialStatus :: addToEigenVolumetricStrain(double x) {
     eigenVolumetricStrain += x;
-}    
+}
 
 //////////////////////////////////////////////////////////
 VectMechMaterial :: VectMechMaterial(unsigned dimension) : Material(dimension) {
@@ -457,11 +457,11 @@ Matrix VectMechVolDevSplitMaterialStatus :: giveStiffnessTensor(string type) con
 }
 
 //////////////////////////////////////////////////////////
-void VectMechVolDevSplitMaterialStatus ::  computeStressWithFrozenIntVars( double timeStep) {
+void VectMechVolDevSplitMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(temp_strain_total);
     VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
-    temp_stress.resize(temp_strain.size() );
+    temp_stress.resize( temp_strain.size() );
     double ED = m->giveE0();
     double EV = m->giveAlpha();
 
@@ -570,11 +570,11 @@ Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(stri
 }
 
 //////////////////////////////////////////////////////////
-void VectMechMaterialWithRotationalStiffnessStatus ::  computeStressWithFrozenIntVars( double timeStep) {
+void VectMechMaterialWithRotationalStiffnessStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_strain = addEigenStrain(temp_strain_total);
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
-    temp_stress.resize(temp_strain.size() );
+    temp_stress.resize( temp_strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
     unsigned dim = m->giveDimension();
     RigidBodyContactWithRotationalStiffness *rbcr = static_cast< RigidBodyContactWithRotationalStiffness * >( element );

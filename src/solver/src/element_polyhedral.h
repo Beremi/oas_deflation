@@ -46,7 +46,7 @@ public:
     virtual void setIntegrationPointsAndWeights();
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Vector giveInternalForces();
-    virtual void evaluateStrains(const Vector &DoFs);    
+    virtual void evaluateStrains(const Vector &DoFs);
 };
 
 

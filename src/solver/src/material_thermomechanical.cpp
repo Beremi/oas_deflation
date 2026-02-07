@@ -25,9 +25,9 @@ bool ThermoMechanicalMaterialStatus :: giveValues(std :: string code, Vector &re
 }
 
 //////////////////////////////////////////////////////////
-void ThermoMechanicalMaterialStatus :: computeStress( double timeStep) {
+void ThermoMechanicalMaterialStatus :: computeStress(double timeStep) {
     addTemperatureEffectToMechanics();
-    CoupledMaterialStatus::computeStress( timeStep);
+    CoupledMaterialStatus :: computeStress(timeStep);
 }
 
 
@@ -42,10 +42,10 @@ void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, dou
 }
 
 //////////////////////////////////////////////////////////
-void ThermoMechanicalMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void ThermoMechanicalMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     addTemperatureEffectToMechanics();
 
-    CoupledMaterialStatus::computeStressWithFrozenIntVars( timeStep);
+    CoupledMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 
 //////////////////////////////////////////////////////////
@@ -102,8 +102,8 @@ MaterialStatus *ThermoMechanicalMaterial :: giveNewMaterialStatus(Element *e, un
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus ::  addTemperatureEffectToMechanics() {
     ThermoMechanicalMaterial *tmm = static_cast< ThermoMechanicalMaterial * >( mat );
-    Vector eig = Vector :: Zero(mat->giveDimension());
+    Vector eig = Vector :: Zero( mat->giveDimension() );
     eig [ 0 ] = ( temperature - tmm->giveInitialTemperature() ) * tmm->giveThermalExpansionCoeff();
     stats [ 0 ]->addToEigenStrain(eig);
-    stats [ 0 ]->addToEigenVolumetricStrain(eig [ 0 ]);    
+    stats [ 0 ]->addToEigenVolumetricStrain(eig [ 0 ]);
 };

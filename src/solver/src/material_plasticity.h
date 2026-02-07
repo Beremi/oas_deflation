@@ -23,8 +23,8 @@ public:
     VonMisesPlasticMaterialStatus(VonMisesPlasticMaterial *m, Element *e, unsigned ipnum);
     virtual ~VonMisesPlasticMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
 };

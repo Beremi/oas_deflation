@@ -41,9 +41,9 @@ protected:
     virtual void computeMassMatrix();
     virtual void computeDampingMatrix();
     bool areIPLocsInNaturalCoords;
-    
-    virtual void evaluateStresses(double timeStep);       
-    virtual void evaluateStressesWithFrozenIntVars(double timeStep);    
+
+    virtual void evaluateStresses(double timeStep);
+    virtual void evaluateStressesWithFrozenIntVars(double timeStep);
 
 
     ShapeFunc *shafunc;
@@ -90,10 +90,10 @@ public:
     virtual void findElementFriends(ElementContainer *elemcont) { ( void ) elemcont; }
     unsigned giveSolutionOrder() const { return solution_order; }
     virtual Matrix giveBMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); }; //at arbitrary point
-    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix(inttype->giveIPLocationPointer(i) ); };        //at integration point i
+    virtual Matrix giveBMatrix(unsigned i) const { return giveBMatrix( inttype->giveIPLocationPointer(i) ); };        //at integration point i
     Matrix giveStoredBMatrix(unsigned i) { return Bs [ i ]; };
     virtual Matrix giveHMatrix(const Point *x) const { ( void ) x; return Matrix(0, 0); };
-    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix(inttype->giveIPLocationPointer(i) ); };        //at integration point i
+    virtual Matrix giveHMatrix(unsigned i) const { return giveHMatrix( inttype->giveIPLocationPointer(i) ); };        //at integration point i
     Matrix giveStoredHMatrix(unsigned i) { return Hs [ i ]; };
     virtual Vector giveStrain(const Point *x, const Vector &DoFs) const { return giveBMatrix(x) * DoFs; };
     unsigned giveDimension() const { return ndim; }
@@ -121,7 +121,7 @@ public:
     virtual Vector giveBoundingBox()const;
     virtual Vector findIntersectionsWithLine(Point *A, Point *B)const;
     bool doesMechanics()const { return ( physicalFields [ 0 ] > 0 ); };
-    bool doesTransport()const { return ( physicalFields [ 1 ] > 0 ); };    
+    bool doesTransport()const { return ( physicalFields [ 1 ] > 0 ); };
     std :: vector< std :: vector< unsigned > >giveTraingulatedFaces()const;
     virtual double giveDissipatedEnergy() const;
     virtual void evaluateStrains(const Vector &DoFs);

@@ -1,7 +1,7 @@
 #include "linalg.h"
 
 #ifdef PARDISO_FOUND
-    #include <mkl.h>  // For mkl_set_num_threads
+ #include <mkl.h>     // For mkl_set_num_threads
 #endif
 
 using namespace std;
@@ -36,10 +36,10 @@ bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
 
     if ( A.rows() > 0 ) {
-        cgK.setMaxIterations(relMaxIT * A.cols() );
+        cgK.setMaxIterations( relMaxIT * A.cols() );
         cgK.setTolerance(precision);
         cgK.factorize(A);
-        initialGuess = Vector :: Zero(A.cols() );
+        initialGuess = Vector :: Zero( A.cols() );
         maxIT = relMaxIT * A.cols();
     }
 
@@ -266,60 +266,60 @@ SuperLUSolver :: ~SuperLUSolver() {}
 
 //////////////////////////////////////////////////////////
 bool SuperLUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         superlu.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 
 //////////////////////////////////////////////////////////
 bool SuperLUSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         superlu.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool SuperLUSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = superlu.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 #endif
@@ -406,34 +406,34 @@ bool LLTSolver :: solve(Vector &x, const Vector &b) {
 #ifdef PARDISO_FOUND
 PardisoLUSolver :: PardisoLUSolver() {
     name = "PardisoLUSolver";
-    
+
     // Set MKL to use all available threads for Pardiso
     // This can be overridden by MKL_NUM_THREADS environment variable
     int max_threads = mkl_get_max_threads();
-    
+
     // Check if MKL_NUM_THREADS or OMP_NUM_THREADS is set
-    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
-    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
-    
-    if (mkl_threads_env != nullptr) {
-        int requested_threads = std::atoi(mkl_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+    const char *mkl_threads_env = std :: getenv("MKL_NUM_THREADS");
+    const char *omp_threads_env = std :: getenv("OMP_NUM_THREADS");
+
+    if ( mkl_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(mkl_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLU: Using " << requested_threads 
-                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLU: Using " << requested_threads
+                        << " threads (from MKL_NUM_THREADS)" << std :: endl;
         }
-    } else if (omp_threads_env != nullptr) {
-        int requested_threads = std::atoi(omp_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+    } else if ( omp_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(omp_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLU: Using " << requested_threads 
-                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLU: Using " << requested_threads
+                        << " threads (from OMP_NUM_THREADS)" << std :: endl;
         }
     } else {
         // Use all available threads by default
         mkl_set_num_threads(max_threads);
-        std::cout << "PardisoLU: Using " << max_threads 
-                  << " threads (default - all available)" << std::endl;
+        std :: cout << "PardisoLU: Using " << max_threads
+                    << " threads (default - all available)" << std :: endl;
     }
 }
 
@@ -442,60 +442,60 @@ PardisoLUSolver :: ~PardisoLUSolver() {}
 
 //////////////////////////////////////////////////////////
 bool PardisoLUSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 
 //////////////////////////////////////////////////////////
 bool PardisoLUSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool PardisoLUSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = pardiso.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
@@ -506,31 +506,31 @@ bool PardisoLUSolver :: solve(Vector &x, const Vector &b) {
 
 PardisoLDLTSolver :: PardisoLDLTSolver() {
     name = "PardisoLDLTSolver";
-    
+
     // Set MKL to use all available threads for Pardiso
     int max_threads = mkl_get_max_threads();
-    
-    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
-    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
-    
-    if (mkl_threads_env != nullptr) {
-        int requested_threads = std::atoi(mkl_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+
+    const char *mkl_threads_env = std :: getenv("MKL_NUM_THREADS");
+    const char *omp_threads_env = std :: getenv("OMP_NUM_THREADS");
+
+    if ( mkl_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(mkl_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLDLT: Using " << requested_threads 
-                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLDLT: Using " << requested_threads
+                        << " threads (from MKL_NUM_THREADS)" << std :: endl;
         }
-    } else if (omp_threads_env != nullptr) {
-        int requested_threads = std::atoi(omp_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+    } else if ( omp_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(omp_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLDLT: Using " << requested_threads 
-                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLDLT: Using " << requested_threads
+                        << " threads (from OMP_NUM_THREADS)" << std :: endl;
         }
     } else {
         mkl_set_num_threads(max_threads);
-        std::cout << "PardisoLDLT: Using " << max_threads 
-                  << " threads (default - all available)" << std::endl;
+        std :: cout << "PardisoLDLT: Using " << max_threads
+                    << " threads (default - all available)" << std :: endl;
     }
 }
 
@@ -539,60 +539,60 @@ PardisoLDLTSolver :: ~PardisoLDLTSolver() {}
 
 //////////////////////////////////////////////////////////
 bool PardisoLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 
 //////////////////////////////////////////////////////////
 bool PardisoLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool PardisoLDLTSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = pardiso.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
@@ -603,31 +603,31 @@ bool PardisoLDLTSolver :: solve(Vector &x, const Vector &b) {
 
 PardisoLLTSolver :: PardisoLLTSolver() {
     name = "PardisoLLTSolver";
-    
+
     // Set MKL to use all available threads for Pardiso
     int max_threads = mkl_get_max_threads();
-    
-    const char* mkl_threads_env = std::getenv("MKL_NUM_THREADS");
-    const char* omp_threads_env = std::getenv("OMP_NUM_THREADS");
-    
-    if (mkl_threads_env != nullptr) {
-        int requested_threads = std::atoi(mkl_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+
+    const char *mkl_threads_env = std :: getenv("MKL_NUM_THREADS");
+    const char *omp_threads_env = std :: getenv("OMP_NUM_THREADS");
+
+    if ( mkl_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(mkl_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLLT: Using " << requested_threads 
-                      << " threads (from MKL_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLLT: Using " << requested_threads
+                        << " threads (from MKL_NUM_THREADS)" << std :: endl;
         }
-    } else if (omp_threads_env != nullptr) {
-        int requested_threads = std::atoi(omp_threads_env);
-        if (requested_threads > 0 && requested_threads <= max_threads) {
+    } else if ( omp_threads_env != nullptr ) {
+        int requested_threads = std :: atoi(omp_threads_env);
+        if ( requested_threads > 0 && requested_threads <= max_threads ) {
             mkl_set_num_threads(requested_threads);
-            std::cout << "PardisoLLT: Using " << requested_threads 
-                      << " threads (from OMP_NUM_THREADS)" << std::endl;
+            std :: cout << "PardisoLLT: Using " << requested_threads
+                        << " threads (from OMP_NUM_THREADS)" << std :: endl;
         }
     } else {
         mkl_set_num_threads(max_threads);
-        std::cout << "PardisoLLT: Using " << max_threads 
-                  << " threads (default - all available)" << std::endl;
+        std :: cout << "PardisoLLT: Using " << max_threads
+                    << " threads (default - all available)" << std :: endl;
     }
 }
 
@@ -636,60 +636,60 @@ PardisoLLTSolver :: ~PardisoLLTSolver() {}
 
 //////////////////////////////////////////////////////////
 bool PardisoLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 
 //////////////////////////////////////////////////////////
 bool PardisoLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         pardiso.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool PardisoLLTSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = pardiso.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 #endif
@@ -702,7 +702,7 @@ bool PardisoLLTSolver :: solve(Vector &x, const Vector &b) {
 #ifdef CHOLMOD_FOUND
 CholmodLLTSolver :: CholmodLLTSolver() {
     name = "CholmodLLTSolver";
-    std::cout << "CholmodLLT: Using CHOLMOD simplicial LLT factorization" << std::endl;
+    std :: cout << "CholmodLLT: Using CHOLMOD simplicial LLT factorization" << std :: endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -710,59 +710,59 @@ CholmodLLTSolver :: ~CholmodLLTSolver() {}
 
 //////////////////////////////////////////////////////////
 bool CholmodLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         cholmod.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         cholmod.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodLLTSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = cholmod.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
@@ -775,24 +775,24 @@ bool CholmodLLTSolver :: solve(Vector &x, const Vector &b) {
 CholmodLDLTSolver :: CholmodLDLTSolver() {
     name = "CholmodLDLT";
     cout << "Creating CholmodLDLTSolver (Simplicial LDLT)" << endl;
-    
+
     // Access internal CHOLMOD settings using correct Eigen API
-    cholmod_common& c = cholmod.cholmod();
-    
+    cholmod_common &c = cholmod.cholmod();
+
     // Try different ordering methods (may help with some matrices)
     // AMD ordering (default)
     c.nmethods = 1;
     //c.method[0].ordering = CHOLMOD_AMD;
-    
+
     // OR try METIS if available (sometimes better for large problems)
-    c.method[0].ordering = CHOLMOD_METIS;
-    
+    c.method [ 0 ].ordering = CHOLMOD_METIS;
+
     // OR try nested dissection
     //c.method[0].ordering = CHOLMOD_NESDIS;
-    
+
     // Ensure single-threaded
     c.useGPU = 0;
-    
+
     //cout << "CHOLMOD LDLT using ordering: " << c.method[0].ordering << endl;
 }
 
@@ -801,78 +801,78 @@ CholmodLDLTSolver :: ~CholmodLDLTSolver() {}
 
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
-    auto start = std::chrono::system_clock::now();
-#endif
-    
-    if (A.rows() > 0) {
-#if PRINT_DEBUG_TIME
-        std::cout << "CHOLMOD LDLT factorization:" << std::endl;
-        std::cout << "  Matrix size: " << A.rows() << "x" << A.cols() << std::endl;
-        std::cout << "  Non-zeros in A: " << A.nonZeros() << std::endl;
-#endif
+ #if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+ #endif
+
+    if ( A.rows() > 0 ) {
+ #if PRINT_DEBUG_TIME
+        std :: cout << "CHOLMOD LDLT factorization:" << std :: endl;
+        std :: cout << "  Matrix size: " << A.rows() << "x" << A.cols() << std :: endl;
+        std :: cout << "  Non-zeros in A: " << A.nonZeros() << std :: endl;
+ #endif
         cholmod.factorize(A);
 
-#if PRINT_DEBUG_TIME
-        if (cholmod.info() != Eigen::Success) {
-            std::cerr << "CHOLMOD factorization failed!" << std::endl;
+ #if PRINT_DEBUG_TIME
+        if ( cholmod.info() != Eigen :: Success ) {
+            std :: cerr << "CHOLMOD factorization failed!" << std :: endl;
             return false;
         }
-#endif
+ #endif
     }
-    
-#if PRINT_DEBUG_TIME
-    auto now = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration<double>(now - start);
-    std::cout << "  Factorization time: " << elapsed.count() << " seconds" << std::endl;
-#endif
+
+ #if PRINT_DEBUG_TIME
+    auto now = std :: chrono :: system_clock :: now();
+    auto elapsed = std :: chrono :: duration< double >(now - start);
+    std :: cout << "  Factorization time: " << elapsed.count() << " seconds" << std :: endl;
+ #endif
 
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
-    auto start = std::chrono::system_clock::now();
-#endif
+ #if PRINT_DEBUG_TIME
+    auto start = std :: chrono :: system_clock :: now();
+ #endif
 
-    if (A.rows() > 0) {
-#if PRINT_DEBUG_TIME
+    if ( A.rows() > 0 ) {
+ #if PRINT_DEBUG_TIME
         // Print matrix statistics
-        std::cout << "CHOLMOD LDLT analyzing matrix pattern:" << std::endl;
-        std::cout << "  Size: " << A.rows() << " x " << A.cols() << std::endl;
-        std::cout << "  Non-zeros: " << A.nonZeros() << std::endl;
-        std::cout << "  Density: " << (double)A.nonZeros() / (A.rows() * A.cols()) * 100.0 << "%" << std::endl;
-#endif
+        std :: cout << "CHOLMOD LDLT analyzing matrix pattern:" << std :: endl;
+        std :: cout << "  Size: " << A.rows() << " x " << A.cols() << std :: endl;
+        std :: cout << "  Non-zeros: " << A.nonZeros() << std :: endl;
+        std :: cout << "  Density: " << ( double ) A.nonZeros() / ( A.rows() * A.cols() ) * 100.0 << "%" << std :: endl;
+ #endif
         cholmod.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
-    auto now = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration<double>(now - start);
-    std::cout << "  Pattern analysis time: " << elapsed.count() << " seconds" << std::endl;
-#endif
-    
+ #if PRINT_DEBUG_TIME
+    auto now = std :: chrono :: system_clock :: now();
+    auto elapsed = std :: chrono :: duration< double >(now - start);
+    std :: cout << "  Pattern analysis time: " << elapsed.count() << " seconds" << std :: endl;
+ #endif
+
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodLDLTSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = cholmod.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
@@ -883,7 +883,7 @@ bool CholmodLDLTSolver :: solve(Vector &x, const Vector &b) {
 
 CholmodSupernodalLLTSolver :: CholmodSupernodalLLTSolver() {
     name = "CholmodSupernodalLLTSolver";
-    std::cout << "CholmodSupernodalLLT: Using CHOLMOD supernodal LLT factorization" << std::endl;
+    std :: cout << "CholmodSupernodalLLT: Using CHOLMOD supernodal LLT factorization" << std :: endl;
 }
 
 //////////////////////////////////////////////////////////
@@ -891,59 +891,59 @@ CholmodSupernodalLLTSolver :: ~CholmodSupernodalLLTSolver() {}
 
 //////////////////////////////////////////////////////////
 bool CholmodSupernodalLLTSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         cholmod.factorize(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodSupernodalLLTSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
     if ( A.rows() > 0 ) {
         cholmod.analyzePattern(A);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver decomposition duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 
 //////////////////////////////////////////////////////////
 bool CholmodSupernodalLLTSolver :: solve(Vector &x, const Vector &b) {
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
-#endif
+ #endif
 
     if ( b.size() > 0 ) {
         x = cholmod.solve(b);
     }
 
-#if PRINT_DEBUG_TIME
+ #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
 
     elapsed_seconds = now - start;
     std :: cout << "linalg solver duration: " << convertTimeToString_(elapsed_seconds) << std :: endl;
     cout.flush();
-#endif
+ #endif
     return true;
 }
 #endif
@@ -989,7 +989,7 @@ bool CholmodSupernodalLLTSolver :: solve(Vector &x, const Vector &b) {
 
 
 bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
-    std::cout << "Using solver type: " << solver_type << std::endl;
+    std :: cout << "Using solver type: " << solver_type << std :: endl;
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
@@ -1027,12 +1027,12 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     } else if ( solver_type == "EigenLLT" ) {
         Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
         x = simplicial_llt_solver.compute(A).solve(b);
-        
+
         //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
         result = 1;
 #ifdef SUPERLU_FOUND
     } else if ( solver_type == "SuperLU" ) {
-        Eigen :: SuperLU < Eigen :: SparseMatrix< double > > superlu_solver;
+        Eigen :: SuperLU< Eigen :: SparseMatrix< double > >superlu_solver;
         superlu_solver.compute(A);
         result = 1;
 #endif
@@ -1241,7 +1241,7 @@ double checkCoplanarity(const Point &ptA, const Point &ptB, const Point &ptC, co
     Point AC = ptC - ptA;
     Point AD = ptD - ptA;
     //triple scalar product AB*(ACxAD) =>0
-    double coplanarityError = AB.dot(AC.cross(AD) );
+    double coplanarityError = AB.dot( AC.cross(AD) );
     return coplanarityError;
 }
 
@@ -1355,15 +1355,15 @@ void giveGaussIntegrationPointAndWeights(unsigned n, Vector &locs, Vector &weis)
         weis [ 0 ] = weis [ 2 ] = 5. / 9.;
         weis [ 1 ] = 8. / 9.;
     } else if ( n == 4 ) {
-        locs [ 0 ] = -sqrt( 3. / 7. + 2. / 7. * sqrt(6. / 5.) );
-        locs [ 1 ] = -sqrt( 3. / 7. - 2. / 7. * sqrt(6. / 5.) );
+        locs [ 0 ] = -sqrt(3. / 7. + 2. / 7. * sqrt(6. / 5.) );
+        locs [ 1 ] = -sqrt(3. / 7. - 2. / 7. * sqrt(6. / 5.) );
         locs [ 2 ] = -locs [ 1 ];
         locs [ 3 ] = -locs [ 0 ];
         weis [ 0 ] = weis [ 3 ] = ( 18. - sqrt(30.) ) / 36;
         weis [ 1 ] = weis [ 2 ] = ( 18. + sqrt(30.) ) / 36;
     } else if ( n == 5 ) {
-        locs [ 0 ] = -sqrt( 5. + 2. * sqrt(10. / 7.) ) / 3;
-        locs [ 1 ] = -sqrt( 5. - 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 0 ] = -sqrt(5. + 2. * sqrt(10. / 7.) ) / 3;
+        locs [ 1 ] = -sqrt(5. - 2. * sqrt(10. / 7.) ) / 3;
         locs [ 2 ] = 0.;
         locs [ 3 ] = -locs [ 1 ];
         locs [ 4 ] = -locs [ 0 ];
@@ -1387,7 +1387,7 @@ double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, 
         minp = ( * a ) [ i ];
         minp = min(minp, ( * b ) [ i ]);
         minp = min(minp, ( * c ) [ i ]);
-        if ( min( ( * A ) [ i ], ( * B ) [ i ] ) > maxp || max( ( * A ) [ i ], ( * B ) [ i ] ) < minp ) {
+        if ( min( ( * A ) [ i ], ( * B ) [ i ]) > maxp || max( ( * A ) [ i ], ( * B ) [ i ]) < minp ) {
             return -1.;
         }
     }
@@ -1413,7 +1413,7 @@ double find_intesection_of_segment_and_triangle(const Point *A, const Point *B, 
     Point normal = Point( ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) - ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) * ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ), ( ( * b ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) - ( ( * c ) [ 2 ] - ( * a ) [ 2 ] ) * ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ), ( ( * b ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * c ) [ 1 ] - ( * a ) [ 1 ] ) - ( ( * c ) [ 0 ] - ( * a ) [ 0 ] ) * ( ( * b ) [ 1 ] - ( * a ) [ 1 ] ) );
     normal.normalize();
     double d = -( ( * a ) [ 0 ] * normal [ 0 ] + ( * a ) [ 1 ] * normal [ 1 ] + ( * a ) [ 2 ] * normal [ 2 ] );
-    double t = abs(( normal [ 0 ] * ( * A ) [ 0 ] + normal [ 1 ] * ( * A ) [ 1 ] + normal [ 2 ] * ( * A ) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] ));
+    double t = abs( ( normal [ 0 ] * ( * A ) [ 0 ] + normal [ 1 ] * ( * A ) [ 1 ] + normal [ 2 ] * ( * A ) [ 2 ] + d ) / ( normal [ 0 ] * dirvec [ 0 ] + normal [ 1 ] * dirvec [ 1 ] + normal [ 2 ] * dirvec [ 2 ] ) );
     if ( t >= 0 && t <= length ) {
         return t;
     } else {

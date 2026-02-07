@@ -23,8 +23,8 @@ public:
     CrossSection * giveCrossSection() { return CS; }
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void readFromLine(std :: istringstream &iss);
     virtual Matrix giveMassTensor() const;
@@ -50,18 +50,18 @@ class NormalPlasticBeamMaterial;
 class NormalPlasticBeamMaterialStatus : public BeamMaterialStatus
 {
 protected:
-  double normalPlasticStrain = 0;
-  double temp_normalPlasticStrain = 0;
-  double cumulPlasticStrain = 0;
-  double temp_cumulPlasticStrain = 0;  
+    double normalPlasticStrain = 0;
+    double temp_normalPlasticStrain = 0;
+    double cumulPlasticStrain = 0;
+    double temp_cumulPlasticStrain = 0;
 public:
     NormalPlasticBeamMaterialStatus(NormalPlasticBeamMaterial *m, Element *e, unsigned ipnum);
     virtual ~NormalPlasticBeamMaterialStatus() {};
     virtual void update();
     virtual void resetTemporaryVariables();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void readFromLine(std :: istringstream &iss);
 };
@@ -70,8 +70,8 @@ public:
 class NormalPlasticBeamMaterial : public BeamMaterial
 {
 protected:
-  Function *plasticEnvelope;
-  unsigned plasticEnvelopeFuncNum;
+    Function *plasticEnvelope;
+    unsigned plasticEnvelopeFuncNum;
 public:
     NormalPlasticBeamMaterial() : BeamMaterial() { name = "Normal plastic beam material"; };
     virtual ~NormalPlasticBeamMaterial() {};

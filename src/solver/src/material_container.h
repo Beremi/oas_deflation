@@ -15,7 +15,7 @@ class MaterialContainer
 {
 private:
     std :: vector< Material * >matrs;
-    Model * masterModel;
+    Model *masterModel;
 public:
     MaterialContainer() {};
     ~MaterialContainer();
@@ -24,7 +24,7 @@ public:
     void init();
     Material *giveMaterial(unsigned const mat);
     void runPreparationForStressEvaluation(ElementContainer *elems);
-    Model* giveModel() const;
+    Model * giveModel() const;
     void setModel(Model *m);
     bool requestTetrahedralBackgroundMesh() const;
 protected:

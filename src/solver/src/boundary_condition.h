@@ -101,7 +101,7 @@ public:
     virtual ~SelfWeight() {};
     virtual void readFromLine(std :: istringstream &iss, ElementContainer *elems);
     virtual void init(FunctionContainer *funcs, double time);
-    virtual double giveValue(const Point *xyz, double time);    
+    virtual double giveValue(const Point *xyz, double time);
     virtual std :: vector< double >giveBodyForceDoFValues(double t);
 };
 
@@ -114,7 +114,7 @@ class BCContainer
 private:
     FunctionContainer *functions;
     std :: vector< BoundaryCondition * >BC;
-    
+
     std :: vector< unsigned >dirichDoFs;
     std :: vector< unsigned >neumannDoFs;
 

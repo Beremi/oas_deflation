@@ -219,7 +219,7 @@ void CrossSectionContainer :: readFromFile(const std :: string filename, const u
     cout << "Input file '" <<  filename;
     size_t origsize = css.size();
     string line, csType;
-    ifstream inputfile(filename.c_str() );
+    ifstream inputfile( filename.c_str() );
     if ( inputfile.is_open() ) {
         while ( getline(inputfile >> std :: ws, line) ) {
             if ( line.empty() || ( line.at(0) == '#' ) ) {

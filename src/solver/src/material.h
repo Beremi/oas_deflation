@@ -33,17 +33,17 @@ public:
     virtual void computeStressWithFrozenIntVars(double timeStep) { ( void ) timeStep; };
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
-    virtual void setTotalTempStrain(Vector str) {  temp_strain_total = str; temp_strain = str;};    
+    virtual void setTotalTempStrain(Vector str) {  temp_strain_total = str; temp_strain = str; };
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Vector giveTotalTempStrain() const { return temp_strain_total; };
-    virtual Vector giveTotalUpdatedStrain() const { return updt_strain_total; };    
+    virtual Vector giveTotalUpdatedStrain() const { return updt_strain_total; };
     virtual Matrix giveStiffnessTensor(std :: string type) const { ( void ) type; return Matrix(0, 0); };
     virtual Matrix giveMassTensor() const { return Matrix(0, 0); };
     virtual Matrix giveDampingTensor() const { return Matrix(0, 0); };
     virtual void addToEigenStrain(const Vector &x);
-    virtual void addToEigenVolumetricStrain(double x) { (void) x;};    
-    virtual void removeEigenStrain() {eigenstrain.setZero();};
+    virtual void addToEigenVolumetricStrain(double x) { ( void ) x; };
+    virtual void removeEigenStrain() { eigenstrain.setZero(); };
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(std :: istringstream &iss);
@@ -51,15 +51,15 @@ public:
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };
     virtual void initializeStressAndStrainVector(unsigned num);
-    double giveDissipatedEnergyDensity() const {return dissipEnergyDensity;};  
+    double giveDissipatedEnergyDensity() const { return dissipEnergyDensity; };
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();
-    virtual MaterialStatus* giveMechanicalMaterialStatus() {return nullptr;};
-    virtual MaterialStatus* giveTransportMaterialStatus() {return nullptr;};
-    virtual MaterialStatus* giveHeatConductionMaterialStatus() {return nullptr;};    
+    virtual MaterialStatus * giveMechanicalMaterialStatus() { return nullptr; };
+    virtual MaterialStatus * giveTransportMaterialStatus() { return nullptr; };
+    virtual MaterialStatus * giveHeatConductionMaterialStatus() { return nullptr; };
 protected:
     virtual Vector addEigenStrain(const Vector &totalStrain) const;
-    virtual double addEigenVolumetricStrain(double x) const { return x;};    
+    virtual double addEigenVolumetricStrain(double x) const { return x; };
     Element *element;
     std :: string name;
     Material *mat;
@@ -98,13 +98,13 @@ public:
     void setId(const unsigned &i) { this->idx = i; }
     virtual void init(MaterialContainer *matcont) { ( void ) matcont; };
     bool isProducingInternalSources()const { return produceInternalSources; }
-    virtual void prepareForStressEvaluation(ElementContainer *elems) {(void) elems;};
+    virtual void prepareForStressEvaluation(ElementContainer *elems) { ( void ) elems; };
     bool requiresMassMatrixUpdate() const { return massMatUpdate; };
     bool requiresDampingsMatrixUpdate() const { return dampMatUpdate; };
-    virtual bool requestTetrahedralBackgroundMesh()const{return false;} //for volumetric strain
-    virtual Material* giveMechanicalMaterial() {return nullptr;};
-    virtual Material* giveTransportMaterial() {return nullptr;};
-    virtual Material* giveHeatConductionMaterial() {return nullptr;};
+    virtual bool requestTetrahedralBackgroundMesh()const { return false; } //for volumetric strain
+    virtual Material * giveMechanicalMaterial() { return nullptr; };
+    virtual Material * giveTransportMaterial() { return nullptr; };
+    virtual Material * giveHeatConductionMaterial() { return nullptr; };
 };
 
 
@@ -121,23 +121,20 @@ protected:
 public:
     CoupledMaterialStatus(Material *m, Element *e, unsigned ipnum);
     virtual ~CoupledMaterialStatus();
-    virtual void init();    
+    virtual void init();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);
-    virtual void setTotalTempStrain(Vector str);        
+    virtual void setTotalTempStrain(Vector str);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void update();
     virtual void setParameterValue(std :: string code, double value);
-    virtual MaterialStatus* giveMechanicalMaterialStatus();
-    virtual MaterialStatus* giveTransportMaterialStatus();
-    virtual MaterialStatus* giveHeatConductionMaterialStatus();    
+    virtual MaterialStatus * giveMechanicalMaterialStatus();
+    virtual MaterialStatus * giveTransportMaterialStatus();
+    virtual MaterialStatus * giveHeatConductionMaterialStatus();
     virtual void initializeStressAndStrainVector(unsigned num);
     virtual void addToEigenVolumetricStrain(double x);
     virtual void addToEigenStrain(const Vector &x);
-    
-    
-    
 };
 
 //////////////////////////////////////////////////////////
@@ -155,9 +152,9 @@ public:
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     std :: vector< Material * >giveMaterials() const { return mats; };
     Material *giveMaterial(unsigned i) const;
-    virtual Material* giveMechanicalMaterial();
-    virtual Material* giveTransportMaterial();
-    virtual Material* giveHeatConductionMaterial();  
+    virtual Material * giveMechanicalMaterial();
+    virtual Material * giveTransportMaterial();
+    virtual Material * giveHeatConductionMaterial();
 };
 
 

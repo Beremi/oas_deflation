@@ -60,7 +60,7 @@ public:
     void init();
     virtual void update();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
-    virtual void computeStress( double timeStep);
+    virtual void computeStress(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;
 };
 

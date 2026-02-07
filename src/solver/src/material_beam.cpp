@@ -25,7 +25,7 @@ bool BeamMaterialStatus :: giveValues(string code, Vector &result) const {
     if ( code.compare("normalforce") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 0 ];
-        return true;        
+        return true;
     } else if ( code.compare("shearforceY") == 0 ) {
         result.resize(1);
         result [ 0 ] = temp_stress [ 1 ];
@@ -81,13 +81,13 @@ Matrix BeamMaterialStatus :: giveStiffnessTensor(string type) const {
 }
 
 //////////////////////////////////////////////////////////
-void BeamMaterialStatus :: computeStress( double timeStep) {
+void BeamMaterialStatus :: computeStress(double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
-    BeamMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
+    BeamMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void BeamMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void BeamMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;
     temp_stress = giveStiffnessTensor("elastic") * temp_strain;
@@ -155,15 +155,15 @@ bool NormalPlasticBeamMaterialStatus :: giveValues(string code, Vector &result) 
 
 //////////////////////////////////////////////////////////
 void NormalPlasticBeamMaterialStatus :: update() {
-     normalPlasticStrain = temp_normalPlasticStrain;
-     cumulPlasticStrain = temp_cumulPlasticStrain;
-     BeamMaterialStatus :: update();
+    normalPlasticStrain = temp_normalPlasticStrain;
+    cumulPlasticStrain = temp_cumulPlasticStrain;
+    BeamMaterialStatus :: update();
 }
 
 //////////////////////////////////////////////////////////
 void NormalPlasticBeamMaterialStatus :: resetTemporaryVariables() {
     temp_normalPlasticStrain = normalPlasticStrain;
-    temp_cumulPlasticStrain = cumulPlasticStrain;     
+    temp_cumulPlasticStrain = cumulPlasticStrain;
     TensMechMaterialStatus :: resetTemporaryVariables();
 }
 
@@ -174,39 +174,38 @@ Matrix NormalPlasticBeamMaterialStatus :: giveStiffnessTensor(string type) const
 }
 
 //////////////////////////////////////////////////////////
-void NormalPlasticBeamMaterialStatus :: computeStress( double timeStep) {
-    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)    
+void NormalPlasticBeamMaterialStatus :: computeStress(double timeStep) {
+    //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     computeStressWithFrozenIntVars(timeStep);
-    NormalPlasticBeamMaterial *tm = static_cast< NormalPlasticBeamMaterial * >( mat );         
+    NormalPlasticBeamMaterial *tm = static_cast< NormalPlasticBeamMaterial * >( mat );
     double E = tm->giveElasticModulus();
-    double normstress = temp_stress[0]/CS->giveArea();
+    double normstress = temp_stress [ 0 ] / CS->giveArea();
     temp_cumulPlasticStrain = cumulPlasticStrain;
-    temp_normalPlasticStrain = normalPlasticStrain; 
+    temp_normalPlasticStrain = normalPlasticStrain;
     double limitValue = tm->givePlasticLimit(temp_cumulPlasticStrain);
-    double plstrdiff = (abs(normstress)-limitValue)/E;
-    while(plstrdiff>1e-6){
-        temp_cumulPlasticStrain += plstrdiff;         
-        temp_normalPlasticStrain += copysign(plstrdiff,normstress);        
-        normstress = copysign(limitValue,normstress);
+    double plstrdiff = ( abs(normstress) - limitValue ) / E;
+    while ( plstrdiff > 1e-6 ) {
+        temp_cumulPlasticStrain += plstrdiff;
+        temp_normalPlasticStrain += copysign(plstrdiff, normstress);
+        normstress = copysign(limitValue, normstress);
         limitValue = tm->givePlasticLimit(temp_cumulPlasticStrain);
-        plstrdiff = (abs(normstress)-limitValue)/E;
-        
+        plstrdiff = ( abs(normstress) - limitValue ) / E;
     }
-    temp_stress[0] = normstress*CS->giveArea();
+    temp_stress [ 0 ] = normstress * CS->giveArea();
 }
 
 //////////////////////////////////////////////////////////
-void NormalPlasticBeamMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void NormalPlasticBeamMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
-    ( void ) timeStep;    
+    ( void ) timeStep;
     Vector shiftedstrain = temp_strain;
-    shiftedstrain[0] -= normalPlasticStrain;
-    temp_stress = BeamMaterialStatus::giveStiffnessTensor("elastic") * shiftedstrain;
+    shiftedstrain [ 0 ] -= normalPlasticStrain;
+    temp_stress = BeamMaterialStatus :: giveStiffnessTensor("elastic") * shiftedstrain;
 }
 
 //////////////////////////////////////////////////////////
 void NormalPlasticBeamMaterialStatus :: readFromLine(istringstream &iss) {
-     BeamMaterialStatus :: readFromLine(iss);
+    BeamMaterialStatus :: readFromLine(iss);
 }
 
 //////////////////////////////////////////////////////////
@@ -217,7 +216,7 @@ void NormalPlasticBeamMaterialStatus :: readFromLine(istringstream &iss) {
 //////////////////////////////////////////////////////////
 void NormalPlasticBeamMaterial :: readFromLine(istringstream &iss) {
     BeamMaterial :: readFromLine(iss); //read elastic parameters
-    
+
     iss.clear(); // clear string stream
     iss.seekg(0, iss.beg); //reset position in string stream
 
@@ -245,10 +244,10 @@ MaterialStatus *NormalPlasticBeamMaterial :: giveNewMaterialStatus(Element *e, u
 //////////////////////////////////////////////////////////
 void NormalPlasticBeamMaterial :: init(MaterialContainer *matcont) {
     BeamMaterial :: init(matcont);
-    plasticEnvelope = matcont->giveModel()->giveFunctions()->giveFunction(plasticEnvelopeFuncNum);    
+    plasticEnvelope = matcont->giveModel()->giveFunctions()->giveFunction(plasticEnvelopeFuncNum);
 };
 
 //////////////////////////////////////////////////////////
-double NormalPlasticBeamMaterial :: givePlasticLimit(double cumstrain) const{
-  return plasticEnvelope->giveY(cumstrain);
+double NormalPlasticBeamMaterial :: givePlasticLimit(double cumstrain) const {
+    return plasticEnvelope->giveY(cumstrain);
 }

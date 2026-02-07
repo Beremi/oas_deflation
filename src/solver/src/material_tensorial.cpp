@@ -18,13 +18,13 @@ TensTrsprtMaterialStatus :: TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Elem
 
 
 //////////////////////////////////////////////////////////
-void TensTrsprtMaterialStatus :: computeStress( double timeStep) {
+void TensTrsprtMaterialStatus :: computeStress(double timeStep) {
     effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
-    computeStressWithFrozenIntVars( timeStep);
+    computeStressWithFrozenIntVars(timeStep);
 };
 
 //////////////////////////////////////////////////////////
-void TensTrsprtMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void TensTrsprtMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
 };
@@ -65,7 +65,7 @@ double TensTrsprtMaterialStatus :: calculatePressureDependentPermeability(double
         return tmat->givePermeability();
     } else {
         double m = tmat->giveParamM();
-        double saturation = pow(1. + pow(pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
+        double saturation = pow(1. + pow( pressure / tmat->giveParamA(), 1. / ( 1. - m ) ), -m);
         return tmat->givePermeability() * pow(saturation, 0.5) * pow(1. - pow(1. - pow(saturation, 1. / m), m), 2.);
     }
 }
@@ -171,12 +171,12 @@ TensHeatConductionMaterialStatus :: TensHeatConductionMaterialStatus(TensHeatCon
 
 
 //////////////////////////////////////////////////////////
-void TensHeatConductionMaterialStatus :: computeStress( double timeStep) {
-    computeStressWithFrozenIntVars( timeStep);
+void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
+    computeStressWithFrozenIntVars(timeStep);
 };
 
 //////////////////////////////////////////////////////////
-void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
     temp_stress = m->giveConductivity() * addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
@@ -268,8 +268,8 @@ MaterialStatus *TensHeatConductionMaterial :: giveNewMaterialStatus(Element *e, 
 //////////////////////////////////////////////////////////
 // ELASTIC TENSORIAL MECHANICAL MATERIAL
 
-void TensMechMaterialStatus :: computeStress( double timeStep) {
-    TensMechMaterialStatus :: computeStressWithFrozenIntVars( timeStep);
+void TensMechMaterialStatus :: computeStress(double timeStep) {
+    TensMechMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -288,7 +288,7 @@ double TensMechMaterialStatus :: giveMassConstant() const {
 }
 
 //////////////////////////////////////////////////////////
-void TensMechMaterialStatus :: computeStressWithFrozenIntVars( double timeStep) {
+void TensMechMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_stress = giveStiffnessTensor("elastic") * addEigenStrain(temp_strain);
 };
@@ -436,12 +436,12 @@ TensCosseratMechMaterial :: TensCosseratMechMaterial(unsigned dimension) : TensM
 }
 
 //////////////////////////////////////////////////////////
-void TensCosseratMechMaterialStatus ::  computeStress( double timeStep) {
-    TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars( timeStep);
+void TensCosseratMechMaterialStatus ::  computeStress(double timeStep) {
+    TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars(timeStep);
 };
 
 //////////////////////////////////////////////////////////
-void TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars( double timeStep) {
+void TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     temp_stress = giveStiffnessTensor("elastic") *  addEigenStrain(temp_strain);
 };

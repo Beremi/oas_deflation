@@ -32,8 +32,8 @@ public:
     virtual void updateNextTimeToSave(const double &time);
     virtual void updateNextStepToSave(const unsigned &step);
     virtual void exportData(unsigned step, int iteration, fs :: path resultDir) const = 0;
-    virtual std::string giveFileName(unsigned step, int iteration) const;
-    std::string giveFileName() const { return filename; };
+    virtual std :: string giveFileName(unsigned step, int iteration) const;
+    std :: string giveFileName() const { return filename; };
     virtual void init();
     size_t giveMaxSize(unsigned c) const { return maxsize [ c ]; }
     void appendToName(std :: string app) { filename = filename + app; };
@@ -49,7 +49,7 @@ protected:
     bool save_iterations;
     double multiplier;
     Solver *solver;
-    
+
     std :: vector< unsigned >list;  // list of entities to export
 
     std :: vector< double >times_to_save;  // vector to store times for export
@@ -155,7 +155,7 @@ protected:
 public:
     Gauge(unsigned dimension) : DataExporter(dimension) {   name = "Gauge"; };
     ~Gauge() {};
-    virtual std::string giveFileName(unsigned step, int iteration) const override;
+    virtual std :: string giveFileName(unsigned step, int iteration) const override;
     std :: string giveGaugeName() const { return gname; }
 };
 

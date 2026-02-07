@@ -20,8 +20,8 @@ public:
     virtual ~ThermoMechanicalMaterialStatus() {};
     bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
-    virtual void computeStress( double timeStep);
-    virtual void computeStressWithFrozenIntVars( double timeStep);
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);
 };
 
 //////////////////////////////////////////////////////////
