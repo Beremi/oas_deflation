@@ -4,6 +4,7 @@ import pathlib
 import argparse
 import logging
 import datetime
+from urllib.parse import unquote, urlparse
 #os.environ["ETS_TOOLKIT"] = "qt"
 #os.environ["QT_API"] = "pyqt6"
 from traits.api import HasStrictTraits, Instance, List, Enum, Button, Str, \
@@ -16,6 +17,13 @@ from traitsui.qt.tree_editor \
     import CopyAction, CutAction, \
            PasteAction, DeleteAction, RenameAction
 from traitsui.message import Message
+
+# Custom DeleteAction that works with hide_root=True
+# (built-in DeleteAction is disabled when the parent node is hidden)
+CustomDeleteAction = Action(
+    name='Delete',
+    action='editor._menu_delete_node',
+)
 from traitsui.file_dialog  import open_file, TextInfo, FileInfo, save_file
 from pyface.api import FileDialog, OK
 from mpl_qt_editor import MPLFigureEditor
@@ -123,6 +131,16 @@ def HItem(value=None, **traits):
     return HGroup(Item(value, **traits, springy=True))
 
 
+def normalize_file_path(path):
+    """Convert file:// URI to regular path, or return path as-is."""
+    if path.startswith('file://'):
+        # Parse the URI and extract the path
+        parsed = urlparse(path)
+        # Unquote to handle percent-encoded characters
+        return unquote(parsed.path)
+    return path
+
+
 def error(message="", title="Error", parent=None):
     """Displays an error message to the user as a modal window."""
     msg = Message(message=message)
@@ -195,6 +213,7 @@ class LDFile(HasStrictTraits):
             new_curve.y_values = curve.y_values
             new_curve.x_scale = curve.x_scale
             new_curve.y_scale = curve.y_scale
+            new_curve.prepend_zero = curve.prepend_zero
             new_file.ld_curves.append(new_curve)
         
         self.parent.ldfiles.append(new_file)
@@ -210,7 +229,8 @@ class LDFile(HasStrictTraits):
     def _open_button_fired(self):
         """Handles the user clicking the 'Open...' button."""
         wildcard = '*.out|*.txt|*.dat|*.csv|*.*'
-        default_dir = str(pathlib.Path(self.ld_file).parent) if self.ld_file else str(pathlib.Path.cwd())
+        normalized_path = normalize_file_path(self.ld_file) if self.ld_file else ''
+        default_dir = str(pathlib.Path(normalized_path).parent) if normalized_path else str(pathlib.Path.cwd())
         
         dialog = FileDialog(
             title='Open LD File',
@@ -243,22 +263,25 @@ class LDFile(HasStrictTraits):
             self.data = None
             return []
         
-        if not pathlib.Path(self.ld_file).exists():
-            logging.error(f'File does not exist: {self.ld_file}')
+        # Normalize file path (handle file:// URIs)
+        normalized_path = normalize_file_path(self.ld_file)
+        
+        if not pathlib.Path(normalized_path).exists():
+            logging.error(f'File does not exist: {normalized_path}')
             if not silent:
-                error(f'File does not exist:\n{self.ld_file}', 'Error')
+                error(f'File does not exist:\n{normalized_path}', 'Error')
             self.data = None
             return []
         
         try:
-            logging.debug(f'Loading: {self.ld_file}')
-            self.data = pd.read_csv(self.ld_file, sep='\t', header=0, index_col=False)
-            logging.info(f'Loaded {len(self.data)} rows from {pathlib.Path(self.ld_file).name}')
+            logging.debug(f'Loading: {normalized_path}')
+            self.data = pd.read_csv(normalized_path, sep='\t', header=0, index_col=False)
+            logging.info(f'Loaded {len(self.data)} rows from {pathlib.Path(normalized_path).name}')
             return list(self.data.columns)
         except Exception as err:
-            logging.error(f'Failed to load {self.ld_file}: {err}')
+            logging.error(f'Failed to load {normalized_path}: {err}')
             if not silent:
-                error(f'The file cannot be loaded:\n{self.ld_file}\n\n{str(err)}', 'Error')
+                error(f'The file cannot be loaded:\n{normalized_path}\n\n{str(err)}', 'Error')
             self.data = None
             return []
 
@@ -279,7 +302,27 @@ class LDFile(HasStrictTraits):
                                page_name='.name'),
                 height=0.6, resizable=True),
                 ),
+                id='ldfile_view',
                 resizable=True)
+
+ldcurve_view = View(VGroup(HGroup(Item('name'),
+                              Item('active', label='Draw')),
+                       HGroup(Item('draw_this_button', show_label=False),
+                              Item('copy_to_clipboard', show_label=False),
+                              Item('save_to_txt', show_label=False),),
+                       HGroup(HItem('x_values'),
+                               Item('x_scale', show_label=False)),
+                       HGroup(HItem('y_values'),
+                               Item('y_scale', show_label=False)),
+                       HGroup(Item('line_style', label='Line Style'),
+                              Item('line_width', label='Width')),
+                       HGroup(Item('marker_style', label='Marker'),
+                              Item('marker_size', label='Size')),
+                       Item('prepend_zero', label='Zero point'),
+                       Item('ignore_last_step', label='Ignore last step'),
+                       ),
+                id='ldcurve_view',
+                )
 
 class LDCurve(HasStrictTraits):
     ld_num = 0
@@ -308,6 +351,8 @@ class LDCurve(HasStrictTraits):
 
     x_scale = Float(1)
     y_scale = Float(1)
+    prepend_zero = Bool(False)  # Prepend (0, 0) point before drawing
+    ignore_last_step = Bool(False)  # Exclude last data point when drawing
     
     # Line style options
     line_style = Enum(['-', '--', '-.', ':'])
@@ -360,18 +405,25 @@ class LDCurve(HasStrictTraits):
             return False
         return True
 
+    def _get_xy_data(self, global_x_scale=1.0, global_y_scale=1.0, ignore_last_step=False):
+        """Get scaled x and y data arrays, optionally prepending a zero point
+        and excluding the last data point."""
+        x = self.ldfile.data[self.x_values] * self.x_scale * global_x_scale
+        y = self.ldfile.data[self.y_values] * self.y_scale * global_y_scale
+        if self.prepend_zero:
+            x = pd.concat([pd.Series([0.0]), x], ignore_index=True)
+            y = pd.concat([pd.Series([0.0]), y], ignore_index=True)
+        if (self.ignore_last_step or ignore_last_step) and len(x) > 1:
+            x = x[:-1]
+            y = y[:-1]
+        return x, y
+
     def draw_line(self, ax, ignore_last_step=False, global_x_scale=1.0, global_y_scale=1.0):
         """Draw line on the given axes"""
         if not self._validate_data():
             return {'lines': [], 'markers': []}
         
-        x_to_draw = self.ldfile.data[self.x_values] * self.x_scale * global_x_scale
-        y_to_draw = self.ldfile.data[self.y_values] * self.y_scale * global_y_scale
-        
-        # Exclude last data point if ignore_last_step is True
-        if ignore_last_step and len(x_to_draw) > 1:
-            x_to_draw = x_to_draw[:-1]
-            y_to_draw = y_to_draw[:-1]
+        x_to_draw, y_to_draw = self._get_xy_data(global_x_scale, global_y_scale, ignore_last_step)
         
         label = f'{self.ldfile.name}-{self.name}'
         
@@ -394,8 +446,7 @@ class LDCurve(HasStrictTraits):
             return
         
         try:
-            x_data = self.ldfile.data[self.x_values] * self.x_scale
-            y_data = self.ldfile.data[self.y_values] * self.y_scale
+            x_data, y_data = self._get_xy_data()
             df = pd.DataFrame({self.x_values: x_data, self.y_values: y_data})
             df.to_clipboard(excel=True, index=False)
             logging.info('Data copied to clipboard')
@@ -414,8 +465,7 @@ class LDCurve(HasStrictTraits):
             return
         
         try:
-            x_data = self.ldfile.data[self.x_values] * self.x_scale
-            y_data = self.ldfile.data[self.y_values] * self.y_scale
+            x_data, y_data = self._get_xy_data()
             df = pd.DataFrame({self.x_values: x_data, self.y_values: y_data})
             df.to_csv(file_name, sep='\t', index=False)
             logging.info(f'Data saved to {file_name}')
@@ -430,38 +480,7 @@ class LDCurve(HasStrictTraits):
         """Toggle the active state"""
         self.active = not self.active
 
-    view = View(VGroup(HGroup(Item('name'),
-                              Item('active', label='Draw')),
-                       HGroup(HItem('x_values'),
-                               Item('x_scale', show_label=False)),
-                       HGroup(HItem('y_values'),
-                               Item('y_scale', show_label=False)),
-                       HGroup(Item('line_style', label='Line Style'),
-                              Item('line_width', label='Width')),
-                       HGroup(Item('marker_style', label='Marker'),
-                              Item('marker_size', label='Size')),
-                       Item('draw_this_button', show_label=False),
-                       Item('copy_to_clipboard', show_label=False),
-                       Item('save_to_txt', show_label=False),
-                       )
-                )
-
-ldcurve_view = View(VGroup(HGroup(Item('name'),
-                              Item('active', label='Draw')),
-                       HGroup(HItem('x_values'),
-                               Item('x_scale', show_label=False)),
-                       HGroup(HItem('y_values'),
-                               Item('y_scale', show_label=False)),
-                       HGroup(Item('line_style', label='Line Style'),
-                              Item('line_width', label='Width')),
-                       HGroup(Item('marker_style', label='Marker'),
-                              Item('marker_size', label='Size')),
-                       Item('draw_this_button', show_label=False),
-                       Item('copy_to_clipboard', show_label=False),
-                       Item('save_to_txt', show_label=False),
-                       )
-                )
-
+    view = ldcurve_view
 
 class CustomCurve(HasStrictTraits):
     """Custom curve defined by mathematical equation"""
@@ -597,13 +616,17 @@ class CustomCurve(HasStrictTraits):
         HGroup(Item('marker_style', label='Marker'),
                Item('marker_size', label='Size')),
         Item('draw_this_button', show_label=False),
-    ))
+    ),
+    id='customcurve_view',
+    )
 
 
 class LDFiles(HasStrictTraits):
     name = 'ldfiles'
     figure = Instance(Figure)
     add_ldfile = Button('Add new LD file')
+    add_multiple_ldfiles = Button('Add multiple LD files')
+    file_paths_text = Str('')  # Text field for pasting multiple file paths
     ldfiles = List(LDFile)
     add_custom_curve = Button('Add custom curve')
     custom_curves = List(CustomCurve)
@@ -620,6 +643,49 @@ class LDFiles(HasStrictTraits):
             return
         new_file = LDFile(figure=self.figure, parent=self)
         self.ldfiles.append(new_file)
+        # Automatically add first curve
+        new_file._add_ldcurve_fired()
+    
+    def _add_multiple_ldfiles_fired(self):
+        """Add multiple LD files from pasted file paths (one per line)"""
+        if self.figure is None:
+            logging.error("Figure not initialized, cannot add LD files")
+            error("Figure not initialized. Please restart the application.", "Error")
+            return
+        
+        if not self.file_paths_text.strip():
+            error("Please paste file paths in the text field (one per line).", "No File Paths")
+            return
+        
+        # Split by newlines and filter empty lines
+        file_paths = [line.strip() for line in self.file_paths_text.split('\n') if line.strip()]
+        
+        added_count = 0
+        for file_path in file_paths:
+            # Normalize file path (handle file:// URIs)
+            normalized_path = normalize_file_path(file_path)
+            
+            if not pathlib.Path(normalized_path).exists():
+                logging.warning(f'File does not exist, skipping: {normalized_path}')
+                continue
+            
+            new_file = LDFile(figure=self.figure, parent=self)
+            new_file.ld_file = normalized_path
+            new_file.name = pathlib.Path(normalized_path).stem  # Use filename without extension
+            self.ldfiles.append(new_file)
+            
+            # Automatically add first curve if data loaded successfully
+            if new_file.labels:
+                new_file._add_ldcurve_fired()
+            
+            added_count += 1
+        
+        logging.info(f'Added {added_count} LD file(s) from {len(file_paths)} path(s)')
+        if added_count < len(file_paths):
+            error(f'Added {added_count} out of {len(file_paths)} files.\nSome files were not found or could not be loaded.', 'Partial Success')
+        
+        # Clear the text field after processing
+        self.file_paths_text = ''
     
     def _add_custom_curve_fired(self):
         """Add a new custom equation-based curve"""
@@ -638,30 +704,33 @@ class LDFiles(HasStrictTraits):
                 item.figure = self.figure
 
     view = View(
-        Item('add_ldfile', show_label=False),
+        HGroup(
+            Item('add_ldfile', show_label=False),
+            Item('add_multiple_ldfiles', show_label=False),
+        ),
         Item('ldfiles', style='custom', show_label=False,
              editor=ListEditor(use_notebook=True,
                                deletable=True,
                                dock_style='tab',
                                page_name='.name')),
+        id='ldfiles_view',
         resizable=True
     )
              
 
 class FigureSettings(HasStrictTraits):
-    ignore_last_step = Bool(False)
     show_legend = Bool()
     set_xlim = Bool()
     x_limits = Tuple(float('nan'), float('nan'))
     set_ylim = Bool()
     y_limits = Tuple(float('nan'), float('nan'))
     view = View(
-        Item('ignore_last_step', show_label=True),
         Item('show_legend', show_label=True),
         HGroup(Item('set_xlim', show_label=False),
                Item('x_limits', show_label=True)),
         HGroup(Item('set_ylim', show_label=False),
                Item('y_limits', show_label=True)),
+        id='figuresettings_view',
         resizable=True
     )
 
@@ -675,6 +744,7 @@ class AxisSettings(HasStrictTraits):
         Item('title', show_label=True),
         Item('xlabel', show_label=True),
         Item('ylabel', show_label=True),
+        id='axissettings_view',
         resizable=True
     )
         
@@ -724,7 +794,9 @@ ldfile_view = View(VGroup(HGroup(Item('open_button', show_label=False, id='ld_op
                                deletable=True,
                                dock_style='tab',
                                page_name='.name')),
-                ))
+                ),
+                id='ldfile_tree_view',
+                )
                 
 # Custom action for adding new LD file with proper figure initialization
 add_ldfile_action = Action(
@@ -771,7 +843,9 @@ customcurve_view = View(VGroup(
     HGroup(Item('marker_style', label='Marker'),
            Item('marker_size', label='Size')),
     Item('draw_this_button', show_label=False),
-))
+),
+id='customcurve_tree_view',
+)
 
 # Tree editor for LD Files
 tree_editor = TreeEditor(
@@ -788,7 +862,7 @@ tree_editor = TreeEditor(
                              #CutAction,
                              #PasteAction,
                              Separator(),
-                             DeleteAction),
+                             CustomDeleteAction),
                   view =  View()),
         TreeNode( node_for  = [ LDFile ],
                   auto_open = True,
@@ -806,7 +880,7 @@ tree_editor = TreeEditor(
                              #CutAction,
                              #PasteAction,
                              Separator(),
-                             DeleteAction,
+                             CustomDeleteAction,
                              Separator(),
                              RenameAction),
                   view =  ldfile_view),
@@ -817,7 +891,7 @@ tree_editor = TreeEditor(
                   menu=Menu( toggle_ldcurve_active_action,
                              Separator(),
                              Separator(),
-                             DeleteAction,
+                             CustomDeleteAction,
                              Separator(),
                              RenameAction),
                   view =  ldcurve_view),
@@ -827,7 +901,7 @@ tree_editor = TreeEditor(
                   copy      = True,
                   menu=Menu( toggle_customcurve_active_action,
                              Separator(),
-                             DeleteAction,
+                             CustomDeleteAction,
                              Separator(),
                              RenameAction),
                   view =  customcurve_view)
@@ -856,6 +930,7 @@ class CustomCurves(HasStrictTraits):
     
     view = View(
         Item('add_custom_curve', show_label=False),
+        id='customcurves_view',
         resizable=True
     )
 
@@ -869,7 +944,7 @@ custom_curves_tree_editor = TreeEditor(
                   label     = '=Custom Curves',
                   add       = [ CustomCurve ],
                   menu=Menu( Separator(),
-                             DeleteAction),
+                             CustomDeleteAction),
                   view =  View()),
         TreeNode( node_for  = [ CustomCurve ],
                   auto_open = True,
@@ -877,7 +952,7 @@ custom_curves_tree_editor = TreeEditor(
                   copy      = True,
                   menu=Menu( toggle_customcurve_active_action,
                              Separator(),
-                             DeleteAction,
+                             CustomDeleteAction,
                              Separator(),
                              RenameAction),
                   view =  customcurve_view),
@@ -910,6 +985,24 @@ class BatchEditDialog(HasStrictTraits):
     change_active = Bool(False)
     active = Bool(True)
     
+    change_line_style = Bool(False)
+    line_style = Enum(['-', '--', '-.', ':'])
+    
+    change_line_width = Bool(False)
+    line_width = Float(1.5)
+    
+    change_marker_style = Bool(False)
+    marker_style = Enum(['o', 'none', 's', '^', 'v', '<', '>', 'd', 'p', '*'])
+    
+    change_marker_size = Bool(False)
+    marker_size = Float(6.0)
+    
+    change_prepend_zero = Bool(False)
+    prepend_zero = Bool(False)
+    
+    change_ignore_last_step = Bool(False)
+    ignore_last_step = Bool(False)
+    
     apply_button = Button('Apply to Selected')
     
     def _all_labels_default(self):
@@ -938,30 +1031,72 @@ class BatchEditDialog(HasStrictTraits):
             if self.change_active:
                 curve.active = self.active
                 count += 1
+            if self.change_line_style:
+                curve.line_style = self.line_style
+                count += 1
+            if self.change_line_width:
+                curve.line_width = self.line_width
+                count += 1
+            if self.change_marker_style:
+                curve.marker_style = self.marker_style
+                count += 1
+            if self.change_marker_size:
+                curve.marker_size = self.marker_size
+                count += 1
+            if self.change_prepend_zero:
+                curve.prepend_zero = self.prepend_zero
+                count += 1
+            if self.change_ignore_last_step:
+                curve.ignore_last_step = self.ignore_last_step
+                count += 1
         logging.info(f'Applied batch changes to {len(self.curves)} curves')
     
     view = View(
         VGroup(
             '_',
             HGroup(
-                Item('change_x_values', label='Change X'),
+                Item('change_x_values', label='Change X', show_label=False),
                 Item('x_values', enabled_when='change_x_values'),
             ),
             HGroup(
-                Item('change_y_values', label='Change Y'),
+                Item('change_y_values', label='Change Y', show_label=False),
                 Item('y_values', enabled_when='change_y_values'),
             ),
             HGroup(
-                Item('change_x_scale', label='Change X Scale'),
+                Item('change_x_scale', label='Change X Scale', show_label=False),
                 Item('x_scale', enabled_when='change_x_scale'),
             ),
             HGroup(
-                Item('change_y_scale', label='Change Y Scale'),
+                Item('change_y_scale', label='Change Y Scale', show_label=False),
                 Item('y_scale', enabled_when='change_y_scale'),
             ),
             HGroup(
-                Item('change_active', label='Change Active'),
+                Item('change_active', label='Change Active', show_label=False),
                 Item('active', enabled_when='change_active'),
+            ),
+            HGroup(
+                Item('change_line_style', label='Change Line Style', show_label=False),
+                Item('line_style', enabled_when='change_line_style'),
+            ),
+            HGroup(
+                Item('change_line_width', label='Change Line Width', show_label=False),
+                Item('line_width', enabled_when='change_line_width'),
+            ),
+            HGroup(
+                Item('change_marker_style', label='Change Marker Style', show_label=False),
+                Item('marker_style', enabled_when='change_marker_style'),
+            ),
+            HGroup(
+                Item('change_marker_size', label='Change Marker Size', show_label=False),
+                Item('marker_size', enabled_when='change_marker_size'),
+            ),
+            HGroup(
+                Item('change_prepend_zero', label='Change Zero Point', show_label=False),
+                Item('prepend_zero', enabled_when='change_prepend_zero'),
+            ),
+            HGroup(
+                Item('change_ignore_last_step', label='Change Ignore Last Step', show_label=False),
+                Item('ignore_last_step', enabled_when='change_ignore_last_step'),
             ),
             '_',
             Item('apply_button', show_label=False),
@@ -970,6 +1105,46 @@ class BatchEditDialog(HasStrictTraits):
         buttons=['OK', 'Cancel'],
         kind='livemodal',
         resizable=True,
+    )
+
+
+class MultipleFilesDialog(HasStrictTraits):
+    """Dialog for adding multiple LD files from pasted paths"""
+    file_paths_text = Str('')
+    ldfiles_container = Any()  # Reference to LDFiles container
+    
+    add_button = Button('Add Files')
+    
+    def _add_button_fired(self):
+        """Process and add files from pasted paths"""
+        if not self.file_paths_text.strip():
+            error("Please paste file paths in the text field (one per line).", "No File Paths")
+            return
+        
+        if self.ldfiles_container is None:
+            logging.error("LDFiles container reference not set")
+            return
+        
+        # Trigger the ldfiles container to process the paths
+        self.ldfiles_container.file_paths_text = self.file_paths_text
+        self.ldfiles_container._add_multiple_ldfiles_fired()
+    
+    view = View(
+        VGroup(
+            Item('file_paths_text', 
+                 label='Paste file paths (one per line)',
+                 style='custom',
+                 height=200,
+                 width=400),
+            '_',
+            Item('add_button', show_label=False),
+        ),
+        title='Add Multiple LD Files',
+        buttons=['OK', 'Cancel'],
+        kind='livemodal',
+        resizable=True,
+        width=500,
+        height=300,
     )
 
 
@@ -997,6 +1172,7 @@ class ControlPanel(HasStrictTraits):
     ipython_widget = Any()  # Will hold the IPython widget
 
     add_ldfile_button = Button('Add new LD file')
+    add_multiple_ldfiles_button = Button('Add multiple LD files')
     add_custom_curve_button = Button('Add custom curve')
     batch_edit_button = Button('Batch Edit Selected')
     draw_button = Button('Draw all')
@@ -1075,6 +1251,11 @@ class ControlPanel(HasStrictTraits):
     def _add_ldfile_button_fired(self):
         self.ldfiles.add_ldfile = True
     
+    def _add_multiple_ldfiles_button_fired(self):
+        """Open dialog for adding multiple LD files"""
+        dialog = MultipleFilesDialog(ldfiles_container=self.ldfiles)
+        dialog.edit_traits()
+    
     def _add_custom_curve_button_fired(self):
         """Add a new custom equation-based curve"""
         new_curve = CustomCurve(parent=self)
@@ -1148,8 +1329,6 @@ class ControlPanel(HasStrictTraits):
         all_markers = []
         all_lines = []
         
-        ignore_last = self.figure_settings.ignore_last_step
-        
         # Draw LD file curves
         for ldfile in self.ldfiles.ldfiles:
             if not ldfile.active:  # Skip inactive files
@@ -1157,7 +1336,7 @@ class ControlPanel(HasStrictTraits):
             for curve in ldfile.ld_curves:
                 if not curve.active:  # Skip inactive curves
                     continue
-                result = curve.draw_line(ax, ignore_last_step=ignore_last,
+                result = curve.draw_line(ax, ignore_last_step=False,
                                         global_x_scale=self.global_x_scale,
                                         global_y_scale=self.global_y_scale)
                 if result:
@@ -1284,7 +1463,6 @@ class ControlPanel(HasStrictTraits):
                 'ldfiles': [],
                 'custom_curves': [],
                 'figure_settings': {
-                    'ignore_last_step': self.figure_settings.ignore_last_step,
                     'show_legend': self.figure_settings.show_legend,
                     'set_xlim': self.figure_settings.set_xlim,
                     'x_limits': list(self.figure_settings.x_limits),
@@ -1318,6 +1496,8 @@ class ControlPanel(HasStrictTraits):
                         'line_width': curve.line_width,
                         'marker_style': curve.marker_style,
                         'marker_size': curve.marker_size,
+                        'prepend_zero': curve.prepend_zero,
+                        'ignore_last_step': curve.ignore_last_step,
                     }
                     ldfile_data['curves'].append(curve_data)
                 
@@ -1417,7 +1597,6 @@ class ControlPanel(HasStrictTraits):
             
             # Restore figure settings
             fs = state.get('figure_settings', {})
-            self.figure_settings.ignore_last_step = fs.get('ignore_last_step', False)
             self.figure_settings.show_legend = fs.get('show_legend', False)
             self.figure_settings.set_xlim = fs.get('set_xlim', False)
             self.figure_settings.x_limits = tuple(fs.get('x_limits', [float('nan'), float('nan')]))
@@ -1462,6 +1641,8 @@ class ControlPanel(HasStrictTraits):
                     new_curve.line_width = curve_data.get('line_width', 1.5)
                     new_curve.marker_style = curve_data.get('marker_style', 'o')
                     new_curve.marker_size = curve_data.get('marker_size', 6.0)
+                    new_curve.prepend_zero = curve_data.get('prepend_zero', False)
+                    new_curve.ignore_last_step = curve_data.get('ignore_last_step', False)
                     new_ldfile.ld_curves.append(new_curve)
                 
                 self.ldfiles.ldfiles.append(new_ldfile)
@@ -1497,7 +1678,9 @@ class ControlPanel(HasStrictTraits):
             Group(
                 HGroup(
                     Item('add_ldfile_button', show_label=False),
-                    Item('batch_edit_button', show_label=False),),
+                    Item('add_multiple_ldfiles_button', show_label=False),
+                    Item('batch_edit_button', show_label=False),
+                ),
                 Item('ldfiles', editor=tree_editor, show_label=False, id='treeeditor'),
                 label='LD Files',
                 id='ld_files_tab'),
@@ -1511,7 +1694,7 @@ class ControlPanel(HasStrictTraits):
                          style='custom', show_label=False,
                          height=0.6, resizable=True),
                 ),
-                label='Custom Curves',
+                label='Func',
                 id='custom_curves_tab'),
             Group(
                 Item('@figure_settings', show_label=False),
@@ -1524,11 +1707,11 @@ class ControlPanel(HasStrictTraits):
                     Item('global_x_scale', label='Global X Scale'),
                     Item('global_y_scale', label='Global Y Scale'),
                 ), 
-                label='Figure Settings',
+                label='FigSet',
                 id='figure_settings_tab'),
             Group(
                 Item('log_text', style='custom', show_label=False,
-                     height=400, width=600, resizable=True),
+                     resizable=True),
                 Item('clear_log_button', show_label=False),
                 label='Log',
                 id='log_tab'),
@@ -1540,7 +1723,7 @@ class ControlPanel(HasStrictTraits):
                 Group(
                     Item('ipython_widget', editor=IPythonEditor(),
                          show_label=False),
-                    label='IPython Console',
+                    label='IpyConsole',
                     id='ipython_tab')
             )
         
