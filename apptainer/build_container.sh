@@ -9,7 +9,7 @@ apptainer build ../../OAS-build-container/OAS_build.sif ubuntu_24-dev.def
 # Build OOFEM and OAS using the container
 echo "Building OAS using the building container..."
 cd ../../OAS-build-container
-apptainer exec --bind ../OAS:/OAS OAS_build.sif /bin/bash -c "
+apptainer exec --bind ../OAS:/OAS,$(pwd):$(pwd) OAS_build.sif /bin/bash -c "
 cmake -DCMAKE_BUILD_TYPE=Release -DUSE_CHOLMOD=ON /OAS
 
 cmake --build . -- -j 10

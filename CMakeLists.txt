@@ -2,15 +2,18 @@ cmake_minimum_required(VERSION 3.18.0 FATAL_ERROR)
 
 message(STATUS "project source directory -> ${CMAKE_SOURCE_DIR}")
 message(STATUS "project build directory -> ${CMAKE_BINARY_DIR}")
-# Do this before project() to skip the compiler config process
-#if ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-if (("${CMAKE_BINARY_DIR}" MATCHES "${CMAKE_SOURCE_DIR}[\/\\]") OR ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}"))
+
+# Calculate the relative path from the Source to the Build directory
+file(RELATIVE_PATH _rel_path "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+
+# If the relative path doesn't start with '..' and isn't empty, 
+# it means the build directory is INSIDE the source directory.
+if(NOT "${_rel_path}" MATCHES [[^\.\.]] AND NOT "${_rel_path}" STREQUAL "")
   message(FATAL_ERROR "In-source builds are disabled.
-    Please create a subfolder outside of repository
-    and use `cmake PATH_TO_SRC` inside it.
-    NOTE: cmake will now create CMakeCache.txt and CMakeFiles/*.
-          You must delete them, or cmake will refuse to work.")
-endif() # yes, end-markers and even else() need empty parens
+    Current Build Path: ${CMAKE_BINARY_DIR}
+    Current Source Path: ${CMAKE_SOURCE_DIR}
+    Please create a folder COMPLETELY OUTSIDE of the source tree.")
+endif()
 
 include (CheckSymbolExists)
 include (CheckCXXSymbolExists)
