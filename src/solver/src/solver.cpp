@@ -294,6 +294,15 @@ double Solver :: giveExternalForce(unsigned k) const {
     return f_ext [ k ];
 }
 
+//////////////////////////////////////////////////////////
+void Solver :: setAllDoFsExternally(Vector DoFs) {
+    if (DoFs.size()!=totalDoFnum){
+        cerr << "Provided DoFs have incorrect length " << DoFs.size() << " instead of expected " << totalDoFnum << endl;
+        exit(1);
+    }
+    trial_r = DoFs;
+}
+    
 /*
  * //////////////////////////////////////////////////////////
  * Vector Solver :: lumpMatrix(CoordinateIndexedSparseMatrix &Q) const {

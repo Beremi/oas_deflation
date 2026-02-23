@@ -142,8 +142,6 @@ int main(int argc, char **argv) {
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
 
-
-
     masterModel->readFromFile( input.string() );
 
     // check if exists or create directory for results

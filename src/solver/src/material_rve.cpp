@@ -1647,7 +1647,7 @@ void DiscreteMechanicalRVEMaterial :: readFromLine(istringstream &iss) {
     string param;
     while (  iss >> param ) {
         if ( param.compare("project_curvatures") == 0 || param.compare("project_curvature") == 0 ) {
-            //switch on projection of curvatures accordong to paper RezCus2017
+            //switch on projection of curvatures according to paper RezCus2017
             project_curvature = true;
         } else if ( param.compare("convert_from_cauchy") == 0 ) {
             //the element is Cauchy but the material is Cosserat

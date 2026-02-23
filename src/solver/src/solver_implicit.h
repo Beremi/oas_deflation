@@ -36,6 +36,8 @@ public:
     virtual void reset();
     virtual void rebuild();
     virtual void factorizeLinearSystem();
+    virtual void updateSystemMatrices() {updateSystemMatrices(0, 0, 1); computeKeff();};    
+    virtual CoordinateIndexedSparseMatrix giveSystemMatrix() const {return Keff;};    
 };
 
 //////////////////////////////////////////////////////////

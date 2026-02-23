@@ -141,6 +141,8 @@ class Model:
         self.dogboneD0=None
         self.dogboneH=None
         self.dogboneH0=None
+        
+        self.cornerNode=False
 
         for i in range (len(r)):
             if (r[i]=='blank'):
@@ -358,6 +360,10 @@ class Model:
             if (r[i]=='adaptivityReady'):
                 if (int(r[i+1])==1): self.adaptivityReady = True
                 if (int(r[i+1])==0): self.adaptivityReady = False
+            if (r[i]=='cornerNode'):
+                if (int(r[i+1])==1): self.cornerNode = True
+                if (int(r[i+1])==0): self.cornerNode = False
+
 
         print('done.')
 
@@ -804,7 +810,7 @@ class Model:
 
     def run_2d_box_with_periodic_nodes(self, node_coords_init=None):
         self.activeTransport = False
-        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create2d_box_with_periodic_nodes(self.maxLim, self.minDist, self.trials)
+        (self.node_coords, self.mechBC_merged, self.trsprtBC_merged, self.govNodes, self.govNodesMechBC, self.rigidPlates, self.vor, self.areas, self.functions, self.radii)  = utilitiesModeling.create2d_box_with_periodic_nodes(self.maxLim, self.minDist, self.trials, self.cornerNode)
 
         #coords = np.asarray(self.node_coords)
         #lims = [np.amin(coords[:,0]),np.amax(coords[:,0]),np.amin(coords[:,1]),np.amax(coords[:,1])]

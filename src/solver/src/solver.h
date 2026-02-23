@@ -43,8 +43,7 @@ protected:
     bool silent;
 
     virtual void updateFieldVariables();
-    virtual void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
-
+    
     std :: vector< Pertrubation * >pertrubations;
 
     //Vector lumpMatrix(CoordinateIndexedSparseMatrix &Q) const;
@@ -86,6 +85,12 @@ public:
     Vector giveResiduals() const { return residuals; };
     bool showStepTime() const { return showTime; };
     bool isSilent() const { return silent; };
+    unsigned giveTotalDoFNumber() const { return totalDoFnum; };
+    void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
+    Vector giveInternalForces() const {return f_int;};
+    virtual void updateSystemMatrices() {};    
+    virtual CoordinateIndexedSparseMatrix giveSystemMatrix() const {return CoordinateIndexedSparseMatrix(freeDoFnum, freeDoFnum);};  
+    void setAllDoFsExternally(Vector DoFs);    
 };
 
 //////////////////////////////////////////////////////////

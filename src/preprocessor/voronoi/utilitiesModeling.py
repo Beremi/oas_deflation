@@ -1619,13 +1619,13 @@ def create2d_Hanging_FracZone(maxLim, minDist, trials):
 
     return node_coords, mechBC_merged, [], govNodes, govNodesMechBC, rigidPlates, vor, [], functions
 
-def create2d_box_with_periodic_nodes(maxLim, minDist, trials):
+def create2d_box_with_periodic_nodes(maxLim, minDist, trials, cornerNode):
     print('Creating 2d frac zone...')
     dim=2
 
     ### sampling of nodes
     ### direct setting of mechanicalBCs
-    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble2d_box_with_periodic_nodes(maxLim, minDist, trials)
+    node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions, radii  = assemble2d_box_with_periodic_nodes(maxLim, minDist, trials, cornerNode)
 
     print('Conducting Power tesselationSSSSSSS...', end = '')
     vor, regions, vertices, polygons, areas, centroids, points = utilitiesNumeric.runMirroredVoronoi (node_coords, dim, maxLim)
@@ -5382,9 +5382,14 @@ def assemble2d_Hanging_FracZone(maxLim, minDist, trials):
 
     return node_coords, mechBC_merged, mechInitC_merged,  govNodes, govNodesMechBC, rigidPlates, functions
 
-def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
+def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials, cornerNode):
     dim = 2
-    node_coords = []
+
+    indent = 1e-8
+    
+    if cornerNode: 
+        node_coords = [[indent,indent],[maxLim[0]-indent, indent],[maxLim[0]-indent, maxLim[1]-indent],[indent, maxLim[1]-indent]]
+    else: node_coords = []
     mechBC_merged = []
     mechInitC_merged = []
     govNodes = []
@@ -5392,7 +5397,7 @@ def assemble2d_box_with_periodic_nodes(maxLim, minDist, trials):
     rigidPlates = []
     functions = []
 
-    indent = 1e-8
+
 
     oldlen = len(node_coords)
     nodeA = np.array([minDist*0.4, indent])
