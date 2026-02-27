@@ -17,7 +17,7 @@ class NodeContainer; //forward declaration
 class Element; //forward declaration
 class ElementContainer; //forward declaration
 class Solver; //forward declaration
-
+class MaterialStatus; //forward declaration
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // DIRICHLET AND NEUMANN BOUNDARY CONDITION
@@ -105,6 +105,26 @@ public:
     virtual std :: vector< double >giveBodyForceDoFValues(double t);
 };
 
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EIGENSTRAINS
+class EigenStrainLoad 
+{
+protected:
+    MaterialStatus *ms;
+    std :: vector< unsigned >funcIDs;
+    std :: vector< Function * >funcspointers;
+    double beginTime, endTime;    
+public:
+    EigenStrainLoad() { beginTime = -INFINITY, endTime = INFINITY; };
+    EigenStrainLoad(MaterialStatus *matstat, std::vector< Function * > f) { ms = matstat; funcspointers = f; beginTime = -INFINITY, endTime = INFINITY; };    
+    virtual ~EigenStrainLoad(){};
+    virtual void readFromLine(std :: istringstream &iss, ElementContainer *elems);
+    virtual void init(FunctionContainer *funcs, double time);
+    void applyEigenStrainLoad(double t);    
+    double giveBeginTime() const { return beginTime; };
+    double giveEndTime() const { return endTime; };  
+};
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -113,18 +133,20 @@ class BCContainer
 {
 private:
     FunctionContainer *functions;
-    std :: vector< BoundaryCondition * >BC;
+    std :: vector< BoundaryCondition * >BC;  
 
     std :: vector< unsigned >dirichDoFs;
     std :: vector< unsigned >neumannDoFs;
 
     std :: vector< BodyLoad * >loads;
+    std :: vector< EigenStrainLoad * >eigloads;
+
     std :: set< double >stageTimes;
 
 public:
     BCContainer() { functions = nullptr; };
     virtual ~BCContainer();
-    void setContainers(FunctionContainer *f) { functions = f; };
+    void setContainers(FunctionContainer *f) { functions = f;};
     void setInitialDoFFields(Solver *s);
     void init(double time);
     void clear();
@@ -142,6 +164,8 @@ public:
     void addBoundaryCondition(BoundaryCondition *bc) { BC.push_back(bc); }
     void removeBoundaryCondition(unsigned i);
     double giveTimeOfNextChange(double time);
+    void addEigenStrainLoad(EigenStrainLoad *eig) { eigloads.push_back(eig); };
+    void applyEigenStrainLoads(double time);     
 protected:
 };
 

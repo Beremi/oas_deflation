@@ -29,7 +29,7 @@ public:
     virtual ~Function() {};
     double checkTimeBellowZero(double t) const;
     virtual double giveY(double t) const { ( void ) t; return 0; };
-    virtual double giveY(const Point *t) { ( void ) t; return 0; }
+    virtual double giveY(const Point *t) { ( void ) t; return 0; } 
     virtual void readFromLine(std :: istringstream &iss) = 0;
     virtual double giveNextEtreme(const double &t) const = 0;
     virtual void setActive() { active = true; };

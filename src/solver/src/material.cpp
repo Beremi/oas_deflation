@@ -77,7 +77,14 @@ void MaterialStatus :: resetTemporaryVariables() {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: addToEigenStrain(const Vector &x) {
-    eigenstrain += x;
+    if (eigenstrain.size()==0){
+        eigenstrain = x;
+    } else if (eigenstrain.size() == x.size()){
+        eigenstrain += x;
+    } else {
+        cerr << "Error in " << name << ": eigenstrain size does not match the size of the added vector" << endl;
+        exit(1);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -147,8 +154,8 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    if ( num != giveMaterial()->giveStrainSize() ) {
-        cerr << "Error in " << giveName() << ": strain size does not match" << endl;
+    if ( num != giveMaterial()->giveExternalStrainSize() ) {
+        cerr << "Error in " << giveName() << ": strain size does not match, expected " << giveMaterial()->giveExternalStrainSize() << " but " << num << " recieved" << endl;
         exit(1);
     }
     temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(num);

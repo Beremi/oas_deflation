@@ -648,14 +648,20 @@ CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(Co
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep) {
+void ElementContainer :: resetEigenStrain(double time) {
+    for ( auto &e : elems ) {
+        e->removeEigenStrain();
+    }
+    bconds->applyEigenStrainLoads(time);   
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double time, double timeStep) {
     Vector elDoFvalues, elForces;
     vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
 
-    for ( auto &e : elems ) {
-        e->removeEigenStrain();
-    }
+    resetEigenStrain(time);
 
     materials->runPreparationForStressEvaluation(this);
 
@@ -739,13 +745,13 @@ void ElementContainer :: integrateInertiaForces(const Vector &full_a, Vector &fu
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep) {
-    integrateInternalForces(full_r, full_f, false, timeStep);
+void ElementContainer :: integrateInternalForces(Vector &full_r, Vector &full_f, double time, double timeStep) {
+    integrateInternalForces(full_r, full_f, false, time, timeStep);
 }
 
 //////////////////////////////////////////////////////////
-void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep) {
-    integrateInternalForces(full_r, full_f, true, timeStep);
+void ElementContainer :: integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double time, double timeStep) {
+    integrateInternalForces(full_r, full_f, true, time, timeStep);
 }
 
 //////////////////////////////////////////////////////////

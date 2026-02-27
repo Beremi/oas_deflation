@@ -57,9 +57,9 @@ public:
     void updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool lumped) const;
     //void updateLumpedMassMatrix(Vector &M) const;
     double integrateKineticEnergy(const Vector &velocity) const;
-    void integrateInternalForces(Vector &full_r, Vector &full_f, double timeStep);                        ///< return internal forces with temporary update of internal variables
-    void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double timeStep);  ///< return internal forces based on current state of internal variables
-    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double timeStep);          ///< return internal forces with or without frozen internal variables
+    void integrateInternalForces(Vector &full_r, Vector &full_f, double time, double timeStep);                        ///< return internal forces with temporary update of internal variables
+    void integrateInternalForcesWithFrozenIntVariables(Vector &full_r, Vector &full_f, double time, double timeStep);  ///< return internal forces based on current state of internal variables
+    void integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double time, double timeStep);          ///< return internal forces with or without frozen internal variables
     void integrateDampingForces(const Vector &full_v, Vector &full_f) const;
     void integrateInertiaForces(const Vector &full_a, Vector &full_f) const;
     Element *giveElement(unsigned const num) const;
@@ -74,6 +74,7 @@ public:
     std :: vector< Vector >computePrincipalStresses() const;
     void replaceTrueMassMatricesByLumpedOnes();
     double giveDissipatedEnergy() const;
+    void resetEigenStrain(double time);
 
     std :: vector< Element * > :: iterator begin() { return elems.begin(); }
     std :: vector< Element * > :: iterator end() { return elems.end(); }

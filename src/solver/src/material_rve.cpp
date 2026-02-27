@@ -4,6 +4,7 @@
 #include "element_ldpm.h"
 #include "element_continuous.h"
 #include "pblock_periodic_bc.h"
+#include "boundary_condition.h"
 //#include "solver_implicit.h"
 
 using namespace std;
@@ -23,6 +24,7 @@ RVEMaterialStatus :: RVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnu
     for ( unsigned i = 0; i < ndim; i++ ) {
         axDirs(i, i) = 1.;
     }
+    
 }
 
 //////////////////////////////////////////////////////////
@@ -40,13 +42,14 @@ void RVEMaterialStatus :: init() {
     //therefore, preprocessing blocks are now called in reader instead of model initialization
 
     //generateVolumetricAverageBC(); //not good idea because the stiffness matrix becomes full
-    generateRandomFixedBC();
-
+    generateRandomFixedBC();   
+  
     stringstream appendname;
     appendname << "_" << std :: setfill('0') << std :: setw(4) << element->giveID() << "_" << std :: setw(2) << idx;
     RVE->giveExporters()->appendToAllNames( appendname.str() );
 
     RVE->init();
+    generateEigenStrainLoads();    
 }
 
 //////////////////////////////////////////////////////////
@@ -296,12 +299,10 @@ void DiscreteTransportRVEMaterialStatus :: computeStress(double timeStep) {
 
     transformStrain();
 
-    //set eigenstrains
-    applyEigenStrains();
-
     //solve
     RVE->resetTime();
     RVE->giveSolver()->runBeforeEachStep();
+    applyEigenStrains(); //set eigenstrains
     RVE->giveSolver()->solve();
 
 
@@ -720,6 +721,39 @@ DiscreteMechanicalRVEMaterialStatus :: DiscreteMechanicalRVEMaterialStatus(RVEMa
 }
 
 /////////////////////////////////./////////////////////////
+void DiscreteMechanicalRVEMaterialStatus :: generateEigenStrainLoads() { 
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    if ( !macromat->addMacroComponents() ) {
+        ElementContainer *elems = RVE->giveElements();
+        FunctionContainer *funcs = RVE->giveFunctions();
+        BCContainer *bcs = RVE->giveBoundaryConditions();
+        
+        vector<MaterialStatus *> mss;
+        unsigned eigsize;
+        vector < Function * > ff;
+        vector< double >x, y;
+        x.resize(2, 0);
+        x[1] = 1;
+        y.resize(2, 0);              
+        for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
+            mss = elems->giveElement(i)->giveMaterialStats();
+            for ( auto &ms:mss){
+                eigsize = ms->giveMaterial()->giveStrainSize();    
+                ff.resize(eigsize);
+                for(unsigned k=0; k<eigsize; k++){
+                    PieceWiseLinearFunction *newf = new PieceWiseLinearFunction(x, y);
+                    ff[k] = newf;
+                    funcs->addFunction(newf); 
+                    eigenfunctions.push_back(newf);
+                }
+                EigenStrainLoad *el = new EigenStrainLoad(ms, ff);
+                bcs->addEigenStrainLoad(el);
+            }            
+        }
+    }
+};  
+
+/////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
     DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     if ( !macromat->addMacroComponents() ) {
@@ -727,6 +761,7 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
         vector< vector< Matrix > > *projectors = macromat->giveProjectors();
         ElementContainer *elems = RVE->giveElements();
         Element *e;
+        unsigned fID = 0;
         for ( unsigned i = 0; i < elems->giveSize(); i++ ) {
             if ( ( ( * projectors ) [ i ] ).size() == 0 ) {
                 continue;
@@ -734,7 +769,10 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
             e = elems->giveElement(i);
             for ( unsigned ip = 0; ip < e->giveNumIP(); ip++ ) {
                 Vector eigstr =  -( * projectors ) [ i ] [ ip ] * local_strain;
-                e->giveMatStatus(ip)->addToEigenStrain(eigstr);
+                for(unsigned l=0; l<eigstr.size(); l++){
+                    eigenfunctions[fID]->setYValue(eigstr[l],1);
+                    fID++;
+                }
             }
         }
     } else {
@@ -850,10 +888,9 @@ void DiscreteMechanicalRVEMaterialStatus :: computeStress(double timeStep) {
     }
     if ( not RVE->giveSolver()->isSilent() ) {
         cout << "Solving mechanical RVE" << endl;
-    }
+    }    
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_strain = addEigenStrain(macromaterial->strainToCosserat(temp_strain) );   //macroscopic eigenstrain
-
     transformStrain();
 
     //set eigenstrains
@@ -912,9 +949,9 @@ void DiscreteMechanicalRVEMaterialStatus :: computeStress(double timeStep) {
     local_stress.resize( temp_strain.size() );
     local_stress.setZero();
     collectStresses();
-
+    
     transformStress();
-    temp_stress = macromaterial->stressToCauchy(temp_stress);
+    temp_stress = macromaterial->stressToCauchy(temp_stress);  
 }
 
 /////////////////////////////////./////////////////////////

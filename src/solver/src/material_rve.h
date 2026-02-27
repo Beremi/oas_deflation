@@ -10,7 +10,7 @@ class Node; //forward declaraion
 class Transp1D; //forward declaraion
 class BoundaryCondition; //forward declaraion
 class PieceWiseLinearFunction; //forward declaraion
-
+class Function; //forward declaraion
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -28,6 +28,8 @@ protected:
 
     //setup for volumetric average
     PieceWiseLinearFunction *volumAverFunc;
+    
+    std::vector < PieceWiseLinearFunction *> eigenfunctions;
 
     bool is_precomputed;
 
@@ -43,6 +45,7 @@ public:
     virtual void setReferenceSystemDirections(Matrix r) { axDirs = r; };
     Matrix giveTransformationMatrix() { return transf; };
     Matrix giveReferenceSystemDirections() { return axDirs; };
+    virtual void generateEigenStrainLoads() { };    
 };
 
 //////////////////////////////////////////////////////////
@@ -187,6 +190,7 @@ public:
     virtual Matrix giveMassTensor() const;
     double computeAverageDensity() const;
     virtual void setParameterValue(std :: string code, double value);
+    virtual void generateEigenStrainLoads();    
 };
 
 //////////////////////////////////////////////////////////
@@ -227,7 +231,7 @@ public:
     bool isConvertingFromCauchy() const { return convert_from_cauchy; };
     void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
     bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };
-    unsigned giveExternalStrainSize() const;
+    virtual unsigned giveExternalStrainSize() const;
 };
 
 //////////////////////////////////////////////////////////

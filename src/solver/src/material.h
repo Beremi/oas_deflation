@@ -44,6 +44,7 @@ public:
     virtual void addToEigenStrain(const Vector &x);
     virtual void addToEigenVolumetricStrain(double x) { ( void ) x; };
     virtual void removeEigenStrain() { eigenstrain.setZero(); };
+    Vector giveEigenStrain() const {return eigenstrain;};    
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
     virtual void readFromLine(std :: istringstream &iss);
@@ -95,6 +96,7 @@ public:
     unsigned giveId() { return idx; }
     unsigned giveDimension() const { return dim; }
     unsigned giveStrainSize() const { return strainsize; }
+    virtual unsigned giveExternalStrainSize() const {return giveStrainSize();};    
     void setId(const unsigned &i) { this->idx = i; }
     virtual void init(MaterialContainer *matcont) { ( void ) matcont; };
     bool isProducingInternalSources()const { return produceInternalSources; }

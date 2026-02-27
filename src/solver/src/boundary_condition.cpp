@@ -2,6 +2,7 @@
 #include "node_container.h"
 #include "element_container.h"
 #include "solver.h"
+#include "material.h"
 
 using namespace std;
 //////////////////////////////////////////////////////////
@@ -342,6 +343,39 @@ vector< double >SelfWeight :: giveBodyForceDoFValues(double t) {
     return load;
 }
 
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// EIGENSTRAINS
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+void EigenStrainLoad :: readFromLine(istringstream &iss, ElementContainer *elems) {
+    //TODO
+    (void) iss;
+    (void) elems;
+    //ms = elems->giveElement(elemID)->giveMatStatus(intPointID);
+ }
+
+//////////////////////////////////////////////////////////
+void EigenStrainLoad :: init(FunctionContainer *funcs, double time) {
+    (void) time;
+    if (funcspointers.size()>0) return;
+    
+    funcspointers.resize(funcIDs.size());
+    for(unsigned k=0; k<funcIDs.size(); k++){
+        funcspointers[k] = funcs->giveFunction(funcIDs[k]);
+    }    
+}
+
+//////////////////////////////////////////////////////////
+void EigenStrainLoad :: applyEigenStrainLoad(double t) {
+    Vector eig = Vector::Zero(funcspointers.size());
+    for(unsigned k=0; k<funcspointers.size(); k++){
+        eig[k] = funcspointers[k]->giveY(t);
+    }
+    ms->addToEigenStrain(eig);
+}
+
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // CONTAINER FOR BOUNDARY CONDITIONS
@@ -356,6 +390,11 @@ BCContainer :: ~BCContainer() {
             delete vl;
         }
     }
+    for ( auto &vl: eigloads ) {
+        if ( vl != nullptr ) {
+            delete vl;
+        }
+    }    
 }
 
 //////////////////////////////////////////////////////////
@@ -370,6 +409,11 @@ void BCContainer :: clear() {
             delete vl;
         }
     }
+    for ( auto &vl: eigloads ) {
+        if ( vl != nullptr ) {
+            delete vl;
+        }
+    }    
 }
 
 //////////////////////////////////////////////////////////
@@ -428,6 +472,12 @@ void BCContainer :: init(double time) {
         l->init(functions, time);
         stageTimes.insert(l->giveBeginTime() );
         stageTimes.insert(l->giveEndTime() );
+    }
+
+    for ( auto &e: eigloads ) {
+        e->init(functions, time);
+        stageTimes.insert(e->giveBeginTime() );
+        stageTimes.insert(e->giveEndTime() );
     }
 }
 
@@ -533,4 +583,11 @@ void BCContainer :: setInitialDoFFields(Solver *solver) {
     for ( auto &bc: BC ) {
         bc->setInitialDoFFields(solver);
     }
+}
+
+//////////////////////////////////////////////////////////
+void BCContainer :: applyEigenStrainLoads(double time){
+    for ( auto &eig: eigloads ) {
+        eig->applyEigenStrainLoad(time);
+    }  
 }

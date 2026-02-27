@@ -40,7 +40,7 @@ void TransientCentralDifferenceMechanicalSolver :: init(std :: string init_r_fil
     //compute actions at the end of the last time step
     //elems->integrateDampingForces(v, f_dam);
     //elems->integrateInertiaForces(a, f_acc);
-    computeInternalExternalForces(r, load, 0, dt);
+    computeInternalExternalForces(r, load, 0, time, dt);
     residuals -= f_dam + f_acc;
 }
 
@@ -144,7 +144,7 @@ void TransientCentralDifferenceMechanicalSolver :: solve() {
 
     //compute residuals
     elems->integrateDampingForces(v, f_dam);
-    computeInternalExternalForces(trial_r, load, 0, dt);
+    computeInternalExternalForces(trial_r, load, 0, time, dt);
     residuals -= f_dam;
 }
 

@@ -86,7 +86,7 @@ public:
     bool showStepTime() const { return showTime; };
     bool isSilent() const { return silent; };
     unsigned giveTotalDoFNumber() const { return totalDoFnum; };
-    void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double timeStep);
+    void computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double t, double timeStep);
     Vector giveInternalForces() const {return f_int;};
     virtual void updateSystemMatrices() {};    
     virtual CoordinateIndexedSparseMatrix giveSystemMatrix() const {return CoordinateIndexedSparseMatrix(freeDoFnum, freeDoFnum);};  

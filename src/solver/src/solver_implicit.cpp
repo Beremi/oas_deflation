@@ -31,7 +31,7 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     //initial conditions
     if ( init_r_file.compare("") != 0 ) {
         r = nodes->readInitialConditions(init_r_file);
-        computeInternalExternalForces(r, load, false, -1); //to activate initial conditions at elements
+        computeInternalExternalForces(r, load, false, time, -1); //to activate initial conditions at elements
         elems->updateMaterialStatuses();
     }
     elems->prepareStiffnessMatrix(K);
@@ -736,7 +736,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     if ( idc->requireForces() ) {
                         load.setZero();
                         nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
-                        computeInternalExternalForces(trial_r_B, load, false, idc_time + idc_dt);
+                        computeInternalExternalForces(trial_r_B, load, false, idc_time + idc_dt, idc_dt);
                         fext_B = f_ext;
                     }
 
@@ -746,7 +746,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     if ( idc->requireForces() ) {
                         load.setZero();
                         nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
-                        computeInternalExternalForces(trial_r_A, load, false, idc_time);
+                        computeInternalExternalForces(trial_r_A, load, false, idc_time, idc_dt);
                         fext_A = f_ext;
                     }
 
@@ -906,7 +906,7 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
     if ( time == init_time && idc ) {
         nodes->addRHS_nodalLoad(load, time); //add nodal load
         nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs at time 0
-        computeInternalExternalForces(trial_r, load, true, -1.);
+        computeInternalExternalForces(trial_r, load, true, time, -1.);
     }
 
 
@@ -1128,14 +1128,14 @@ void TransientLinearTransportSolver :: rebuild() {
 void TransientLinearTransportSolver :: computeForcesAtIntegrationTime(const bool frozen) {
     elems->integrateDampingForces(v * ( 1. - alpha_m ) +  v_old * alpha_m, f_dam);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, time - dt*alpha_f, dt * ( 1. - alpha_f ) );
     residuals -= f_dam;
 }
 
 //////////////////////////////////////////////////////////
 void TransientLinearTransportSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
-    computeInternalExternalForces(trial_r, load, frozen, dt);
+    computeInternalExternalForces(trial_r, load, frozen, time, dt);
     residuals -= f_dam;
 }
 
@@ -1500,7 +1500,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
     elems->integrateDampingForces(v * ( 1. - alpha_f ) +  v_old * alpha_f, f_dam);
     elems->integrateInertiaForces(a * ( 1. - alpha_m ) +  a_old * alpha_m, f_acc);
     Vector ll = load_old * alpha_f + load * ( 1. - alpha_f );
-    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, dt * ( 1. - alpha_f ) );
+    computeInternalExternalForces( r * alpha_f + trial_r * ( 1. - alpha_f ), ll, frozen, time-dt*alpha_f, dt * ( 1. - alpha_f ) );
     residuals -= f_dam + f_acc;
 }
 
@@ -1508,7 +1508,7 @@ void TransientLinearMechanicalSolver :: computeForcesAtIntegrationTime(const boo
 void TransientLinearMechanicalSolver :: computeForcesAtStepEnd(const bool frozen) {
     elems->integrateDampingForces(v, f_dam);
     elems->integrateInertiaForces(a, f_acc);
-    computeInternalExternalForces(trial_r, load, frozen, dt);
+    computeInternalExternalForces(trial_r, load, frozen, time, dt);
     residuals -= f_dam + f_acc;
 }
 
