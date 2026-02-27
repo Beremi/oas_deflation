@@ -35,12 +35,11 @@ void LDPMMaterialStatus :: init() {
 }
 
 //////////////////////////////////////////////////////////
-void LDPMMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    updt_strain = Vector :: Zero(num);
+void LDPMMaterialStatus :: initializeStressAndStrainVector() {
+    VectMechMaterialStatus :: initializeStressAndStrainVector();
+    unsigned num = temp_strain.size();
     updt_mech_stress = Vector :: Zero(num);
-    temp_strain = Vector :: Zero(num);
-    temp_mech_stress = Vector :: Zero(num);
-    VectMechMaterialStatus :: initializeStressAndStrainVector(num);
+    temp_mech_stress = Vector :: Zero(num); 
 }
 
 //////////////////////////////////////////////////////////

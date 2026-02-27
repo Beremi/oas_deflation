@@ -51,7 +51,7 @@ public:
     virtual Vector giveInternalSource()const { return Vector(0); };
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value) { ( void ) code; ( void ) value; };
-    virtual void initializeStressAndStrainVector(unsigned num);
+    virtual void initializeStressAndStrainVector();
     double giveDissipatedEnergyDensity() const { return dissipEnergyDensity; };
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();
@@ -96,7 +96,6 @@ public:
     unsigned giveId() { return idx; }
     unsigned giveDimension() const { return dim; }
     unsigned giveStrainSize() const { return strainsize; }
-    virtual unsigned giveExternalStrainSize() const {return giveStrainSize();};    
     void setId(const unsigned &i) { this->idx = i; }
     virtual void init(MaterialContainer *matcont) { ( void ) matcont; };
     bool isProducingInternalSources()const { return produceInternalSources; }
@@ -134,7 +133,7 @@ public:
     virtual MaterialStatus * giveMechanicalMaterialStatus();
     virtual MaterialStatus * giveTransportMaterialStatus();
     virtual MaterialStatus * giveHeatConductionMaterialStatus();
-    virtual void initializeStressAndStrainVector(unsigned num);
+    virtual void initializeStressAndStrainVector();
     virtual void addToEigenVolumetricStrain(double x);
     virtual void addToEigenStrain(const Vector &x);
 };

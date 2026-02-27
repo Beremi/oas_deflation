@@ -111,7 +111,7 @@ void Fiber :: setUpCrossings() {
 
     //set stress and strain vectors at integration points
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ]->initializeStressAndStrainVector(Bs [ k ].rows() );
+        stats [ k ]->initializeStressAndStrainVector();
         stats [ k ]->init();
     }
 }

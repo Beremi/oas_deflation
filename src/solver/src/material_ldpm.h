@@ -40,7 +40,7 @@ public:
     virtual void setParameterValue(std :: string code, double value);
     virtual void readFromLine(std :: istringstream &iss);
     virtual bool isElastic(const bool &now = false) const;
-    virtual void initializeStressAndStrainVector(unsigned num);
+    virtual void initializeStressAndStrainVector();
     double giveSigmaBCDiff(double relt, double *transSigmaBC);
     virtual double giveNormalCrackOpening()const { return temp_crackOpening; };
 };

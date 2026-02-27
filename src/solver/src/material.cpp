@@ -153,12 +153,8 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-void MaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    if ( num != giveMaterial()->giveExternalStrainSize() ) {
-        cerr << "Error in " << giveName() << ": strain size does not match, expected " << giveMaterial()->giveExternalStrainSize() << " but " << num << " recieved" << endl;
-        exit(1);
-    }
-    temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(num);
+void MaterialStatus :: initializeStressAndStrainVector() {
+    temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(mat->giveStrainSize());
 }
 
 //////////////////////////////////////////////////////////
@@ -340,10 +336,10 @@ MaterialStatus * CoupledMaterialStatus :: giveHeatConductionMaterialStatus() {
 }
 
 //////////////////////////////////////////////////////////
-void CoupledMaterialStatus :: initializeStressAndStrainVector(unsigned num) {
-    MaterialStatus :: initializeStressAndStrainVector(num);
+void CoupledMaterialStatus :: initializeStressAndStrainVector() {
+    MaterialStatus :: initializeStressAndStrainVector();
     for ( auto &s:stats ) {
-        s->initializeStressAndStrainVector( s->giveMaterial()->giveStrainSize() );
+        s->initializeStressAndStrainVector( );
     }
 }
 

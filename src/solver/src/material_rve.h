@@ -146,6 +146,7 @@ public:
     void setPrecomputedConductivity(Matrix lam);
     void setMasterMaterial(VectTrsprtMaterialStatus *masterS,  VectTrsprtMaterial *masterM);
     void setPrecomputedCapacity(double c);
+    virtual void readFromLine(std :: istringstream &iss);    
 };
 
 //////////////////////////////////////////////////////////
@@ -173,7 +174,6 @@ protected:
     virtual void calculateTransformationMatrix();
 
     double macro_volumetricStrain;
-
 public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
@@ -207,6 +207,7 @@ protected:
     Matrix CauchyToCosseratMatrix;
     bool storedPrecomputeTensors;
 
+    unsigned internal_strainsize;
 public:
     DiscreteMechanicalRVEMaterial(unsigned dimension);
     virtual ~DiscreteMechanicalRVEMaterial() {};
@@ -229,9 +230,9 @@ public:
     Vector stressToCauchy(Vector stress);
     Matrix matrixToCauchy(Matrix matrix);
     bool isConvertingFromCauchy() const { return convert_from_cauchy; };
-    void setConversionFromCauchy(bool convert) { convert_from_cauchy = convert; };
+    void setConversionFromCauchy(bool convert);
     bool hasPrecomputedTensorsStored() const { return storedPrecomputeTensors; };
-    virtual unsigned giveExternalStrainSize() const;
+    unsigned giveInternalStrainSize(){return internal_strainsize;};
 };
 
 //////////////////////////////////////////////////////////
@@ -273,7 +274,7 @@ public:
     virtual void setParameterValue(std :: string code, double value);
     virtual void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed(); };
-    virtual void setReferenceSystemDirections(Matrix r);
+    virtual void setReferenceSystemDirections(Matrix r);    
 };
 
 //////////////////////////////////////////////////////////

@@ -104,7 +104,7 @@ void Element :: init() {
 
     //set stress and strain vectors at integration points
     for ( k = 0; k < inttype->giveNumIP(); k++ ) {
-        stats [ k ]->initializeStressAndStrainVector(Bs [ k ].rows() );
+        stats [ k ]->initializeStressAndStrainVector();
     }
 
     volume  = 0;
@@ -290,6 +290,7 @@ void Element :: evaluateStressesWithFrozenIntVars(double timeStep) {
     for ( auto &s: stats) {
         s->computeStressWithFrozenIntVars(timeStep);
     }
+    
 }
 
 //////////////////////////////////////////////////////////
