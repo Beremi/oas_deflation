@@ -124,6 +124,7 @@ public:
     bool isPrecomputed() const { return is_precomputed; };
     void setToMasterStatus() { is_master_status = true; };
     virtual bool giveValues(std :: string code, Vector &result) const;
+    virtual void generateEigenStrainLoads();      
 };
 
 //////////////////////////////////////////////////////////
