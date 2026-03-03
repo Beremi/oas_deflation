@@ -59,8 +59,8 @@ void PBlockContainer :: readFromFile(const string filename, unsigned dim) {
                     MechanicalPeriodicBC *newblock = new MechanicalPeriodicBC();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
-                } else if ( ftype.compare("MechanicalSphericalPeriodicBCExperimental") == 0 ) {
-                    MechanicalSphericalPeriodicBCExperimental *newblock = new MechanicalSphericalPeriodicBCExperimental();
+                } else if ( ftype.compare("MechanicalSphericalPeriodicBCWithCrack") == 0 ) {
+                    MechanicalSphericalPeriodicBCWithCrack *newblock = new MechanicalSphericalPeriodicBCWithCrack();
                     newblock->readFromLine(iss, dim);
                     blocks.push_back(newblock);
                 } else if ( ftype.compare("MechanicalSphericalPeriodicBC") == 0 ) {

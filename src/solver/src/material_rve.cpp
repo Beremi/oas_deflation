@@ -835,14 +835,14 @@ void DiscreteMechanicalRVEMaterialStatus :: applyEigenStrains() {
             if ( dim == 2 ) {
                 reducedStrain [ 0 ] = local_strain [ 0 ];
                 reducedStrain [ 1 ] = local_strain [ 1 ];
-                reducedStrain [ 2 ] = ( local_strain [ 2 ] + local_strain [ 3 ] ) / 2.;
+                reducedStrain [ 2 ] = local_strain [ 2 ] + local_strain [ 3 ];
             } else if ( dim == 3 ) {
                 reducedStrain [ 0 ] = local_strain [ 0 ];
                 reducedStrain [ 1 ] = local_strain [ 1 ];
                 reducedStrain [ 2 ] = local_strain [ 2 ];
-                reducedStrain [ 3 ] = ( local_strain [ 3 ] + local_strain [ 4 ] ) / 2.;
-                reducedStrain [ 4 ] = ( local_strain [ 5 ] + local_strain [ 6 ] ) / 2.;
-                reducedStrain [ 5 ] = ( local_strain [ 7 ] + local_strain [ 8 ] ) / 2.;
+                reducedStrain [ 3 ] = local_strain [ 3 ] + local_strain [ 4 ];
+                reducedStrain [ 4 ] = local_strain [ 5 ] + local_strain [ 6 ];
+                reducedStrain [ 5 ] = local_strain [ 7 ] + local_strain [ 8 ];
             }
             mpc->setEigenStrain(reducedStrain);
         } else {
@@ -884,13 +884,13 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
 
 /////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: computeStressPrecomputed(double timeStep) {
-    ( void ) timeStep;
+    ( void ) timeStep;  
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
     temp_strain = addEigenStrain(macromaterial->strainToCosserat(temp_strain) );   //macroscopic eigenstrain
     transformStrain();
     local_stress = macromaterial->givePrecomputedElasticTensor() * local_strain;
     transformStress();
-    temp_stress =  macromaterial->stressToCauchy(temp_stress);    
+    temp_stress =  macromaterial->stressToCauchy(temp_stress);
     if ( macromaterial->isNonlinear() && checkOttosenCriterion() ) {
         setFromPrecomputedToFullModel();
         computeStress(timeStep);
@@ -996,7 +996,7 @@ void DiscreteMechanicalRVEMaterialStatus :: computeStress(double timeStep) {
     collectStresses();
     
     transformStress();
-    temp_stress = macromaterial->stressToCauchy(temp_stress);  
+    temp_stress = macromaterial->stressToCauchy(temp_stress);
 }
 
 /////////////////////////////////./////////////////////////
@@ -1005,7 +1005,6 @@ bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
         cerr << "Ottosen criterion implemented only for 3 dimensions" << endl;
         exit(1);
     }
-
     vector< Vector >eigvecs;
     Vector eignums;
 
@@ -1015,17 +1014,23 @@ bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
     double c1 = 4.775 / fc;
     double c2 = 7.048 / fc;
     double c3 = 0.88 / pow(fc, 2);
-
     Vector stress_without_couple = Vector :: Zero(9);
-    for ( unsigned p = 0; p < 9; p++ ) {
-        stress_without_couple [ p ] = temp_stress [ p ];
+    DiscreteMechanicalRVEMaterial *macromat = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    if (macromat->isConvertingFromCauchy()){
+      for ( unsigned p = 0; p < 3; p++ ) {
+          stress_without_couple [ p ] = temp_stress [ p ];
+          stress_without_couple [ 3+2*p ] = stress_without_couple [ 3+2*p ];
+      }    
+    } else {
+        for ( unsigned p = 0; p < 9; p++ ) {
+            stress_without_couple [ p ] = temp_stress [ p ];
+        }
     }
     LinalgEigenSolver(stress_without_couple, eignums, eigvecs);
     double I1 = eignums [ 0 ] + eignums [ 1 ] + eignums [ 2 ];
     if ( abs(I1) < 1e-10 ) {
         return false;
     }
-
     double J2 = ( pow(eignums [ 0 ] - eignums [ 1 ], 2) + pow(eignums [ 0 ] - eignums [ 2 ], 2) + pow(eignums [ 1 ] - eignums [ 2 ], 2) ) / 6;
     double J3 = ( eignums [ 0 ] - I1 / 3. ) * ( eignums [ 1 ] - I1 / 3. ) * ( eignums [ 2 ] - I1 / 3. );
     double xi = I1 / sqrt(3);
@@ -1095,6 +1100,37 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocal(string ty
         Keff /= volume;
         return Keff;
     }
+}
+
+//////////////////////////////////////////////////////////
+Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocalExact(string type) {
+    ( void ) type;
+    if ( is_precomputed ) {
+        return giveStiffnessTensorPrecomputedLocal(type);
+    }
+    //compute exactly
+    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );    
+    cout << "Precomputing primary fields for mechanical RVE" << endl;
+    bool previously_cauchy = macromaterial->isConvertingFromCauchy();
+    macromaterial->setConversionFromCauchy(false);
+    initializeStressAndStrainVector();
+    unsigned strain_size = macromaterial->giveStrainSize();                
+    Matrix Keff = Matrix :: Zero(strain_size, strain_size);                
+    Vector true_temp_strain = temp_strain;
+    temp_strain *= 0;
+    double factor = 1e-10;
+    for ( unsigned i = 0; i < strain_size; i++ ) {
+        cout << "precomputing for strain component " << i << " out of " << strain_size << endl;
+        temp_strain [ i ] = factor;
+        computeStress(-1);
+        temp_strain [ i ] = 0.;
+        for ( unsigned j = 0; j < strain_size; j++ ) {
+            Keff(i, j) = temp_stress [ j ] / factor;
+        }
+    }
+    temp_strain = true_temp_strain;
+    macromaterial->setConversionFromCauchy(previously_cauchy);    
+    return Keff;
 }
 
 //////////////////////////////////////////////////////////
@@ -1437,29 +1473,7 @@ void DiscreteMechanicalRVEMaterialStatus :: init() {
                 //use Voigt constraint
                 Keff = giveStiffnessTensorLocal("secant");
             } else {
-                //compute exactly
-                cout << "Precomputing primary fields for mechanical RVE" << endl;
-                bool previously_cauchy = macromaterial->isConvertingFromCauchy();
-                macromaterial->setConversionFromCauchy(false);
-                initializeStressAndStrainVector();
-                unsigned strain_size = macromaterial->giveStrainSize();                
-                Keff = Matrix :: Zero(strain_size, strain_size);                
-                Vector true_temp_strain = temp_strain;
-                temp_strain *= 0;
-                double factor = 1e-10;
-                for ( unsigned i = 0; i < strain_size; i++ ) {
-                    cout << "precomputing for strain component " << i << " out of " << strain_size << endl;
-                    temp_strain [ i ] = factor;
-                    computeStress(-1);
-                    temp_strain [ i ] = 0.;
-                    for ( unsigned j = 0; j < strain_size; j++ ) {
-                        Keff(i, j) = temp_stress [ j ] / factor;
-                    }
-                }
-                temp_strain = true_temp_strain;
-                //cout << Keff << endl;
-                //exit(1);
-                macromaterial->setConversionFromCauchy(previously_cauchy);
+                Keff = giveStiffnessTensorLocalExact("secant");
                 initializeStressAndStrainVector();                
             }
             macromaterial->setPrecomputedElasticTensor(Keff);

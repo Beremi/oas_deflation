@@ -101,7 +101,7 @@ protected:
     virtual void collectStresses();
     virtual void computeStressPrecomputed(double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
-    Matrix giveStiffnessTensorLocalExact(std :: string type);
+    virtual Matrix giveStiffnessTensorLocalExact(std :: string type);
     virtual Matrix giveStiffnessTensorPrecomputedLocal(std :: string type) const;
     virtual Matrix giveDampingTensorPrecomputed() const;
 
@@ -169,7 +169,7 @@ protected:
     std :: vector< Matrix >calculateTensProjector(const Element *e, const Point centroid);
     virtual void computeStressPrecomputed(double timeStep);
     virtual Matrix giveStiffnessTensorLocal(std :: string type) const;
-
+    virtual Matrix giveStiffnessTensorLocalExact(std :: string type);
     virtual void transformStrain();
     virtual void transformStress();
     virtual void calculateTransformationMatrix();

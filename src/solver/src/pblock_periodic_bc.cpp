@@ -11,18 +11,20 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // Mechanical Periodic BC
 //////////////////////////////////////////////////////////
+
+MechanicalPeriodicBC::~MechanicalPeriodicBC(){
+    //if ( crackOpeningDoF != nullptr ) {
+    //        delete crackOpeningDoF;
+    //}
+}
+
+//////////////////////////////////////////////////////////
 void MechanicalPeriodicBC :: generateNewDoFs(NodeContainer *nodes) {
     //create new degrees of freedom representing strains ex, ey, gammaxy=2exy or ex, ey, ez, gammyz, gammaxz, gammaxy,
     MechDoF *mn;
     initalNodeNum = nodes->giveSize();
     mn = new MechDoF( dim, 3 * ( dim - 1 ) );
     nodes->addNode(mn);
-
-
-    if ( crack_active ) {
-        Node *cr = new MechDoF(dim, dim);
-        nodes->addNode(cr);
-    }
 }
 
 //////////////////////////////////////////////////////////
@@ -499,6 +501,8 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
     Node *s = nullptr;
     Node *m = nullptr;
     Point diff;
+    unsigned num, init_num;
+    double gamma = volume/PUCsize[0]; //PUCsize is diameter    
     for ( unsigned i = 0; i < masters.size(); i++ ) {
         m = nodes->giveNode(masters [ i ]);
         s = nodes->giveNode(slaves [ i ]);
@@ -512,31 +516,43 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             for ( unsigned k = 0; k < 2 * ( dim - 1 ) - 1; k++ ) {
                 dirs [ 0 ] = dim + k;
                 jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
-                constrs->addConstraint(jd);
+                constrs->addConstraint(jd); //rotations
             }
         }
 
         //connect translations
         diff = s->givePoint() - m->givePoint();
-
         if ( !nonsymmetric_shear ) {
             //direction X  (all gammaxy and gammaxy realized here)
             if ( dim == 3 ) {
-                vm.resize(4);
-                mults.resize(4);
-                dirs.resize(4, 0);
+                init_num = 4; 
+                num = init_num;
+                if (crack_active) num +=3;
+                vm.resize(num);
+                mults.resize(num);
+                dirs.resize(num, 0);
                 dirs [ 2 ] = 5; //gamma xy
                 dirs [ 3 ] = 4; //gamma xz
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
                 vm [ 3 ] = nodes->giveNode(initalNodeNum); //gamma xz
                 mults [ 3 ] = diff.z() / 2;
             } else if ( dim == 2 ) {
-                vm.resize(3);
-                mults.resize(3);
-                dirs.resize(3, 0);
+                init_num = 3; 
+                num = init_num;
+                if (crack_active) num +=2;         
+                vm.resize(num);
+                mults.resize(num);
+                dirs.resize(num, 0);
                 dirs [ 2 ] = 2; //gamma xy
                 vm [ 2 ] = nodes->giveNode(initalNodeNum);
             }
+            if (crack_active){
+                for (unsigned d=0; d<dim; d++){
+                    vm[init_num+d] = crackOpeningDoF;
+                    dirs[init_num+d] = d;                    
+                }
+            }                
+            
             dirs [ 0 ] = 0;
             dirs [ 1 ] = 0; //eps x
             vm [ 0 ] = m; //master
@@ -544,6 +560,14 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             mults [ 0 ] = 1;
             mults [ 1 ] = diff.x();
             mults [ 2 ] = diff.y() / 2;
+            if (crack_active){
+                //mults[3] = -(diff.x()*pow(crack_normal.x(),2) + diff.y()*crack_normal.x()*crack_normal.y())/gamma;//X                
+                //mults[4] = -(diff.x()*crack_normal.x()*crack_normal.y() + diff.y()*(pow(crack_normal.x(),2)-pow(crack_normal.y(),2))/2.)/gamma;//Y
+                //mults[3] += copysign(1.,diff.x()*crack_normal.x())*crack_normal.x();
+                //mults[4] += -copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();
+                mults[3] = -diff.x()*crack_normal.x();
+                mults[4] = -copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();                
+            }            
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -557,6 +581,14 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             dirs [ 1 ] = 1; //eps y
             mults [ 1 ] = diff.y();
             mults [ 2 ] = diff.x() / 2;
+            if (crack_active){
+                //mults[3] = -(diff.y()*pow(crack_normal.y(),2) + diff.x()*crack_normal.x()*crack_normal.y())/gamma;//X    
+                //mults[4] = -(diff.y()*crack_normal.x()*crack_normal.y() + diff.x()*(pow(crack_normal.x(),2)-pow(crack_normal.y(),2))/2.)/gamma; //Y
+                //mults[3] += copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();
+                //mults[4] += copysign(1.,diff.x()*crack_normal.x())*crack_normal.x();    
+                mults[3] = -diff.x()*crack_normal.x();
+                mults[4] = -diff.x()*crack_normal.x();
+            }                    
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
 
@@ -648,11 +680,52 @@ void MechanicalSphericalPeriodicBC :: calculateVolume(ElementContainer *elems) {
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Mechanical Periodic BC on SPHERE experimental
-// uM.n = uS.n & uM.t = uS.(-t)
-// rotations not finished
+// MechanicalSphericalPeriodicBCWithCrack
 //////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBCExperimental :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+
+void MechanicalSphericalPeriodicBCWithCrack:: readFromLine(std :: istringstream &iss, unsigned d){
+    MechanicalSphericalPeriodicBC :: readFromLine(iss, d);
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream
+    
+    bool bcrack_normal = false;
+    bool bcrack_DoF = false;
+    
+    unsigned num;
+    string param;
+    while (  iss >> param ) {
+        if ( param.compare("crack_normal") == 0 ) {
+            iss >> num;
+            if (num!=dim){
+                cerr << "MechanicalSphericalPeriodicBCWithCrack Error: crack_normal size is " << num << " but dimension of the problem is " << dim << endl;
+                exit(1);
+            }
+            crack_normal.resize(num);
+            for ( unsigned i = 0; i < num; i++ ) {
+                iss >> crack_normal [ i ];
+            }
+            bcrack_normal = true;
+        } else if ( param.compare("crack_DoF_node") == 0 ) {
+            iss >> crackDoFNodeNumber;
+            bcrack_DoF = true;
+        }         
+    }
+    if (!bcrack_normal || !bcrack_DoF){
+        cout << "Crack nor activated, missing either crack_normal or crack_DoF_node" << endl;   
+    } else {
+        crack_active = true;
+    }
+}    
+    
+//////////////////////////////////////////////////////////
+void MechanicalSphericalPeriodicBCWithCrack :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
+    unsigned activeConstr = constrs->giveConstraintsSize();
+    MechanicalSphericalPeriodicBC :: generateConstraints(nodes, constrs);
+
+    
+    
+    /*
     //apply contraints, connect periodic images
     Node *s = nullptr;
     Node *m = nullptr;
@@ -678,147 +751,26 @@ void MechanicalSphericalPeriodicBCExperimental :: generateConstraints(NodeContai
             constrainRegular(nodes, constrs, m, s, n, t);
         }
     }
+    */
 }
 
 //////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBCExperimental :: generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs) {
-    ( void ) nodes;
-    ( void ) elems;
-    ( void ) bcs;
-    ( void ) constrs;
-    ( void ) funcs;
-    // substituted by constraints on one master-slave pair in generateConstraints which gets restricted in tangentional direction (constrainRotations)
-}
+void MechanicalSphericalPeriodicBCWithCrack :: apply(Model *model) {
 
-//////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBCExperimental :: constrainRegular(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t) {
-    Point m_coords = m->givePoint();
-    Point s_coords = s->givePoint();
-    JointDoF *jd;
-    vector< Node * >vm;
-    vector< unsigned >dirs;
-    vector< double >mults;
-    // connect rotations
-    if ( dynamic_cast< Particle * >( s ) && dynamic_cast< Particle * >( m ) ) {
-        dirs.resize(1);
-        mults.resize(1);
-        vm.resize(1);
-        mults [ 0 ] = -1;
-        vm [ 0 ] = m;
-        for ( unsigned k = 0; k < 2 * ( dim - 1 ) - 1; k++ ) {  // general, for 2D not necessary
-            dirs [ 0 ] = dim + k;
-            jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
-            constrs->addConstraint(jd);
-        }
+    
+    crackOpeningDoF = dynamic_cast<MechDoF*>(model->giveNodes()->giveNode(crackDoFNodeNumber));
+    if (!crackOpeningDoF){
+      cerr << "MechanicalSphericalPeriodicBCWithCrack Error: expected MechDoF node, received " << model->giveNodes()->giveNode(crackDoFNodeNumber)->giveName() << endl;
+      exit(1);
     }
-
-    double diam = sqrt( pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
-
-    dirs.resize(4);
-    mults.resize(4);
-    vm.resize(4);
-
-    // calculate weights
-    // note: A = - D and B = C (perpendicular)
-    double A = ( n [ 0 ] * t [ 1 ] + n [ 1 ] * t [ 0 ] ) / ( n [ 0 ] * t [ 1 ] - n [ 1 ] * t [ 0 ] );
-    double B = ( 2 * n [ 1 ] * t [ 1 ] ) / ( n [ 0 ] * t [ 1 ] - n [ 1 ] * t [ 0 ] );
-    double C = ( 2 * n [ 0 ] * t [ 0 ] ) / ( n [ 1 ] * t [ 0 ] - n [ 0 ] * t [ 1 ] );
-    double D = ( n [ 1 ] * t [ 0 ] + n [ 0 ] * t [ 1 ] ) / ( n [ 1 ] * t [ 0 ] - n [ 0 ] * t [ 1 ] );
-
-    // 2D ONLY
-    // M refers to macroscopic strain vector w/ symmetrical shear (epsx, epsy, gammayxy), gotten via nodes->giveNode(initalNodeNum)
-    // m refers to displacement vector of the same node (ux, uy, ..., rotx,... ) 6 members?
-    vm [ 0 ] = m;
-    vm [ 1 ] = m;
-    vm [ 2 ] = nodes->giveNode(initalNodeNum);  // M
-    vm [ 3 ] = nodes->giveNode(initalNodeNum);  // M
-    dirs [ 0 ] = 0;     // position where it takes ux value from m
-    dirs [ 1 ] = 1;     // position where it takes uy value from m
-
-    // direction X
-    // ux_S = A * ux_M + B * uy_M + (epsx*nx*2*r + gammaxy*ny*2*r)
-    //      = mults [ 0 ] * m ( 0 ) + mults [ 1 ] * m ( 1 ) - (M ( 0 ) * mults [ 2 ] + M ( 2 ) * mults [ 3 ])
-    dirs [ 2 ] = 0;     // position where it takes epsx value from M
-    dirs [ 3 ] = 2;     // position where it takes gammaxy value from M
-    mults [ 0 ] = A;
-    mults [ 1 ] = B;
-    mults [ 2 ] = -n [ 0 ] * diam;
-    mults [ 3 ] = -n [ 1 ] * diam;
-    jd = new JointDoF(s, 0, vm, dirs, mults);
-    constrs->addConstraint(jd);
-
-    // direction Y
-    // uy_S = C * ux_M + D * uy_M + (epsy*ny*2*r + gammaxy*nx*2*r)
-    //      = mults [ 0 ] * m ( 0 ) + mults [ 1 ] * m ( 1 ) - (M ( 0 ) * mults [ 2 ] + M ( 2 ) * mults [ 3 ])
-    dirs [ 2 ] = 1;     // position where it takes epsx value from M
-    dirs [ 3 ] = 2;     // position where it takes gammaxy value from M
-    mults [ 0 ] = C;
-    mults [ 1 ] = D;
-    mults [ 2 ] = -n [ 1 ] * diam;
-    mults [ 3 ] = -n [ 0 ] * diam;
-    jd = new JointDoF(s, 1, vm, dirs, mults);
-    constrs->addConstraint(jd);
+    if (crackOpeningDoF->giveNumberOfDoFs()!=dim){
+      cerr << "MechanicalSphericalPeriodicBCWithCrack Error: crack MechDoF does not have " << dim << " degrees of freedom but " <<  crackOpeningDoF->giveNumberOfDoFs() << endl;
+      exit(1);
+    }    
+            
+    MechanicalSphericalPeriodicBC :: apply(model);
+    
 }
-
-//////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBCExperimental :: constrainRotation(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t) {
-    JointDoF *jd;
-    Point m_coords = m->givePoint();
-    Point s_coords = s->givePoint();
-    vector< Node * >vm;
-    vector< unsigned >dirs;
-    vector< double >mults;
-    double diam = sqrt( pow(m_coords [ 0 ] - s_coords [ 0 ], 2) + pow(m_coords [ 1 ] - s_coords [ 1 ], 2) );
-    // constrain movement of master node in the direction of n
-    dirs.resize(1);
-    mults.resize(1);
-    vm.resize(1);
-    dirs [ 0 ] = 1;
-    mults [ 0 ] = n [ 0 ] / n [ 1 ];    // |u|*nx = ux, |u|*ny = uy -> ux = (nx/ny) * uy
-    vm [ 0 ] = m;
-    jd = new JointDoF(m, 0, vm, dirs, mults);
-    constrs->addConstraint(jd);
-
-    // constrain rotations (tangentional movement of the master-slave pair)
-    dirs.resize(3);
-    mults.resize(3);
-    vm.resize(3);
-    // calculate weights
-    double AB = ( n [ 0 ] / n [ 1 ] ) * ( ( n [ 0 ] * t [ 1 ] + n [ 1 ] * t [ 0 ] ) / ( n [ 0 ] * t [ 1 ] - n [ 1 ] * t [ 0 ] ) ) +  ( 2 * n [ 1 ] * t [ 1 ] ) / ( n [ 0 ] * t [ 1 ] - n [ 1 ] * t [ 0 ] );
-    double CD = ( n [ 0 ] / n [ 1 ] ) * ( 2 * n [ 0 ] * t [ 0 ] ) / ( n [ 1 ] * t [ 0 ] - n [ 0 ] * t [ 1 ] ) + ( n [ 1 ] * t [ 0 ] + n [ 0 ] * t [ 1 ] ) / ( n [ 1 ] * t [ 0 ] - n [ 0 ] * t [ 1 ] );
-    // 2D ONLY
-    // M refers to macroscopic strain vector w/ symmetrical shear (epsx, epsy, gammayxy), gotten via nodes->giveNode(initalNodeNum)
-    // m refers to displacement vector of the same node (ux, uy, ..., rotx,... )
-    vm [ 0 ] = m;
-    vm [ 1 ] = nodes->giveNode(initalNodeNum);  // M
-    vm [ 2 ] = nodes->giveNode(initalNodeNum);
-    dirs [ 0 ] = 1;     // takes only uy value from m (ux value is constrained by weights above)
-    dirs [ 2 ] = 2;     // position where it takes gammaxy value from M
-
-    // direction X
-    // ux_S = ( A * (nx/ny) + B ) * uy_M + (epsx*nx*2*r + gammaxy*ny*2*r)
-    dirs [ 1 ] = 0;     // position where it takes epsx value from M
-    mults [ 0 ] = AB;
-    mults [ 1 ] = -n [ 0 ] * diam;
-    mults [ 2 ] = -n [ 1 ] * diam;
-    jd = new JointDoF(s, 0, vm, dirs, mults);
-    constrs->addConstraint(jd);
-
-    // direction Y
-    // uy_S = ( C * (nx/ny) + D ) * uy_M + (epsy*ny*2*r + gammaxy*nx*2*r)
-    dirs [ 1 ] = 1;     // position where it takes epsy value from M
-    mults [ 0 ] = CD;
-    mults [ 1 ] = -n [ 1 ] * diam;
-    mults [ 2 ] = -n [ 0 ] * diam;
-    jd = new JointDoF(s, 1, vm, dirs, mults);
-    constrs->addConstraint(jd);
-}
-
-//////////////////////////////////////////////////////////
-void MechanicalSphericalPeriodicBCExperimental :: calculateVolume(ElementContainer *elems) {
-    MechanicalPeriodicBC :: calculateVolume(elems);
-}
-
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

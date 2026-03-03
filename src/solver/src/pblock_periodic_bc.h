@@ -19,7 +19,9 @@ protected:
     unsigned initalNodeNum;
 
     Vector crack_normal;
+    MechDoF *crackOpeningDoF;
     bool crack_active = false;
+    unsigned crackDoFNodeNumber;
 
     int volumetricAverageRigidBC; ///< new boundary condition prescribing average value of pressure
     BoundaryCondition *strainBC; ///< new boundary condition prescribing strain values
@@ -31,7 +33,7 @@ protected:
     virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
 public:
     MechanicalPeriodicBC() { name = "MechanicalPeriodicBC"; nonsymmetric_shear = false; };
-    virtual ~MechanicalPeriodicBC() {};
+    virtual ~MechanicalPeriodicBC();
     virtual void apply(Model *model);
     virtual void readFromLine(std :: istringstream &iss, unsigned d);
     std :: vector< double >giveDimensions() const { return PUCsize; };
@@ -91,6 +93,7 @@ public:
 // Mechanical Periodic Boundary Condition on sphere
 class MechanicalSphericalPeriodicBC : public MechanicalPeriodicBC
 {
+//PUCsize is diameter
 protected:
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
 public:
@@ -101,18 +104,16 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-// Mechanical Periodic Boundary Condition on sphere experimental
-class MechanicalSphericalPeriodicBCExperimental : public MechanicalPeriodicBC
+// Mechanical Periodic Boundary Condition with crack
+class MechanicalSphericalPeriodicBCWithCrack : public MechanicalSphericalPeriodicBC
 {
 protected:
     virtual void generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs);
-    virtual void generateRigidBodyBC(NodeContainer *nodes, ElementContainer *elems, BCContainer *bcs, ConstraintContainer *constrs, FunctionContainer *funcs);
-    void constrainRegular(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
-    void constrainRotation(NodeContainer *nodes, ConstraintContainer *constrs, Node *m, Node *s, Point n, Point t);
 public:
-    MechanicalSphericalPeriodicBCExperimental() { name = "MechanicalSphericalPeriodicBCExperimental"; nonsymmetric_shear = false; };
-    virtual ~MechanicalSphericalPeriodicBCExperimental() {};
-    virtual void calculateVolume(ElementContainer *elems);
+    MechanicalSphericalPeriodicBCWithCrack() { name = "MechanicalSphericalPeriodicBCWithCrack"; nonsymmetric_shear = false; };
+    virtual ~MechanicalSphericalPeriodicBCWithCrack() {};
+    virtual void readFromLine(std :: istringstream &iss, unsigned d); 
+    virtual void apply(Model *model);    
 };
 
 //////////////////////////////////////////////////////////
