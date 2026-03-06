@@ -26,7 +26,8 @@ void TensTrsprtMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void TensTrsprtMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_stress = -effConductivity *addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
+    computeConstitutiveStrain();    
+    temp_stress = -effConductivity *temp_strain; //DO NOT update here effConductivity, it is used for RVE material
 };
 
 //////////////////////////////////////////////////////////
@@ -178,8 +179,9 @@ void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();    
     TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
-    temp_stress = m->giveConductivity() * addEigenStrain(temp_strain); //DO NOT update here effConductivity, it is used for RVE material
+    temp_stress = m->giveConductivity() * temp_strain; //DO NOT update here effConductivity, it is used for RVE material
 };
 
 //////////////////////////////////////////////////////////
@@ -290,7 +292,8 @@ double TensMechMaterialStatus :: giveMassConstant() const {
 //////////////////////////////////////////////////////////
 void TensMechMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_stress = giveStiffnessTensor("elastic") * addEigenStrain(temp_strain);
+    computeConstitutiveStrain();
+    temp_stress = giveStiffnessTensor("elastic") * temp_strain;
 };
 
 //////////////////////////////////////////////////////////
@@ -443,7 +446,8 @@ void TensCosseratMechMaterialStatus ::  computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void TensCosseratMechMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_stress = giveStiffnessTensor("elastic") *  addEigenStrain(temp_strain);
+    computeConstitutiveStrain();
+    temp_stress = giveStiffnessTensor("elastic") *  temp_strain;
 };
 
 //////////////////////////////////////////////////////////

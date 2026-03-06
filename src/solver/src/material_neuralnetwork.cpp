@@ -12,7 +12,8 @@ using namespace std;
 // RECURRENT NETWORK TENSORIAL MECHANICAL MATERIAL
 
 Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain = addEigenStrain(strain);
+    temp_strain_total = strain;
+    computeConstitutiveStrain();
 
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
 

@@ -31,16 +31,15 @@ MaterialStatus :: ~MaterialStatus() {
 }
 
 //////////////////////////////////////////////////////////
-Vector MaterialStatus :: addEigenStrain(const Vector &totalStrain) const {
+void MaterialStatus :: computeConstitutiveStrain() {
     if ( eigenstrain.size() > 0 ) {
-        if ( eigenstrain.size() != totalStrain.size() ) {
-            cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << totalStrain.size() << endl;
+        if ( eigenstrain.size() != temp_strain_total.size() ) {
+            cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << temp_strain_total.size() << endl;
             exit(1);
         }
-        Vector activeStrain = totalStrain - eigenstrain;
-        return activeStrain;
+        temp_strain = temp_strain_total - eigenstrain;
     } else {
-        return totalStrain;
+        temp_strain = temp_strain_total;
     }
 }
 
@@ -154,7 +153,7 @@ bool MaterialStatus :: giveValues(std :: string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void MaterialStatus :: initializeStressAndStrainVector() {
-    temp_stress = temp_strain = updt_stress = updt_strain = Vector :: Zero(mat->giveStrainSize());
+    temp_stress = temp_strain = temp_strain_total = updt_stress = updt_strain = temp_strain_total = Vector :: Zero(mat->giveStrainSize());
 }
 
 //////////////////////////////////////////////////////////

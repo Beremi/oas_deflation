@@ -44,7 +44,6 @@ void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, dou
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     addTemperatureEffectToMechanics();
-
     CoupledMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 

@@ -419,7 +419,7 @@ void Slide32MaterialStatus :: check_state_variable_ranges() {
 
 void Slide32MaterialStatus :: computeStress(double timeStep) {
     ( void ) timeStep;
-
+    computeConstitutiveStrain();
     double s_x_n1, s_y_n1, w_n1;
     w_n1 = temp_strain [ 0 ] * strain_slip_multiplier;
     s_x_n1 = temp_strain [ 1 ] * strain_slip_multiplier;

@@ -90,6 +90,7 @@ void BeamMaterialStatus :: computeStress(double timeStep) {
 void BeamMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;
+    computeConstitutiveStrain();
     temp_stress = giveStiffnessTensor("elastic") * temp_strain;
 }
 
@@ -198,9 +199,9 @@ void NormalPlasticBeamMaterialStatus :: computeStress(double timeStep) {
 void NormalPlasticBeamMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     //computes internal forces in local reference system (N, Vy, Vz, T, My, Mz)
     ( void ) timeStep;
-    Vector shiftedstrain = temp_strain;
-    shiftedstrain [ 0 ] -= normalPlasticStrain;
-    temp_stress = BeamMaterialStatus :: giveStiffnessTensor("elastic") * shiftedstrain;
+    computeConstitutiveStrain();    
+    temp_strain [ 0 ] -= normalPlasticStrain;
+    temp_stress = BeamMaterialStatus :: giveStiffnessTensor("elastic") * temp_strain;
 }
 
 //////////////////////////////////////////////////////////

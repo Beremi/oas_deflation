@@ -30,7 +30,7 @@ VonMisesPlasticMaterialStatus :: VonMisesPlasticMaterialStatus(VonMisesPlasticMa
 void VonMisesPlasticMaterialStatus :: computeStress(double timeStep) {
     ( void ) timeStep;
 
-    temp_strain = addEigenStrain(temp_strain);
+    computeConstitutiveStrain();
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
 
@@ -149,7 +149,7 @@ void VonMisesPlasticMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void VonMisesPlasticMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(temp_strain);
+    computeConstitutiveStrain();
 
     VonMisesPlasticMaterial *vmpm = static_cast< VonMisesPlasticMaterial * >( mat );
 

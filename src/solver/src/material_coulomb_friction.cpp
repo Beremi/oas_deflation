@@ -59,6 +59,7 @@ void CoulombFrictionMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void CoulombFrictionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();
     CoulombFrictionMaterial *m = static_cast< CoulombFrictionMaterial * >( mat );
     RigidBodyBoundary *rb = static_cast< RigidBodyBoundary * >( element );
     temp_strain = temp_strain * rb->giveLength();

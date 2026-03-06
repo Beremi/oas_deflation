@@ -146,7 +146,7 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     updateRateVariables(timeStep);
-    temp_strain  = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
     temp_stress = -effConductivity * temp_strain;
 };
 
@@ -306,7 +306,7 @@ void VectMechMaterialStatus ::  update() {
 //////////////////////////////////////////////////////////
 void VectMechMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
     VectMechMaterial *m = static_cast< VectMechMaterial * >( mat );
     temp_stress.resize( temp_strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];
@@ -459,7 +459,7 @@ Matrix VectMechVolDevSplitMaterialStatus :: giveStiffnessTensor(string type) con
 //////////////////////////////////////////////////////////
 void VectMechVolDevSplitMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
     VectMechVolDevSplitMaterial *m = static_cast< VectMechVolDevSplitMaterial * >( mat );
     temp_stress.resize( temp_strain.size() );
     double ED = m->giveE0();
@@ -572,7 +572,7 @@ Matrix VectMechMaterialWithRotationalStiffnessStatus :: giveStiffnessTensor(stri
 //////////////////////////////////////////////////////////
 void VectMechMaterialWithRotationalStiffnessStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    temp_strain = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
     VectMechMaterialWithRotationalStiffness *m = static_cast< VectMechMaterialWithRotationalStiffness * >( mat );
     temp_stress.resize( temp_strain.size() );
     temp_stress [ 0 ] = m->giveE0() * temp_strain [ 0 ];

@@ -331,20 +331,16 @@ void DiscreteTransportRVEMaterialStatus :: computeStress(double timeStep) {
     //precomputed material
     if ( is_precomputed ) {
         computeStressPrecomputed(timeStep);
-    }
-
+    }   
     cout << "Solving transport RVE" << endl;
 
-    temp_strain = addEigenStrain(temp_strain); //macroscopic eigenstrain
-
+    computeConstitutiveStrain();
     transformStrain();
-
     //solve
     RVE->resetTime();
     RVE->giveSolver()->runBeforeEachStep();
     applyEigenStrains(); //set eigenstrains
     RVE->giveSolver()->solve();
-
 
     //collect results
     local_stress.resize(temp_strain.size() );
@@ -365,6 +361,7 @@ void DiscreteTransportRVEMaterialStatus :: setParameterValue(string code, double
 /////////////////////////////////./////////////////////////
 void DiscreteTransportRVEMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();        
     transformStrain();
     local_stress = giveStiffnessTensorLocal("elastic") * local_strain;
     transformStress();
@@ -518,22 +515,22 @@ Matrix DiscreteTransportRVEMaterialStatus :: giveStiffnessTensorLocalExact(strin
     if ( is_precomputed ) {
         return giveStiffnessTensorPrecomputedLocal(type);
     }
-
     //compute exactly
     cout << "Precomputing primary fields for transport RVE permeability" << endl;
     unsigned dimension = mat->giveDimension();
     Matrix Keff = Matrix :: Zero(dimension, dimension);
-    Vector true_temp_strain = temp_strain;
+    Vector true_temp_strain = temp_strain_total;
+    initializeStressAndStrainVector();    
     double factor = 1e-10;
     for ( unsigned i = 0; i < dimension; i++ ) {
-        temp_strain [ i ] = factor;       
-        computeStress(-1);
-        temp_strain [ i ] = 0.;
+        temp_strain_total [ i ] = factor;         
+        computeStress(-1);  
+        temp_strain_total [ i ] = 0.;
         for ( unsigned j = 0; j < dimension; j++ ) {
             Keff(i, j) = temp_stress [ j ] / factor;
-        }
+        } 
     }
-    temp_strain = true_temp_strain;
+    temp_strain_total = true_temp_strain;
     return Keff;
 }
 
@@ -593,6 +590,7 @@ void DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel() {
         return;                   //this was the master status already initialized
     }
     cout << "*** initialization of transport RVE ***" << endl;
+    Vector prev_temp_strain = temp_strain;     
     RVEMaterialStatus :: init();
 
     ElementContainer *elems = RVE->giveElements();
@@ -605,6 +603,7 @@ void DiscreteTransportRVEMaterialStatus :: setFromPrecomputedToFullModel() {
         orig_mater_params [ 2 * i  ] = m->givePermeability();
         orig_mater_params [ 2 * i + 1 ] = m->giveParamA();
     }
+    temp_strain = prev_temp_strain;     
 }
 
 //////////////////////////////////////////////////////////
@@ -633,21 +632,7 @@ void DiscreteTransportRVEMaterialStatus :: init() {
                 //use Voigt constraint
                 Keff = giveStiffnessTensorLocal("elastic");
             } else {
-                //compute exactly
-                cout << "Precomputing primary fields for transport RVE" << endl;
-                Vector true_temp_strain = temp_strain;
-                temp_strain *= 0;
-                double factor = 1e-10;
-                for ( unsigned i = 0; i < ndim; i++ ) {
-                    cout << "precomputing for pressure gradient component " << i << " out of " << ndim << endl;
-                    temp_strain [ i ] = factor;
-                    computeStress(-1);
-                    temp_strain [ i ] = 0.;
-                    for ( unsigned j = 0; j < ndim; j++ ) {
-                        Keff(i, j) = temp_stress [ j ] / factor;
-                    }
-                }
-                temp_strain = true_temp_strain;
+                Keff = giveStiffnessTensorLocalExact("elastic");
             }
             macromaterial->setPrecomputedConductivity(Keff);
             is_precomputed = true; //set back to precomputed to use it
@@ -886,7 +871,7 @@ void DiscreteMechanicalRVEMaterialStatus :: collectStresses() {
 void DiscreteMechanicalRVEMaterialStatus :: computeStressPrecomputed(double timeStep) {
     ( void ) timeStep;  
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    temp_strain = addEigenStrain(macromaterial->strainToCosserat(temp_strain) );   //macroscopic eigenstrain
+    computeConstitutiveStrain();   
     transformStrain();
     local_stress = macromaterial->givePrecomputedElasticTensor() * local_strain;
     transformStress();
@@ -911,11 +896,26 @@ bool DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &res
     }
 }
 
+//////////////////////////////////////////////////////////
+void DiscreteMechanicalRVEMaterialStatus :: computeConstitutiveStrain() {
+    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
+    if ( eigenstrain.size() > 0 ) {
+        if ( eigenstrain.size() != temp_strain_total.size() ) {
+            cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << temp_strain_total.size() << endl;
+            exit(1);
+        }
+        temp_strain = macromaterial->strainToCosserat(temp_strain_total) - macromaterial->strainToCosserat(eigenstrain);
+    } else if ( temp_strain_total.size() > 0 ){
+        temp_strain = macromaterial->strainToCosserat(temp_strain_total);
+    }
+}
+
+
 /////////////////////////////////./////////////////////////
 void DiscreteMechanicalRVEMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    temp_strain = macromaterial->strainToCosserat(temp_strain);
+    computeConstitutiveStrain();    
     transformStrain();
     local_stress = giveStiffnessTensorLocal("elastic") * local_strain;
     transformStress();
@@ -934,8 +934,8 @@ void DiscreteMechanicalRVEMaterialStatus :: computeStress(double timeStep) {
     if ( not RVE->giveSolver()->isSilent() ) {
         cout << "Solving mechanical RVE" << endl;
     }    
-    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );
-    temp_strain = addEigenStrain(macromaterial->strainToCosserat(temp_strain) );   //macroscopic eigenstrain
+    DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );    
+    computeConstitutiveStrain();        
     transformStrain();
 
     //set eigenstrains
@@ -997,7 +997,7 @@ void DiscreteMechanicalRVEMaterialStatus :: computeStress(double timeStep) {
     
     transformStress();
     temp_stress = macromaterial->stressToCauchy(temp_stress);
-}
+ }
 
 /////////////////////////////////./////////////////////////
 bool DiscreteMechanicalRVEMaterialStatus :: checkOttosenCriterion() {
@@ -1110,26 +1110,26 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocalExact(stri
     }
     //compute exactly
     DiscreteMechanicalRVEMaterial *macromaterial = static_cast< DiscreteMechanicalRVEMaterial * >( mat );    
-    cout << "Precomputing primary fields for mechanical RVE" << endl;
+    cout << "PrecomputingiveInternalStrainSizeg primary fields for mechanical RVE" << endl;
     bool previously_cauchy = macromaterial->isConvertingFromCauchy();
     macromaterial->setConversionFromCauchy(false);
     initializeStressAndStrainVector();
     unsigned strain_size = macromaterial->giveStrainSize();                
     Matrix Keff = Matrix :: Zero(strain_size, strain_size);                
-    Vector true_temp_strain = temp_strain;
-    temp_strain *= 0;
+    Vector true_temp_strain = temp_strain_total;
+    temp_strain_total *= 0;
     double factor = 1e-10;
     for ( unsigned i = 0; i < strain_size; i++ ) {
         cout << "precomputing for strain component " << i << " out of " << strain_size << endl;
-        temp_strain [ i ] = factor;
+        temp_strain_total [ i ] = factor;
         computeStress(-1);
-        temp_strain [ i ] = 0.;
+        temp_strain_total [ i ] = 0.;
         for ( unsigned j = 0; j < strain_size; j++ ) {
             Keff(i, j) = temp_stress [ j ] / factor;
         }
     }
-    temp_strain = true_temp_strain;
-    macromaterial->setConversionFromCauchy(previously_cauchy);    
+    temp_strain_total = true_temp_strain;
+    macromaterial->setConversionFromCauchy(previously_cauchy); 
     return Keff;
 }
 
@@ -1445,8 +1445,10 @@ void DiscreteMechanicalRVEMaterialStatus :: setFromPrecomputedToFullModel() {
     if ( is_master_status ) {
         return;                   //this was the master status already initialized
     }
-    cout << "*** initialization of mechanical RVE ***" << endl;
+    cout << "*** initialization of mechanical RVE in element " << element->giveID() << " and IP " << idx << " ***" << endl;
+    Vector prev_temp_strain = temp_strain;     
     RVEMaterialStatus :: init(); 
+    temp_strain = prev_temp_strain; 
 }
 
 //////////////////////////////////////////////////////////
@@ -1701,11 +1703,14 @@ void DiscreteMechanicalRVEMaterial :: setConversionFromCauchy(bool convert){
     
 /////////////////////////////////./////////////////////////
 Vector DiscreteMechanicalRVEMaterial :: strainToCosserat(Vector strain) {
-    if ( convert_from_cauchy ) {
+    if ( convert_from_cauchy && CauchyToCosseratMatrix.cols()==strain.size()) {
         return CauchyToCosseratMatrix * strain;
-    } else {
-        return strain;
     }
+    if (giveInternalStrainSize()!=strain.size()){
+        cerr << "Error in DiscreteMechanicalRVEMaterial: expected strain tensor of size " << CauchyToCosseratMatrix.rows() << " but size " << strain.size() << " provided" << endl;
+        exit(1);
+    }
+    return strain;
 }
 
 /////////////////////////////////./////////////////////////
@@ -1816,11 +1821,13 @@ void DiscreteCoupledRVEMaterialStatus ::  setFromPrecomputedToFullModel() {
         return;
     }
     is_precomputed = false;
+    Vector prev_temp_strain = temp_strain;     
     mechRVEstat->setFromPrecomputedToFullModel();
     trspRVEstat->setFromPrecomputedToFullModel();
     if ( !is_master_status ) {
         findFriends();
     }
+    temp_strain = prev_temp_strain;     
 }
 
 //////////////////////////////////////////////////////////
@@ -1981,6 +1988,7 @@ Vector DiscreteCoupledRVEMaterialStatus :: giveInternalSource() const {
 //////////////////////////////////////////////////////////
 void DiscreteCoupledRVEMaterialStatus ::  computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();    
     DiscreteCoupledRVEMaterial *dcm = static_cast< DiscreteCoupledRVEMaterial * >( mat );
     unsigned ndim = dcm->giveDimension();
     temp_stress = giveStiffnessTensor("secant") * temp_strain;

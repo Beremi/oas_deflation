@@ -33,7 +33,7 @@ public:
     virtual void computeStressWithFrozenIntVars(double timeStep) { ( void ) timeStep; };
     virtual Vector giveTempStress() const { return temp_stress; };
     virtual Vector giveUpdatedStress() const { return updt_stress; };
-    virtual void setTotalTempStrain(Vector str) {  temp_strain_total = str; temp_strain = str; };
+    virtual void setTotalTempStrain(Vector str) {  temp_strain_total = str;};
     virtual Vector giveTempStrain() const { return temp_strain; };
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Vector giveTotalTempStrain() const { return temp_strain_total; };
@@ -58,8 +58,9 @@ public:
     virtual MaterialStatus * giveMechanicalMaterialStatus() { return nullptr; };
     virtual MaterialStatus * giveTransportMaterialStatus() { return nullptr; };
     virtual MaterialStatus * giveHeatConductionMaterialStatus() { return nullptr; };
+    unsigned giveID() const {return idx;};
 protected:
-    virtual Vector addEigenStrain(const Vector &totalStrain) const;
+    virtual void computeConstitutiveStrain();
     virtual double addEigenVolumetricStrain(double x) const { return x; };
     Element *element;
     std :: string name;

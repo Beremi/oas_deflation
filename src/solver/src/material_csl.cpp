@@ -322,13 +322,14 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: computeStress(double timeStep) {
-    computeDamage(addEigenStrain(temp_strain) );
+    computeConstitutiveStrain();
+    computeDamage( temp_strain );
     CSLMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
 
 //////////////////////////////////////////////////////////
 void CSLMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
-    temp_strain = addEigenStrain(temp_strain);
+    computeConstitutiveStrain();
     VectMechMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
     temp_stress *=   1. - temp_damage;
     if ( temp_strain [ 0 ] > 0 ) {

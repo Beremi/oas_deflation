@@ -81,6 +81,7 @@ Matrix BrittleMaterialStatus :: giveStiffnessTensor(string type) const {
 
 //////////////////////////////////////////////////////////
 void BrittleMaterialStatus :: computeStress(double timeStep) {
+    computeConstitutiveStrain();
     computeDamage(temp_strain);
     if ( damage ) {
         Matrix stiff = giveStiffnessTensor("secant");
@@ -93,6 +94,7 @@ void BrittleMaterialStatus :: computeStress(double timeStep) {
 
 //////////////////////////////////////////////////////////
 void BrittleMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
+    computeConstitutiveStrain();
     ( void ) timeStep;
     temp_stress = Vector :: Zero( temp_strain.size() );  //TOTO: FIX
 }
@@ -186,6 +188,7 @@ Matrix ContactMaterialStatus :: giveStiffnessTensor(string type) const {
 //////////////////////////////////////////////////////////
 void ContactMaterialStatus :: computeStress(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();    
     temp_normal_strain = temp_strain [ 0 ];
     temp_stress = Vector :: Zero( temp_strain.size() );
     if ( temp_normal_strain < 0 ) {
@@ -202,6 +205,7 @@ void ContactMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void ContactMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
+    computeConstitutiveStrain();    
     temp_stress *= 0;
 }
 

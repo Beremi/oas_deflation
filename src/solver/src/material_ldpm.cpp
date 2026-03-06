@@ -430,9 +430,8 @@ Vector LDPMMaterialStatus :: passZero(const Vector &strain) {
 
 //////////////////////////////////////////////////////////
 void LDPMMaterialStatus :: computeStress(double timeStep) {
-    temp_strain = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
     temp_volumetricStrain = addEigenVolumetricStrain(temp_volumetricStrain_total);
-    temp_strain = temp_strain;
 
     //compute differentiations
     deVdt = ( temp_volumetricStrain - volumetricStrain ) / timeStep;
@@ -569,7 +568,7 @@ void LDPMMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
 
-    temp_strain = addEigenStrain(temp_strain_total);
+    computeConstitutiveStrain();
 
     // absolute prediction
     // double strN_tmp = m->giveE0() * temp_strain [ 0 ];

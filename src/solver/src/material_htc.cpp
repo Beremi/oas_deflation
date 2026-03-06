@@ -136,6 +136,7 @@ void HTCMaterialStatus :: updateMaterialParameters(double timeStep) {
 
 //////////////////////////////////////////////////////////
 void HTCMaterialStatus :: computeStress(double timeStep) {
+    computeConstitutiveStrain();
     updateMaterialParameters(timeStep);
     HTCMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
 }
@@ -143,7 +144,7 @@ void HTCMaterialStatus :: computeStress(double timeStep) {
 //////////////////////////////////////////////////////////
 void HTCMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-
+    computeConstitutiveStrain();
     Vector hstrain = Vector :: Zero(3);
     Vector tstrain = Vector :: Zero(3);
     for ( unsigned i = 0; i < 3; i++ ) {

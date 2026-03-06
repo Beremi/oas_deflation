@@ -173,8 +173,10 @@ protected:
     virtual void transformStrain();
     virtual void transformStress();
     virtual void calculateTransformationMatrix();
+    virtual void computeConstitutiveStrain();    
 
     double macro_volumetricStrain;
+    Vector cosserat_temp_strain;
 public:
     DiscreteMechanicalRVEMaterialStatus(RVEMaterial *m, Element *e, unsigned ipnum, fs :: path masterfile, unsigned ndim);
     virtual ~DiscreteMechanicalRVEMaterialStatus() {};
@@ -275,7 +277,7 @@ public:
     virtual void setParameterValue(std :: string code, double value);
     virtual void setFromPrecomputedToFullModel();
     virtual void setToPrecomputed() { is_precomputed = true; mechRVEstat->setToPrecomputed(); trspRVEstat->setToPrecomputed(); };
-    virtual void setReferenceSystemDirections(Matrix r);    
+    virtual void setReferenceSystemDirections(Matrix r); 
 };
 
 //////////////////////////////////////////////////////////

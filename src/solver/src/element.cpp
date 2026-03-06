@@ -265,7 +265,7 @@ Matrix Element :: giveStiffnessMatrix(std :: string matrixType) const {
 //////////////////////////////////////////////////////////
 void Element :: evaluateStrains(const Vector &DoFs) {
     for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        stats [ i ]->setTotalTempStrain(Bs [ i ] * DoFs);
+        stats [ i ]->setTotalTempStrain(Bs [ i ] * DoFs);      
     }
 }
 
@@ -281,7 +281,7 @@ void Element :: evaluateStresses(bool frozen, double timeStep) {
 //////////////////////////////////////////////////////////
 void Element :: evaluateStresses(double timeStep) {
     for ( auto &s: stats) {
-        s->computeStress(timeStep);
+        s->computeStress(timeStep);     
     }
 }
 
