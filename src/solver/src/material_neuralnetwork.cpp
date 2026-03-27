@@ -11,40 +11,26 @@ using namespace std;
 //////////////////////////////////////////////////////////
 // RECURRENT NETWORK TENSORIAL MECHANICAL MATERIAL
 
-Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double timeStep) {
-    temp_strain_total = strain;
+void NeuralNetworkMaterialStatus :: computeStress(double timeStep) {
     computeConstitutiveStrain();
 
     NeuralNetworkMaterial *m = static_cast< NeuralNetworkMaterial * >( mat );
-
-    // Normalization of input DoFs.
-    Matrix norm = m->giveNormMatrix();
-    Vector x_mean = norm.row(0).transpose();
-    Vector x_std = norm.row(1).transpose();
-    Vector y_mean = norm.row(2).head(6).transpose();
-    Vector y_std = norm.row(3).head(6).transpose();
-
-    // std::cout << "\nCheckpoint 01\n" << std::flush;
-
-    // Vector strain_norm = ( temp_strain.array() - x_mean.array() ) / x_std.array();
-
-    // std::cout << "Strain norm" << strain_norm << "\n" << std::flush;
-
 
     Vector input_norm = Eigen :: VectorXd :: Zero(10);
 
     input_norm.head(6) = temp_strain;
     input_norm(6) = m->giveE0();
-    input_norm(7) = m->giveft() ;
-    input_norm(8) = m->giveGt();
+    input_norm(7) = m->giveAlpha() ;
+    input_norm(8) = m->giveft();
     input_norm(9) = m->giveRVEsize();
+    
+    if (m->give_normalize_inputs()) { // Normalization of input DoFs.
+        input_norm.array() -= m->x_mean.array();
+        input_norm.array() /= m->x_std.array();
+    }
 
-    Vector input_norm_N = ( input_norm.array() - x_mean.array() ) / x_std.array();
-
-    // std::cout << "Input norm" << input_norm_N << "\n" << std::flush;
-
-    Eigen :: VectorXf input_float = input_norm_N.cast< float > ();
-    torch :: Tensor inputs_torch = torch :: from_blob(input_float.data(), { 1, 10 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
+    Eigen :: VectorXf input_float = input_norm.cast< float > (); // Cast to float because libtorch works with float tensors by default
+    torch :: Tensor inputs_torch = torch :: from_blob(input_float.data(), { 1, 10 }); // Populates torch Tensor with Eigen Vector/Matrix
     // inputs_torch = inputs_torch.unsqueeze(0); // so that sequence len = 1
 
     inputs_torch = inputs_torch.unsqueeze(0);
@@ -54,9 +40,8 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
 
     ///// strain increment - calculation, normalization, casting to torch tensor
     Vector strain_increment = temp_strain - prev_strain;
-    Vector strain_increment_norm = ( strain_increment.array() - x_mean.head(6).array() ) / x_std.head(6).array();
-    Eigen :: VectorXf increment_float = strain_increment_norm.cast< float > ();
-    torch :: Tensor increment_torch = torch :: from_blob(increment_float.data(), { 1, 6 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
+    Eigen :: VectorXf increment_float = strain_increment.cast< float > ();
+    torch :: Tensor increment_torch = torch :: from_blob(increment_float.data(), { 1, 6 }); // Populates torch Tensor with Eigen Vector/Matrix
     increment_torch = increment_torch.unsqueeze(0);
     // std::cout << "increment_torch norm" << increment_torch << "\n" << std::flush;
 
@@ -64,27 +49,10 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     // inputs into form that libtorch wants
     std :: vector< torch :: jit :: IValue >inputs;
     inputs.push_back(inputs_torch);
-
     if ( m->give_use_strain_increment() ) {
         inputs.push_back(increment_torch);
     }
-
-    std :: vector< Layer >layers = m->giveNetworkProps();
-    for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ]; // <- note the &
-        if ( layer.name == "LSTM" ) {
-            auto hc_in = std :: make_tuple( hc_vectors [ i ] [ 0 ].clone(), hc_vectors [ i ] [ 1 ].clone() );
-            inputs.push_back(hc_in);
-        } else if ( layer.name == "GRU" ) {
-            auto h_in = hc_vectors [ i ] [ 0 ].clone();
-            inputs.push_back(h_in);
-        } else if ( layer.name == "LMSC" ) {
-            // auto h_in = hc_vectors[i][0];
-            auto h_in = hc_vectors [ i ] [ 0 ].clone();
-
-            inputs.push_back(h_in);
-        }
-    }
+    inputs.push_back(hidden_state);
 
     // std::cout << "inputs \n"  << inputs << "\n";
 
@@ -102,44 +70,35 @@ Vector NeuralNetworkMaterialStatus :: giveStress(const Vector &strain, double ti
     // torch :: Tensor hidden_new = tuple_output->elements() [ 1 ].toTensor();
     // std::cout << "hidden_new \n"  << hidden_new << "\n";
 
-    // std::cout << "hc_vectors_prev \n"  << hc_vectors << "\n";
+    // std::cout << "hidden_state_prev \n"  << hidden_state << "\n";
 
     // Update hidden states
-    for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ]; // <- note the &
-        if ( layer.name == "LSTM" ) {
-            auto hc_tuple = tuple_output->elements() [ i + 1 ].toTuple();
-            temp_hc_vectors [ i ] [ 0 ] = hc_tuple->elements() [ 0 ].toTensor(); // update h tensor
-            temp_hc_vectors [ i ] [ 1 ] = hc_tuple->elements() [ 1 ].toTensor(); // update c tensor
-        } else if ( ( layer.name == "GRU" ) || ( layer.name == "LMSC" ) ) {
-            auto h_tensor = tuple_output->elements() [ i + 1 ].toTensor();
-            temp_hc_vectors [ i ] [ 0 ] = h_tensor;
-        }
-    }
-    ;
-    // std::cout << "hc_vectors_post \n"  << hc_vectors << "\n";
+    temp_hidden_state = tuple_output->elements() [ 1 ];
+    // std::cout << "hidden_state_post \n"  << temp_hidden_state << "\n";
 
     // std::cout << "post hidden update\n"  << "\n";
 
     // temp_hidden = hidden_new;
 
-    stress_norm_tensor = stress_norm_tensor.squeeze(0);
+    stress_norm_tensor = stress_norm_tensor.squeeze(0); // - first squeeze to remove batch dimension, second to remove sequence dimension
     stress_norm_tensor = stress_norm_tensor.squeeze(0); // !! do not use _squeeze() - it is IN-PLACE and messes up the tensor memory address
 
     // std::cout << "\nCheckpoint 03\n" << std::flush;
 
     // Convert forces_norm Tensor to vector and to Eigen Vector and to double type
-    std :: vector< float >outVec(stress_norm_tensor.data_ptr< float >(), stress_norm_tensor.data_ptr< float >() + stress_norm_tensor.numel() );
-    Eigen :: VectorXf outFloat = Eigen :: VectorXf :: Map( & outVec [ 0 ], strain.size() );
-    Eigen :: VectorXd stress_norm = outFloat.cast< double > ();
+    auto stress_ptr = stress_norm_tensor.data_ptr<float>();
+    Eigen::Map<Eigen::VectorXf> outFloat(stress_ptr, temp_strain.size());
+    Eigen::VectorXd stress_norm = outFloat.cast<double>();
     // std::cout << "Stress Norm\n" << stress_norm << "\n" << std::flush;
 
-    // // Denormalize output stress
-    temp_stress = ( stress_norm.array() * y_std.array() ) + y_mean.array();
-    // std::cout << "Stress\n" << temp_stress << "\n" << std::flush;
+    if (m->give_normalize_inputs()) { // Denormalization of output stress.
+        stress_norm.array() *= m->y_std.array();
+        stress_norm.array() += m->y_mean.array();
+    }
+
+    temp_stress = stress_norm; // denormalization happens in network
 
     // std::cout << "returning stress\n"  << "\n";
-    return temp_stress;
 };
 
 //////////////////////////////////////////////////////////
@@ -158,9 +117,9 @@ double NeuralNetworkMaterialStatus :: giveMassConstant() const {
 }
 
 //////////////////////////////////////////////////////////
-Vector NeuralNetworkMaterialStatus :: giveStressWithFrozenIntVars(const Vector &strain, double timeStep) {
+void NeuralNetworkMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
-    return giveStress(strain, timeStep);
+    computeStress(timeStep);
 };
 
 //////////////////////////////////////////////////////////
@@ -224,9 +183,10 @@ Matrix NeuralNetworkMaterialStatus :: giveElasticStiffnessTensor3D() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterialStatus :: update() {
     MaterialStatus :: update();
-    for (size_t i = 0; i < hc_vectors.size(); ++i) {
-        hc_vectors [ i ] = temp_hc_vectors [ i ];
-    }
+    // for (size_t i = 0; i < hc_vectors.size(); ++i) {
+    //     hc_vectors [ i ] = temp_hc_vectors [ i ];
+    // }
+    hidden_state = temp_hidden_state;
     prev_strain = temp_strain;
 }
 
@@ -238,9 +198,9 @@ Matrix NeuralNetworkMaterialStatus :: giveMassTensor() const {
 }
 
 //////////////////////////////////////////////////////////
-std :: vector< std :: vector< torch :: Tensor > >NeuralNetworkMaterialStatus :: giveHiddenState() const {
-    return temp_hc_vectors;
-}
+// std :: vector< std :: vector< torch :: Tensor > >NeuralNetworkMaterialStatus :: giveHiddenState() const {
+//     return temp_hc_vectors;
+// }
 
 //////////////////////////////////////////////////////////
 NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum)  {
@@ -249,33 +209,14 @@ NeuralNetworkMaterialStatus :: NeuralNetworkMaterialStatus(NeuralNetworkMaterial
     // prev_strain = Vector::Zero(temp_strain.size()); // doesn't work, needs to be done differently (with m -> giveDimension())
     prev_strain = Vector :: Zero(6);
 
-    std :: vector< Layer >layers = m->giveNetworkProps();
+    torch::jit::Module inner = m->giveNetwork().attr("model").toModule(); // actual network stored in wrapper
+     if (!inner.find_method("init_hidden")) {
+         cerr << name << ": 'init_hidden' function not found in the model, cannot initialize hidden states" << endl;
+         exit(EXIT_FAILURE);
+     }
 
-    for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ]; // <- note the &
-        int num_layers = layer.num_layers;
-        int hidden_size = layer.hidden_size;
-
-        if ( layer.name == "LSTM" ) {
-            std :: vector< torch :: Tensor >hc;
-            torch :: Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-            torch :: Tensor c = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-            h.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
-            c.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
-            hc.push_back(h);
-            hc.push_back(c);
-            hc_vectors.push_back(hc);
-            temp_hc_vectors.push_back(hc);
-        } else if ( ( layer.name == "GRU" ) || ( layer.name == "LMSC" ) ) {
-            std :: vector< torch :: Tensor >hc;
-            torch :: Tensor h = torch :: zeros({ num_layers, hidden_size }); // initial hidden state as zero
-            h.unsqueeze_(0); // add the "batch_size" dimension (in this case batch_size = 1)
-            hc.push_back(h);
-            hc_vectors.push_back(hc);
-            temp_hc_vectors.push_back(hc);
-        }
-        // std::cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std::flush;
-    }
+    hidden_state = inner.run_method("init_hidden", 1);
+    
 }
 
 //////////////////////////////////////////////////////////
@@ -363,8 +304,8 @@ Matrix NeuralNetworkMaterial :: readStiffMatrixFromFile() const {
 //////////////////////////////////////////////////////////
 void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     string param;
-    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bE0, bft, bGt, bRVEsize;
-    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bE0 = bft = bGt = bRVEsize = false;
+    bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bE0, balpha, bft, bGt, bRVEsize;
+    bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bE0 = balpha = bft = bGt = bRVEsize = false;
     const int MAX_LAYERS = 5;
 
     while (  iss >> param ) {
@@ -380,6 +321,9 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("E0") == 0 ) {
             bE0 = true;
             iss >> E0;
+        } else if ( param.compare("alpha") == 0 ) {
+            balpha = true,
+            iss >> alpha;
         } else if ( param.compare("ft") == 0 ) {
             bft = true;
             iss >> ft;
@@ -417,10 +361,16 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
 
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
+            normalize_inputs = true;
             string filepath;
             iss >> filepath;
             nm_path = GlobPaths :: BASEDIR  / filepath;
             norm = readDataNormalizationMatrix(10, nm_path);
+            x_mean = norm.row(0).transpose();
+            x_std  = norm.row(1).transpose();
+            y_mean = norm.row(2).head(6).transpose();
+            y_std  = norm.row(3).head(6).transpose();
+
         } else if ( param.find("layer_type") != std :: string :: npos ) {
             for (int i = 0; i < MAX_LAYERS; ++i) {
                 std :: string layer_type = "layer_type" + std :: to_string(i);
@@ -477,6 +427,10 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         cerr << name << ": E0 was not specified" << endl;
         exit(EXIT_FAILURE);
     }
+    if ( !balpha ) {
+        cerr << name << ": alpha was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
     if ( !bft ) {
         cerr << name << ": ft was not specified" << endl;
         exit(EXIT_FAILURE);
@@ -495,8 +449,11 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         exit(EXIT_FAILURE);
     }
     if ( !bnormmat ) {
-        cerr << name << ": normalization matrix was not specified" << endl;
-        exit(EXIT_FAILURE);
+        torch::jit::Module inner = network.attr("model").toModule(); // actual network stored in wrapper
+        if (!inner.find_method("init_hidden")) {
+            cerr << name << ": normalization matrix was not specified nor is there the 'init_hidden' function in the model" << endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     for (size_t i = 0; i < layers.size(); ++i) {
