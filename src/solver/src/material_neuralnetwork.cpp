@@ -30,28 +30,31 @@ void NeuralNetworkMaterialStatus :: computeStress(double timeStep) {
     }
 
     Eigen :: VectorXf input_float = input_norm.cast< float > (); // Cast to float because libtorch works with float tensors by default
-    torch :: Tensor inputs_torch = torch :: from_blob(input_float.data(), { 1, 10 }); // Populates torch Tensor with Eigen Vector/Matrix
+    torch :: Tensor inputs_torch = torch :: from_blob(input_float.data(), { 1, 10 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix
     // inputs_torch = inputs_torch.unsqueeze(0); // so that sequence len = 1
 
     inputs_torch = inputs_torch.unsqueeze(0);
+
+    // inputs into form that libtorch wants
+    std :: vector< torch :: jit :: IValue >inputs;
+    inputs.push_back(inputs_torch);
 
     // std::cout << "prev_strain" << prev_strain << "\n" << std::flush;
     // std::cout << "prev_strain size: " << prev_strain.size() << "\n";
 
     ///// strain increment - calculation, normalization, casting to torch tensor
-    Vector strain_increment = temp_strain - prev_strain;
-    Eigen :: VectorXf increment_float = strain_increment.cast< float > ();
-    torch :: Tensor increment_torch = torch :: from_blob(increment_float.data(), { 1, 6 }); // Populates torch Tensor with Eigen Vector/Matrix
-    increment_torch = increment_torch.unsqueeze(0);
-    // std::cout << "increment_torch norm" << increment_torch << "\n" << std::flush;
-
-
-    // inputs into form that libtorch wants
-    std :: vector< torch :: jit :: IValue >inputs;
-    inputs.push_back(inputs_torch);
-    if ( m->give_use_strain_increment() ) {
+    if (m->give_use_strain_increment()) {
+        Vector strain_increment = temp_strain - prev_strain;
+        if (m->give_normalize_inputs()) { // Normalization of increment.
+            strain_increment.array() /= m->x_std.head(strain_increment.size()).array(); // !! only divide by std, mean is not subtracted because it cancels out in the increment. 
+        }
+        Eigen :: VectorXf increment_float = strain_increment.cast< float > ();
+        torch :: Tensor increment_torch = torch :: from_blob(increment_float.data(), { 1, 6 }).clone(); // Populates torch Tensor with Eigen Vector/Matrix, 
+        // !! .clone() is safer (and here necessary because strain_increment is destroyed after end of if)
+        increment_torch = increment_torch.unsqueeze(0);
         inputs.push_back(increment_torch);
     }
+
     inputs.push_back(hidden_state);
 
     // std::cout << "inputs \n"  << inputs << "\n";
@@ -306,7 +309,6 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
     string param;
     bool bstiffmat, bmlmodel, bnormmat, bE, bnu, bdensity, bE0, balpha, bft, bGt, bRVEsize;
     bstiffmat = bmlmodel = bnormmat = bE = bnu = bdensity = bE0 = balpha = bft = bGt = bRVEsize = false;
-    const int MAX_LAYERS = 5;
 
     while (  iss >> param ) {
         if ( param.compare("E") == 0 ) {
@@ -359,6 +361,25 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
                 use_strain_increment = true;
             }
 
+            torch::jit::Module inner = network.attr("model").toModule(); // actual network stored in wrapper
+            
+            if (!inner.find_method("get_use_strain_increment")) {
+                cout << name << ": 'get_use_strain_increment' function not found in the model, looking for LMSC and SUB in name" << endl;
+                std::string last_part = ml_path.filename().string(); // 
+                if (last_part.find("LMSC") != std::string::npos) { // LMSC in model name - strain increment needed
+                    cout << name << ": LMSC found in model name, using strain increment" << endl;
+                    use_strain_increment = true;
+                } else if (last_part.find("SUB") != std::string::npos) { // substepping in model - strain increment needed even for non LMSC networks
+                    cout << name << ": SUB found in model name, using strain increment" << endl;
+                    use_strain_increment = true;
+                } else {
+                    cout << name << ": LMSC or SUB not found in model name, assuming strain increment is not used" << endl;
+                    use_strain_increment = false;
+                }
+            } else {
+                use_strain_increment = inner.run_method("get_use_strain_increment").toBool();
+            }
+
         } else if ( param.compare("norm_mat") == 0 ) {
             bnormmat = true;
             normalize_inputs = true;
@@ -370,31 +391,8 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
             x_std  = norm.row(1).transpose();
             y_mean = norm.row(2).head(6).transpose();
             y_std  = norm.row(3).head(6).transpose();
-
-        } else if ( param.find("layer_type") != std :: string :: npos ) {
-            for (int i = 0; i < MAX_LAYERS; ++i) {
-                std :: string layer_type = "layer_type" + std :: to_string(i);
-                if ( param == layer_type ) {
-                    layers.push_back({ "x", 0, 0 });
-                    iss >> layers [ i ].name;
-                }
-            }
-        } else if ( param.find("num_layers") != std :: string :: npos ) {
-            for (int i = 0; i < MAX_LAYERS; ++i) {
-                std :: string num_lrs = "num_layers" + std :: to_string(i);
-                if ( param == num_lrs ) {
-                    iss >> layers [ i ].num_layers;
-                }
-            }
-        } else if ( param.find("hidden_size") != std :: string :: npos ) {
-            for (int i = 0; i < MAX_LAYERS; ++i) {
-                std :: string hdns = "hidden_size" + std :: to_string(i);
-                if ( param == hdns ) {
-                    iss >> layers [ i ].hidden_size;
-                }
-            }
         }  else {
-            cerr << "MLElement ERROR: " << param << " input parameter not defined \n";
+            cerr << "NeuralNetworkMaterial ERROR: " << param << " input parameter not defined \n";
         }
     }
 
@@ -449,28 +447,9 @@ void NeuralNetworkMaterial :: readFromLine(istringstream &iss) {
         exit(EXIT_FAILURE);
     }
     if ( !bnormmat ) {
-        torch::jit::Module inner = network.attr("model").toModule(); // actual network stored in wrapper
-        if (!inner.find_method("init_hidden")) {
-            cerr << name << ": normalization matrix was not specified nor is there the 'init_hidden' function in the model" << endl;
-            exit(EXIT_FAILURE);
-        }
+        cerr << name << ": normalization matrix was not specified, assuming normalization is a part of the network" << endl; 
     }
 
-    for (size_t i = 0; i < layers.size(); ++i) {
-        Layer &layer = layers [ i ];
-        if ( layer.name == "LSTM" || layer.name == "GRU" ) {
-            if ( layer.hidden_size == 0 || layer.num_layers == 0 ) {
-                cerr << "layer" << i << " has incorrectly specified num_layers of hidden_size" << endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-        std :: cout << layer.name << "  " << layer.num_layers << "  " << layer.hidden_size << "\n" << std :: flush;
-
-        if ( layer.name == "LMSC" ) {
-            use_strain_increment = true;
-        }
-        // use_strain_increment = true;
-    }
 };
 
 //////////////////////////////////////////////////////////

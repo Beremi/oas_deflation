@@ -8,12 +8,6 @@
 #include <fstream>
 #include <torch/script.h>
 
-struct Layer {
-    std :: string name = "Dense";
-    int num_layers = 0;
-    int hidden_size = 0;
-};
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // RECURRENT NETWORK TENSORIAL MATERIAL
@@ -68,7 +62,6 @@ protected:
 
     fs :: path ml_path;
     torch :: jit :: script :: Module network;
-    std :: vector< Layer >layers; // layer info
 
 
 public:
@@ -92,7 +85,6 @@ public:
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont);  };
 
     Matrix giveNormMatrix() const { return norm; };
-    std :: vector< Layer >giveNetworkProps() const { return layers; };
 
     Vector x_mean; Vector x_std; Vector y_mean; Vector y_std;
 
