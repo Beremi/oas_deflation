@@ -31,7 +31,7 @@ protected:
 
     Vector temp_DoFs;
     bool temp_frozen;
-    double timeStep;
+    double temp_timeStep;
 
 public:
     MLMechElement(unsigned dim);

@@ -226,7 +226,7 @@ Vector MLMechElement :: giveInternalForces() {
         } else {
             // std::cout << "\nChceckpoint 0\n" << std::flush;
 
-            int size = DoFs.size();
+            int size = temp_DoFs.size();
             int size_x = size - 3; // size of network input
 
             // std::cout << "\nCheckpoint 00\n" << std::flush;
@@ -399,7 +399,7 @@ Vector MLMechElement :: giveInternalForces() {
             // // OLD
 
             if ( Ftype == "Fp" ) {
-                return stiffmat_elastic * DoFs - forcesFull;
+                return stiffmat_elastic * temp_DoFs - forcesFull;
             } else {
                 // std::cout << "direct Forces prediction" << "\n" << std::flush;
 
