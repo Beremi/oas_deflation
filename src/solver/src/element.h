@@ -44,7 +44,7 @@ protected:
 
     virtual void evaluateStresses(double timeStep);
     virtual void evaluateStressesWithFrozenIntVars(double timeStep);
-
+    
 
     ShapeFunc *shafunc;
     IntegrationType *inttype;
@@ -54,7 +54,8 @@ protected:
     //vetrex 1, line 3, triangle 5, polygon 7, quad 9, tetra 10, brick 12, quadratic_triangle 22, quadratic_tetra 24, quadratic_brick 25
 
     std :: vector< bool >physicalFields;
-
+    std :: vector <unsigned> DoFsWhichChangeSignOfInternalForces; //terms in Poisson Equation that are reverted because of negative Flux
+    
 public:
     Element(unsigned dim);
     virtual ~Element();
@@ -73,6 +74,7 @@ public:
     virtual Vector giveInternalForces();
     double giveKineticEnergy(const Vector &velocity) const;
     std :: vector< unsigned >giveDoFs() const { return DoFids; };
+    unsigned giveNumDoFs() const { return DoFids.size(); };
     std :: vector< unsigned >giveDoFsInDirection(unsigned dir) const;
     unsigned giveNumOutDoFs() const { return outDoFs; };
     virtual void giveValues(std :: string code, Vector &result) const;

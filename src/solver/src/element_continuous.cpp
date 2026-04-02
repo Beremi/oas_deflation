@@ -22,7 +22,7 @@ TrsprtTriangle :: TrsprtTriangle() : Element(2) {
 Matrix TrsprtTriangle :: giveBMatrix(const Point *x) const {
     Matrix phiG = Matrix :: Zero(ndim, numOfNodes);
     shafunc->giveShapeFGrad(x, phiG);
-    return phiG;
+    return phiG; 
 }
 
 //////////////////////////////////////////////////////////

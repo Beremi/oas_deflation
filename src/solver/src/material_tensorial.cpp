@@ -19,7 +19,7 @@ TensTrsprtMaterialStatus :: TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Elem
 
 //////////////////////////////////////////////////////////
 void TensTrsprtMaterialStatus :: computeStress(double timeStep) {
-    effConductivity = updateEffectiveConductivity(); //nonlinear effecto of pressure
+    effConductivity = updateEffectiveConductivity(); //nonlinear effect of pressure
     computeStressWithFrozenIntVars(timeStep);
 };
 
@@ -27,7 +27,7 @@ void TensTrsprtMaterialStatus :: computeStress(double timeStep) {
 void TensTrsprtMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     computeConstitutiveStrain();    
-    temp_stress = -effConductivity *temp_strain; //DO NOT update here effConductivity, it is used for RVE material
+    temp_stress = -effConductivity *temp_strain; //minus is already included in temp_strain
 };
 
 //////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ Matrix TensTrsprtMaterialStatus :: giveStiffnessTensor(string type) const {
     unsigned ss = mat->giveStrainSize();
     Matrix T = Matrix :: Zero(ss, ss);
     for ( unsigned i = 0; i < ss; i++ ) {
-        T(i, i) = -giveEffectiveConductivity(type);
+        T(i, i) = giveEffectiveConductivity(type);
     }
     return T;
 };
@@ -45,7 +45,7 @@ Matrix TensTrsprtMaterialStatus :: giveStiffnessTensor(string type) const {
 Matrix TensTrsprtMaterialStatus :: giveDampingTensor() const {
     TensTrsprtMaterial *m = static_cast< TensTrsprtMaterial * >( mat );
     Matrix M = Matrix :: Zero(1, 1);
-    M(0, 0) = -m->giveCapacity(); //density is deleted, the capacity is in s^2/m^2
+    M(0, 0) = m->giveCapacity()*m->giveDensity(); //[1/Pa * kg/m3 ]
     return M;
 }
 
@@ -79,12 +79,10 @@ bool TensTrsprtMaterialStatus :: giveValues(string code, Vector &result) const {
         result [ 0 ] =  m->givePermeability();
         return true;
     } else if ( code.compare("flux") == 0 ) {
-        result.resize(1);
-        result [ 0 ] =  abs(temp_stress [ 0 ]);
+        result =  temp_stress;
         return true;
     } else if ( code.compare("pressure_gradient") == 0 ) {
-        result.resize(1);
-        result [ 0 ] = abs(temp_strain [ 0 ]);
+        result = temp_strain_total;
         return true;
     } else {
         return MaterialStatus :: giveValues(code, result);
@@ -120,6 +118,10 @@ void TensTrsprtMaterial :: readFromLine(istringstream &iss) {
 
     while (  iss >> param ) {
         if ( param.compare("capacity") == 0 ) {
+            if (capacity!=-1) {
+                cerr << name << ": material parameter 'capacity' was already set" << endl;
+                exit(EXIT_FAILURE);            
+            }
             bcapacity = true;
             iss >> capacity;
         } else if ( param.compare("viscosity") == 0 ) {
@@ -137,7 +139,7 @@ void TensTrsprtMaterial :: readFromLine(istringstream &iss) {
             iss >> m;
         }
     }
-    if ( !bcapacity ) {
+    if ( !bcapacity && capacity==-1) {
         cerr << name << ": material parameter 'capacity' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
@@ -168,11 +170,13 @@ MaterialStatus *TensTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned
 TensHeatConductionMaterialStatus :: TensHeatConductionMaterialStatus(TensHeatConductionMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "heat conduction mat. status";
     temp_temperature = 0;
+    effConductivity = updateEffectiveConductivity();     
 }
 
 
 //////////////////////////////////////////////////////////
 void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
+    effConductivity = updateEffectiveConductivity(); 
     computeStressWithFrozenIntVars(timeStep);
 };
 
@@ -180,9 +184,14 @@ void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
 void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     computeConstitutiveStrain();    
-    TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
-    temp_stress = m->giveConductivity() * temp_strain; //DO NOT update here effConductivity, it is used for RVE material
+    temp_stress = effConductivity * temp_strain;
 };
+
+//////////////////////////////////////////////////////////
+double TensHeatConductionMaterialStatus :: updateEffectiveConductivity() const {
+    TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
+    return m->giveConductivity();
+}
 
 //////////////////////////////////////////////////////////
 Matrix TensHeatConductionMaterialStatus :: giveStiffnessTensor(string type) const {

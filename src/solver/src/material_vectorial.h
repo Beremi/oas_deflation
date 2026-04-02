@@ -47,24 +47,32 @@ class VectHeatConductionMaterial;
 class VectHeatConductionMaterialStatus : public TensHeatConductionMaterialStatus
 {
 protected:
+    double relativeNormalStrain = 0.;
 public:
     VectHeatConductionMaterialStatus(VectHeatConductionMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectHeatConductionMaterialStatus() {};
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual MaterialStatus * giveHeatConductionMaterialStatus() { return this; };
+    virtual double updateEffectiveConductivity() const;
+    virtual void setParameterValue(std :: string code, double value);  
+    virtual Vector giveInternalSource() const;
 };
 
 //////////////////////////////////////////////////////////
 class VectHeatConductionMaterial : public TensHeatConductionMaterial
 {
 protected:
-
+    double eta_c = 0.;
+    double eta_s = 1.;    
 public:
     VectHeatConductionMaterial(unsigned dimension) : TensHeatConductionMaterial(dimension) { name = "Vect heat conduction material"; };
     ~VectHeatConductionMaterial() {};
+    void readFromLine(std :: istringstream &iss);    
     virtual void init(MaterialContainer *matcont) { TensHeatConductionMaterial :: init(matcont); strainsize = 1; }
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual Material * giveHeatConductionMaterial() { return this; };
+    double giveEtaS() const {return eta_s;};
+    double giveEtaC() const {return eta_c;};    
 };
 
 
@@ -145,7 +153,9 @@ public:
 class VectMechMaterial : public Material
 {
 protected:
-    double E0, alpha, density;
+    double E0; //[Pa]
+    double alpha; //[-]
+    double density; //[kg/m3] 
 public:
     VectMechMaterial(unsigned dimension);
     ~VectMechMaterial() {};

@@ -2,6 +2,7 @@
 #include "element_container.h"
 #include "boundary_condition.h"
 #include "material_vectorial.h"
+#include "material_thermomechanical.h"
 #include "model.h"
 
 using namespace std;
@@ -195,31 +196,26 @@ void LDPMTetra :: init() {
 
     //weights for volumetric calculations
     volWeights.resize(12);
-    Point volumeChangeWeights;
-    unsigned j, k, l;
-    double sign;
-    double averageSide = 0;
-    for ( unsigned i = 0; i < 4; i++ ) {
-        j = ( i + 1 ) % 4;
-        k = ( i + 2 ) % 4;
-        l = ( i + 3 ) % 4;
-        averageSide += ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).norm();
-        volumeChangeWeights = ( nodes [ j ]->givePoint() - nodes [ l ]->givePoint() ).cross( nodes [ k ]->givePoint() - nodes [ l ]->givePoint() ) / 6.;
-        volume = ( nodes [ i ]->givePoint() - nodes [ l ]->givePoint() ).dot(volumeChangeWeights);
-        sign = volume / abs(volume);
-        for ( unsigned v = 0; v < 3; v++ ) {
-            volWeights [ 3 * i + v ] = sign * volumeChangeWeights(v)  / 3; //divided by ndim, othewise total trace of strain vector would be returned
-        }
-    }
 
-    volume = abs(volume);
-    averageSide /= 4;
-    if ( volume < 1e-25 ) {
-        cerr << name << "Error: wrong geometry" << endl;
-        exit(1);
-    }
+    Point n0 = nodes[0]->givePoint();
+    Point n1 = nodes[1]->givePoint();
+    Point n2 = nodes[2]->givePoint();
+    Point n3 = nodes[3]->givePoint();
+    volWeights[0] = n1.y()*(n2.z() - n3.z()) + n2.y()*(n3.z() - n1.z()) + n3.y()*(n1.z() - n2.z());
+    volWeights[1] = n1.z()*(n2.x() - n3.x()) + n2.z()*(n3.x() - n1.x()) + n3.z()*(n1.x() - n2.x());
+    volWeights[2] = n1.x()*(n2.y() - n3.y()) + n2.x()*(n3.y() - n1.y()) + n3.x()*(n1.y() - n2.y());
+    volWeights[3] = n2.y()*(n0.z() - n3.z()) + n3.y()*(n2.z() - n0.z()) + n0.y()*(n3.z() - n2.z());
+    volWeights[4] = n2.z()*(n0.x() - n3.x()) + n3.z()*(n2.x() - n0.x()) + n0.z()*(n3.x() - n2.x());
+    volWeights[5] = n2.x()*(n0.y() - n3.y()) + n3.x()*(n2.y() - n0.y()) + n0.x()*(n3.y() - n2.y());
+    volWeights[6] = n3.y()*(n0.z() - n1.z()) + n0.y()*(n1.z() - n3.z()) + n1.y()*(n3.z() - n0.z());
+    volWeights[7] = n3.z()*(n0.x() - n1.x()) + n0.z()*(n1.x() - n3.x()) + n1.z()*(n3.x() - n0.x());
+    volWeights[8] = n3.x()*(n0.y() - n1.y()) + n0.x()*(n1.y() - n3.y()) + n1.x()*(n3.y() - n0.y());
+    volWeights[9] = n0.y()*(n2.z() - n1.z()) + n1.y()*(n0.z() - n2.z()) + n2.y()*(n1.z() - n0.z());
+    volWeights[10] = n0.z()*(n2.x() - n1.x()) + n1.z()*(n0.x() - n2.x()) + n2.z()*(n1.x() - n0.x());
+    volWeights[11] = n0.x()*(n2.y() - n1.y()) + n1.x()*(n0.y() - n2.y()) + n2.x()*(n1.y() - n0.y());
+    volWeights /= 18.*volume;
 
-    nodeWeights /= volume;
+    volume  = abs(volume);
 
     /*
      * double faceVolume = 0;
@@ -275,8 +271,10 @@ Vector LDPMTetra :: giveMasterVariables(const Point *x, const Vector &DoFs) cons
 
 //////////////////////////////////////////////////////////
 void LDPMTetra :: evaluateStrains(const Vector &DoFs) {
-    //compute volumetric strain
 
+    Element::evaluateStrains(DoFs);
+    //compute volumetric strain
+    
     volumetricStrain = 0;
     unsigned r = 0;
     for ( unsigned k = 0; k < 4; k++ ) {
@@ -285,13 +283,9 @@ void LDPMTetra :: evaluateStrains(const Vector &DoFs) {
         }
         r += nodes [ k ]->giveNumberOfDoFs();
     }
-    volumetricStrain /= volume; //mechanical volumetric stress, one third of strain tensor strace
-
     for (auto &s:stats) {
         s->setParameterValue("volumetric_strain", volumetricStrain);
-    }
-
-    Element :: evaluateStrains(DoFs);
+    }    
 };
 
 //////////////////////////////////////////////////////////
@@ -321,7 +315,7 @@ Vector LDPMTetra :: integrateInternalSources() {
 
 //////////////////////////////////////////////////////////
 void LDPMTetra :: computeMassMatrix() {
-    massM = Matrix :: Zero(24, 24);
+    massM = Matrix :: Zero(DoFids.size(), DoFids.size());
     VectMechMaterialStatus *mechstat;
     double density;
     double tetvol;
@@ -331,12 +325,18 @@ void LDPMTetra :: computeMassMatrix() {
     vector< Point * >tetnodes(4);
     vector< Point >reltetnodes(4);
     tetnodes [ 3 ] = vert [ 0 ]->givePointPointer();
-
+    if (DoFids.size()%4 !=0) {
+        cerr << "LDPMTetra: variable node type" << endl;
+        exit(1);
+    }
+    unsigned nodeDoFNum = unsigned(DoFids.size()/4.+0.5);
+    
+    
     for ( unsigned i = 0; i < 12; i++ ) {
-        mechstat = static_cast< VectMechMaterialStatus * >( stats [ 0 ] );
+        mechstat = static_cast< VectMechMaterialStatus * >( stats [ i ]->giveMechanicalMaterialStatus() );
         density = mechstat->giveDensity();
         for ( unsigned j = 0; j < 2; j++ ) {
-            nodeID = nodecodes [ 2 * i + j ];
+            nodeID = nodecodes [ 2 * i + j ];            
             tetnodes [ 0 ] = nodes [ nodeID ]->givePointPointer();
             tetnodes [ 1 ] = vert [ vertcodes [ 2 * i + j ] ]->givePointPointer();
             tetnodes [ 2 ] = vert [ vertcodes [ 2 * i + 1 - j ] ]->givePointPointer();
@@ -353,33 +353,33 @@ void LDPMTetra :: computeMassMatrix() {
                 tetI *= -1;              //should not happen for correctly generated mesh
             }
             for ( unsigned k = 0; k < 3; k++ ) {
-                massM(nodeID * 6 + k, nodeID * 6 + k) += density * tetvol;
+                massM(nodeID * nodeDoFNum + k, nodeID * nodeDoFNum + k) += density * tetvol;
             }
             diff = tetcentr - ( * tetnodes [ 0 ] );
-            massM(nodeID * 6, nodeID * 6 + 4) += density * tetvol * diff [ 2 ];
-            massM(nodeID * 6, nodeID * 6 + 5) -= density * tetvol * diff [ 1 ];
-            massM(nodeID * 6 + 1, nodeID * 6 + 3) -= density * tetvol * diff [ 2 ];
-            massM(nodeID * 6 + 1, nodeID * 6 + 5) += density * tetvol * diff [ 0 ];
-            massM(nodeID * 6 + 2, nodeID * 6 + 3) += density * tetvol * diff [ 1 ];
-            massM(nodeID * 6 + 2, nodeID * 6 + 4) -= density * tetvol * diff [ 0 ];
-            massM(nodeID * 6 + 3, nodeID * 6 + 3) += density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
-            massM(nodeID * 6 + 4, nodeID * 6 + 4) += density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
-            massM(nodeID * 6 + 5, nodeID * 6 + 5) += density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 1 ] ), 2 ) ) );
-            massM(nodeID * 6 + 3, nodeID * 6 + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
-            massM(nodeID * 6 + 3, nodeID * 6 + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
-            massM(nodeID * 6 + 4, nodeID * 6 + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
+            massM(nodeID * nodeDoFNum, nodeID * nodeDoFNum + 4) += density * tetvol * diff [ 2 ];
+            massM(nodeID * nodeDoFNum, nodeID * nodeDoFNum + 5) -= density * tetvol * diff [ 1 ];
+            massM(nodeID * nodeDoFNum + 1, nodeID * nodeDoFNum + 3) -= density * tetvol * diff [ 2 ];
+            massM(nodeID * nodeDoFNum + 1, nodeID * nodeDoFNum + 5) += density * tetvol * diff [ 0 ];
+            massM(nodeID * nodeDoFNum + 2, nodeID * nodeDoFNum + 3) += density * tetvol * diff [ 1 ];
+            massM(nodeID * nodeDoFNum + 2, nodeID * nodeDoFNum + 4) -= density * tetvol * diff [ 0 ];
+            massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 3) += density * ( tetI(0, 0) + tetvol * ( pow( ( diff [ 1 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
+            massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum + 4) += density * ( tetI(1, 1) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 2 ] ), 2 ) ) );
+            massM(nodeID * nodeDoFNum + 5, nodeID * nodeDoFNum + 5) += density * ( tetI(2, 2) + tetvol * ( pow( ( diff [ 0 ] ), 2 ) + pow( ( diff [ 1 ] ), 2 ) ) );
+            massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 4) += density * ( tetI(0, 1) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 1 ] ) ) );
+            massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 5) += density * ( tetI(0, 2) - tetvol * ( ( diff [ 0 ] ) * ( diff [ 2 ] ) ) );
+            massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum + 5) += density * ( tetI(1, 2) - tetvol * ( ( diff [ 1 ] ) * ( diff [ 2 ] ) ) );
         }
     }
     for ( nodeID = 0; nodeID < 4; nodeID++ ) {
-        massM(nodeID * 6 + 4, nodeID * 6) = massM(nodeID * 6, nodeID * 6 + 4);
-        massM(nodeID * 6 + 5, nodeID * 6) = massM(nodeID * 6, nodeID * 6 + 5);
-        massM(nodeID * 6 + 3, nodeID * 6 + 1) = massM(nodeID * 6 + 1, nodeID * 6 + 3);
-        massM(nodeID * 6 + 5, nodeID * 6 + 1) = massM(nodeID * 6 + 1, nodeID * 6 + 5);
-        massM(nodeID * 6 + 3, nodeID * 6 + 2) = massM(nodeID * 6 + 2, nodeID * 6 + 3);
-        massM(nodeID * 6 + 4, nodeID * 6 + 2) = massM(nodeID * 6 + 2, nodeID * 6 + 4);
-        massM(nodeID * 6 + 4, nodeID * 6 + 3) = massM(nodeID * 6 + 3, nodeID * 6 + 4);
-        massM(nodeID * 6 + 5, nodeID * 6 + 3) = massM(nodeID * 6 + 3, nodeID * 6 + 5);
-        massM(nodeID * 6 + 5, nodeID * 6 + 4) = massM(nodeID * 6 + 4, nodeID * 6 + 5);
+        massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum) = massM(nodeID * nodeDoFNum, nodeID * nodeDoFNum + 4);
+        massM(nodeID * nodeDoFNum + 5, nodeID * nodeDoFNum) = massM(nodeID * nodeDoFNum, nodeID * nodeDoFNum + 5);
+        massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 1) = massM(nodeID * nodeDoFNum + 1, nodeID * nodeDoFNum + 3);
+        massM(nodeID * nodeDoFNum + 5, nodeID * nodeDoFNum + 1) = massM(nodeID * nodeDoFNum + 1, nodeID * nodeDoFNum + 5);
+        massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 2) = massM(nodeID * nodeDoFNum + 2, nodeID * nodeDoFNum + 3);
+        massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum + 2) = massM(nodeID * nodeDoFNum + 2, nodeID * nodeDoFNum + 4);
+        massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum + 3) = massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 4);
+        massM(nodeID * nodeDoFNum + 5, nodeID * nodeDoFNum + 3) = massM(nodeID * nodeDoFNum + 3, nodeID * nodeDoFNum + 5);
+        massM(nodeID * nodeDoFNum + 5, nodeID * nodeDoFNum + 4) = massM(nodeID * nodeDoFNum + 4, nodeID * nodeDoFNum + 5);
     }
 }
 
@@ -599,10 +599,6 @@ void LDPMTetraWithTransportAndHeatConduction :: evaluateStrains(const Vector &Do
 };
 
 //////////////////////////////////////////////////////////
-void LDPMTetraWithTransportAndHeatConduction :: computeMassMatrix() {
-}
-
-//////////////////////////////////////////////////////////
 void LDPMTetraWithTransportAndHeatConduction :: giveValues(string code, Vector &result) const {
     if ( code.compare("volumetric_strain") == 0 ) {
         result.resize(1);
@@ -628,6 +624,50 @@ void LDPMTetraWithTransportAndHeatConduction :: giveValues(string code, Vector &
     }
 };
 
+
+//////////////////////////////////////////////////////////
+void LDPMTetraWithTransportAndHeatConduction :: computeDampingMatrix() {
+    LDPMTetraWithTransport::computeDampingMatrix();   
+    
+    if (DoFids.size()%4 !=0) {
+        cerr << "LDPMTetraWithTransportAndHeatConduction: variable node type" << endl;
+        exit(1);
+    }
+    unsigned nodeDoFNum = unsigned(DoFids.size()/4.+0.5);
+    
+    VectMechMaterialStatus *mechstat;
+    VectHeatConductionMaterialStatus *thermostat;
+    ThermoMechanicalMaterialStatus *thermomechstat;    
+    
+    VectMechMaterial *mechmat = static_cast< VectMechMaterial * >( mat->giveMechanicalMaterial() );
+    VectHeatConductionMaterial *thermomat = static_cast< VectHeatConductionMaterial * >( mat->giveHeatConductionMaterial() );
+    ThermoMechanicalMaterial *thermomechmat = static_cast< ThermoMechanicalMaterial * >( mat );     
+    
+    double solidDensity = mechmat->giveDensity();
+    double heatCapacity = thermomechmat->giveHeatCapacity();    
+    double tetvol;
+    unsigned nodeID;
+    vector< Point * >tetnodes(4);
+    tetnodes [ 3 ] = vert [ 0 ]->givePointPointer();
+
+    for ( unsigned i = 0; i < 12; i++ ) {
+        mechstat = static_cast< VectMechMaterialStatus * >( stats [ i ]->giveMechanicalMaterialStatus() );
+        thermostat = static_cast< VectHeatConductionMaterialStatus * >( stats [ i ]->giveHeatConductionMaterialStatus() );
+      
+        for ( unsigned j = 0; j < 2; j++ ) {
+            nodeID = nodecodes [ 2 * i + j ];
+            tetnodes [ 0 ] = nodes [ nodeID ]->givePointPointer();
+            tetnodes [ 1 ] = vert [ vertcodes [ 2 * i + j ] ]->givePointPointer();
+            tetnodes [ 2 ] = vert [ vertcodes [ 2 * i + 1 - j ] ]->givePointPointer();
+            
+            tetvol = tetraVolumeSigned( tetnodes [ 0 ], tetnodes [ 1 ], tetnodes [ 2 ], tetnodes [ 3 ]);
+            if ( tetvol < 0 ) {
+                tetvol *= -1;           //should not happen for correctly generated mesh
+            }
+            dampC(nodeID * nodeDoFNum + 6, nodeID * nodeDoFNum + 6) += solidDensity * tetvol * heatCapacity;
+        }
+    }
+};
 
 /*
  * //////////////////////////////////////////////////////////
@@ -717,6 +757,16 @@ void LDPMTetraWithTransport :: giveValues(string code, Vector &result) const {
 };
 
 //////////////////////////////////////////////////////////
+void LDPMTetraWithTransport :: computeDampingMatrix() {
+    dampC = Matrix :: Zero(DoFids.size(), DoFids.size());    
+    
+    if (DoFids.size()%4 !=0) {
+        cerr << "LDPMTetraWithTransport: variable node type" << endl;
+        exit(1);
+    }
+};
+
+//////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // LDPM TRANSPORT
 //////////////////////////////////////////////////////////
@@ -735,7 +785,7 @@ void LDPMEdgeTransport :: evaluateStrains(const Vector &DoFs) {
         double crackParamB, crackVolumeB;
         tetB->computeCrackParametersForPoiseuilleFlow(LDPMsideB, & crackParamB, & crackVolumeB);
         crackVolume += crackVolumeB;
-        crackParam = 1. / ( g1 / crackParam + g2 / crackParamB );
+        crackParam = 1. / ( g0 / crackParam + g1 / crackParamB );
     }
 
     //Biot effect
@@ -852,18 +902,20 @@ void LDPMEdgeTransport :: init() {
         vert [ p ] = nodesA [ k ];
         p++;
     }
-    DiscreteTrsprtCoupledElem :: init();
+    
 
     if ( !tetB ) {
-        g1 = 1;
-        g2 = 0;
+        g0 = 1;
+        g1 = 0;
     } else {
         Point S = tetA->giveVertex( tetA->giveOppositeSurfaceVertexToNode(LDPMsideA) )->givePoint();
-        g1 = ( nodes [ 0 ]->givePoint() - S ).norm();
-        g2 = ( nodes [ 1 ]->givePoint() - S ).norm();
-        g1 /= g1 + g2;
-        g2 = 1. - g1;
+        g0 = ( nodes [ 0 ]->givePoint() - S ).norm();
+        g1 = ( nodes [ 1 ]->givePoint() - S ).norm();
+        g0 /= g0 + g1;
+        g1 = 1. - g0;
     }
+    
+    DiscreteTrsprtCoupledElem :: init();
 }
 
 
@@ -897,4 +949,20 @@ void LDPMEdgeTransportBoundary :: init() {
     }
 
     DiscreteTrsprtElem :: init();
+}
+
+
+//////////////////////////////////////////////////////////
+Matrix LDPMEdgeTransportBoundary :: giveStiffnessMatrix(std :: string type) const{
+    return LDPMEdgeTransport::giveStiffnessMatrix(type);
+}
+
+//////////////////////////////////////////////////////////
+void LDPMEdgeTransportBoundary :: computeMassMatrix() {
+    massM =  Matrix::Zero(2,2);
+}
+
+//////////////////////////////////////////////////////////
+void LDPMEdgeTransportBoundary :: computeDampingMatrix() {
+    LDPMEdgeTransport::computeDampingMatrix();
 }

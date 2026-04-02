@@ -542,11 +542,10 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
-            // cout << k;                //stiffness or conductivity
         } else if ( diffType == 1 ) {
             k = ( * e )->giveDampingMatrix();                    //damping or capacity
         } else if ( diffType == 2 && lumped ) {
-            k = ( * e )->giveLumpedMassMatrix();                    //mass
+            k = ( * e )->giveLumpedMassMatrix();                    //mass 
         } else if ( diffType == 2 ) {
             k = ( * e )->giveMassMatrix();
         } else {

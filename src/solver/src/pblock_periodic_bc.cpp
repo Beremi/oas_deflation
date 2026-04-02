@@ -511,7 +511,7 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             dirs.resize(1);
             mults.resize(1);
             vm.resize(1);
-            mults [ 0 ] = -1;
+            mults [ 0 ] = 1;
             vm [ 0 ] = m;
             for ( unsigned k = 0; k < 2 * ( dim - 1 ) - 1; k++ ) {
                 dirs [ 0 ] = dim + k;
@@ -561,12 +561,8 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             mults [ 1 ] = diff.x();
             mults [ 2 ] = diff.y() / 2;
             if (crack_active){
-                //mults[3] = -(diff.x()*pow(crack_normal.x(),2) + diff.y()*crack_normal.x()*crack_normal.y())/gamma;//X                
-                //mults[4] = -(diff.x()*crack_normal.x()*crack_normal.y() + diff.y()*(pow(crack_normal.x(),2)-pow(crack_normal.y(),2))/2.)/gamma;//Y
-                //mults[3] += copysign(1.,diff.x()*crack_normal.x())*crack_normal.x();
-                //mults[4] += -copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();
-                mults[3] = -diff.x()*crack_normal.x();
-                mults[4] = -copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();                
+                mults[3] = - (diff.x()*crack_normal.x()+diff.y()*crack_normal.y()/4.)/gamma + copysign(1.,diff.x()*crack_normal.x()+diff.y()*crack_normal.y()); 
+                mults[4] = - (diff.y()*crack_normal.x()/4.)/gamma;                
             }            
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
@@ -582,12 +578,8 @@ void MechanicalSphericalPeriodicBC :: generateConstraints(NodeContainer *nodes, 
             mults [ 1 ] = diff.y();
             mults [ 2 ] = diff.x() / 2;
             if (crack_active){
-                //mults[3] = -(diff.y()*pow(crack_normal.y(),2) + diff.x()*crack_normal.x()*crack_normal.y())/gamma;//X    
-                //mults[4] = -(diff.y()*crack_normal.x()*crack_normal.y() + diff.x()*(pow(crack_normal.x(),2)-pow(crack_normal.y(),2))/2.)/gamma; //Y
-                //mults[3] += copysign(1.,diff.y()*crack_normal.y())*crack_normal.y();
-                //mults[4] += copysign(1.,diff.x()*crack_normal.x())*crack_normal.x();    
-                mults[3] = -diff.x()*crack_normal.x();
-                mults[4] = -diff.x()*crack_normal.x();
+                mults[3] = - (diff.x()*crack_normal.y()/4.)/gamma;             
+                mults[4] = - (diff.x()*crack_normal.x()/4.+diff.y()*crack_normal.y())/gamma + copysign(1.,diff.x()*crack_normal.x()+diff.y()*crack_normal.y());     
             }                    
             jd = new JointDoF(s, dirs [ 0 ], vm, dirs, mults);
             constrs->addConstraint(jd);
@@ -720,7 +712,6 @@ void MechanicalSphericalPeriodicBCWithCrack:: readFromLine(std :: istringstream 
     
 //////////////////////////////////////////////////////////
 void MechanicalSphericalPeriodicBCWithCrack :: generateConstraints(NodeContainer *nodes, ConstraintContainer *constrs) {
-    unsigned activeConstr = constrs->giveConstraintsSize();
     MechanicalSphericalPeriodicBC :: generateConstraints(nodes, constrs);
 
     

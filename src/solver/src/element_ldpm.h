@@ -87,7 +87,7 @@ public:
 class LDPMTetraWithTransport : public LDPMTetra
 {
 protected:
-
+    virtual void computeDampingMatrix();    
 public:
     LDPMTetraWithTransport(unsigned ndim);
     ~LDPMTetraWithTransport() {};
@@ -101,9 +101,10 @@ public:
 class LDPMTetraWithTransportAndHeatConduction : public LDPMTetraWithTransport
 {
 protected:
-    virtual void computeMassMatrix();
     virtual void checkNodeType() const;
     double averageTemperature;
+    virtual void computeDampingMatrix();
+    
 public:
     LDPMTetraWithTransportAndHeatConduction(unsigned ndim);
     ~LDPMTetraWithTransportAndHeatConduction() {};
@@ -128,7 +129,6 @@ protected:
     unsigned LDPMTetraIDA, LDPMTetraIDB;
     ElementContainer *elems;
     unsigned LDPMsideA, LDPMsideB;
-    double g1, g2;
 
 public:
     LDPMEdgeTransport(ElementContainer *allelems);
@@ -146,10 +146,12 @@ public:
 class LDPMEdgeTransportBoundary : public LDPMEdgeTransport
 {
 protected:
-
+    virtual void computeMassMatrix();
+    virtual void computeDampingMatrix();
 public:
     LDPMEdgeTransportBoundary(ElementContainer *allelems);
     ~LDPMEdgeTransportBoundary() {};
+    virtual Matrix giveStiffnessMatrix(std :: string type) const;
     virtual void init();
 };
 #endif  /* _ELEMENT_LDPMTETRA_H */

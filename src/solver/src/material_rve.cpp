@@ -891,6 +891,12 @@ bool DiscreteMechanicalRVEMaterialStatus ::  giveValues(string code, Vector &res
             result [ k ] = temp_stress [ k ];
         }
         return true;
+    } else   if ( code.compare("dissi") == 0 ) {
+        result.resize( temp_stress.size() );
+        for ( unsigned k = 0; k < temp_stress.size(); k++ ) {
+            result [ k ] = temp_stress [ k ];
+        }
+        return true;
     } else {
         return RVEMaterialStatus :: giveValues(code, result);
     }
@@ -1098,6 +1104,8 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocal(string ty
             volume += e->giveVolume();
         }
         Keff /= volume;
+        cout << "APPROXIMATE ONLY" << endl;
+        cout << Keff << endl;
         return Keff;
     }
 }
@@ -1130,6 +1138,8 @@ Matrix DiscreteMechanicalRVEMaterialStatus :: giveStiffnessTensorLocalExact(stri
     }
     temp_strain_total = true_temp_strain;
     macromaterial->setConversionFromCauchy(previously_cauchy); 
+    cout << "FULL" << endl;
+    cout << Keff << endl;    
     return Keff;
 }
 

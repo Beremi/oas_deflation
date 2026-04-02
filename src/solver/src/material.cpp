@@ -31,12 +31,29 @@ MaterialStatus :: ~MaterialStatus() {
 }
 
 //////////////////////////////////////////////////////////
+Matrix MaterialStatus :: giveStiffnessTensor(std :: string type) const {
+    ( void ) type;
+    return Matrix(mat->giveStrainSize(), mat->giveStrainSize()); 
+};
+
+
+//////////////////////////////////////////////////////////
+Matrix MaterialStatus :: giveMassTensor() const {
+    return Matrix(mat->giveStrainSize(), mat->giveStrainSize()); 
+};
+
+//////////////////////////////////////////////////////////
+Matrix MaterialStatus :: giveDampingTensor() const {
+    return Matrix(mat->giveStrainSize(), mat->giveStrainSize()); 
+};
+    
+//////////////////////////////////////////////////////////
 void MaterialStatus :: computeConstitutiveStrain() {
     if ( eigenstrain.size() > 0 ) {
         if ( eigenstrain.size() != temp_strain_total.size() ) {
             cerr << "Material status error: cannot apply eigenstrain of size " << eigenstrain.size() << " to  total strain of size " << temp_strain_total.size() << endl;
             exit(1);
-        }
+        }        
         temp_strain = temp_strain_total - eigenstrain;
     } else {
         temp_strain = temp_strain_total;
@@ -157,6 +174,11 @@ void MaterialStatus :: initializeStressAndStrainVector() {
 }
 
 //////////////////////////////////////////////////////////
+void  MaterialStatus :: removeEigenStrain() {
+    eigenstrain.setZero();
+};
+
+//////////////////////////////////////////////////////////
 Material :: ~Material() {
     for ( vector< Material * > :: iterator n = matComponents.begin(); n != matComponents.end(); ++n ) {
         if ( * n != nullptr ) {
@@ -188,6 +210,14 @@ CoupledMaterialStatus :: CoupledMaterialStatus(Material *m, Element *e, unsigned
 }
 
 //////////////////////////////////////////////////////////
+void  CoupledMaterialStatus :: removeEigenStrain() {
+    eigenstrain.setZero();
+    for ( auto &s:stats ) {
+        s->removeEigenStrain();
+    }    
+};
+
+//////////////////////////////////////////////////////////
 CoupledMaterialStatus :: ~CoupledMaterialStatus() {
     for ( vector< MaterialStatus * > :: iterator m = stats.begin(); m != stats.end(); ++m ) {
         if ( * m != nullptr ) {
@@ -206,7 +236,6 @@ void CoupledMaterialStatus :: init() {
 
 //////////////////////////////////////////////////////////
 Matrix CoupledMaterialStatus :: giveStiffnessTensor(string type) const {
-    ( void ) type;
     unsigned ss = mat->giveStrainSize();
     Matrix D = Matrix :: Zero(ss, ss);
     unsigned k = 0;
@@ -224,6 +253,47 @@ Matrix CoupledMaterialStatus :: giveStiffnessTensor(string type) const {
     }
     return D;
 };
+
+//////////////////////////////////////////////////////////
+Matrix CoupledMaterialStatus :: giveMassTensor() const {
+    unsigned ss = mat->giveStrainSize();
+    Matrix D = Matrix :: Zero(ss, ss);
+    unsigned k = 0;
+    Matrix mD;
+    unsigned mk = 0;
+    for ( auto &s:stats ) {
+        mD = s->giveMassTensor();
+        mk = s->giveMaterial()->giveStrainSize();
+        for ( unsigned i = 0; i < mk; i++ ) {
+            for ( unsigned j = 0; j < mk; j++ ) {
+                D(k + i, k + j) += mD(i, j);
+            }
+        }
+        k += mk;
+    }
+    return D;
+};
+
+//////////////////////////////////////////////////////////
+Matrix CoupledMaterialStatus :: giveDampingTensor() const {
+    unsigned ss = mat->giveStrainSize();
+    Matrix D = Matrix :: Zero(ss, ss);
+    unsigned k = 0;
+    Matrix mD;
+    unsigned mk = 0;
+    for ( auto &s:stats ) {
+        mD = s->giveDampingTensor();
+        mk = s->giveMaterial()->giveStrainSize();
+        for ( unsigned i = 0; i < mk; i++ ) {
+            for ( unsigned j = 0; j < mk; j++ ) {
+                D(k + i, k + j) += mD(i, j);
+            }
+        }
+        k += mk;
+    }
+    return D;
+};
+    
 
 //////////////////////////////////////////////////////////
 void CoupledMaterialStatus :: setParameterValue(std :: string code, double value) {

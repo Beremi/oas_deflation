@@ -17,7 +17,7 @@ VectTrsprtMaterialStatus :: VectTrsprtMaterialStatus(VectTrsprtMaterial *m, Elem
 Matrix VectTrsprtMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
     Matrix T = Matrix :: Zero(1, 1); //discrete material, only one direction in any dimension
-    T(0, 0) = -giveEffectiveConductivity(type);
+    T(0, 0) = giveEffectiveConductivity(type);
     return T;
 };
 
@@ -36,19 +36,84 @@ VectHeatConductionMaterialStatus :: VectHeatConductionMaterialStatus(VectHeatCon
     name = "vectorial heat conduction mat. status";
 }
 
+
 //////////////////////////////////////////////////////////
 Matrix VectHeatConductionMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
     VectHeatConductionMaterial *hcm = static_cast< VectHeatConductionMaterial * >( mat );
     Matrix T = Matrix :: Zero(1, 1); //discrete material, only one direction in any dimension
-    T(0, 0) = hcm->giveConductivity();
+    T(0, 0) = updateEffectiveConductivity();
     return T;
 };
+
+//////////////////////////////////////////////////////////
+double VectHeatConductionMaterialStatus :: updateEffectiveConductivity() const {
+    VectHeatConductionMaterial *m = static_cast< VectHeatConductionMaterial * >( mat );
+    return m->giveConductivity()*(m->giveEtaS()+(1.-m->giveEtaS())/(1.+pow(relativeNormalStrain, m->giveEtaC() )));   
+}
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus :: setParameterValue(std :: string code, double value){
+    if ( code.compare("relative_normal_strain") == 0 ) {
+        relativeNormalStrain = value;
+    } else {
+        TensHeatConductionMaterialStatus :: setParameterValue(code, value);
+    }
+}
+
+//////////////////////////////////////////////////////////
+Vector VectHeatConductionMaterialStatus :: giveInternalSource() const {
+    Vector ints = Vector :: Zero(1);
+    VectHeatConductionMaterial *m = static_cast< VectHeatConductionMaterial * >( mat );
+    /*
+
+    ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
+    if ( crackVolumeRate > 0 || pressureRate > 0 ) {
+        DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
+        double vol = trs->giveVolume();
+        if ( temp_crackVolume > 0 ) {
+            ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+        }
+        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
+    }
+    */
+    return ints * m->giveDensity();
+}
+
 
 //////////////////////////////////////////////////////////
 MaterialStatus *VectHeatConductionMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
     VectHeatConductionMaterialStatus *newStatus = new VectHeatConductionMaterialStatus(this, e, ipnum); //needs to be deleted manually
     return newStatus;
+};
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterial :: readFromLine(istringstream &iss) {
+    string param;
+    bool eta_sb = false;
+    bool eta_cb = false;    
+
+    while (  iss >> param ) {
+        if ( param.compare("eta_s") == 0 ) {
+            eta_sb = true;
+            iss >> eta_s;
+        } else if ( param.compare("eta_c") == 0 ) {
+            eta_cb = true;
+            iss >> eta_c;
+        }
+    }
+    if ( !eta_sb ) {
+        cerr << name << ": material parameter 'eta_s' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }    
+    if ( !eta_cb ) {
+        cerr << name << ": material parameter 'eta_c' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream   
+    TensHeatConductionMaterial :: readFromLine(iss); 
 };
 
 
@@ -113,15 +178,14 @@ Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
     Vector ints = Vector :: Zero(1);
     VectTrsprtCoupledMaterial *m = static_cast< VectTrsprtCoupledMaterial * >( mat );
 
-
-    ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
+    ints [ 0 ]  = m->giveBiotCoeff() * 3. * volStrainRate; //Biot coeff times volumetric strain rate    
     if ( crackVolumeRate > 0 || pressureRate > 0 ) {
         DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
         double vol = trs->giveVolume();
         if ( temp_crackVolume > 0 ) {
-            ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
+            ints [ 0 ] += temp_crackVolume * pressureRate / ( vol * m->giveKw() );
         }
-        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
+        ints [ 0 ] += crackVolumeRate / vol * ( 1. + m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
     }
     return ints * m->giveDensity();
 }
@@ -201,14 +265,9 @@ bool VectTrsprtCoupledMaterialStatus ::  giveValues(string code, Vector &result)
 
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
-    TensTrsprtMaterial :: readFromLine(iss);
-
-    iss.clear(); // clear string stream
-    iss.seekg(0, iss.beg); //reset position in string stream
-
     string param;
-    bool bturtuosity, bbiot;
-    bturtuosity = bbiot = false;
+    bool bturtuosity, bbiot, bbiotm;
+    bturtuosity = bbiot = bbiotm = false;
 
     while (  iss >> param ) {
         if ( param.compare("crack_turtuosity") == 0 ) {
@@ -221,8 +280,16 @@ void VectTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
             iss >> refP;
         } else if ( param.compare("Kw") == 0 ) {
             iss >> Kw;
+        } else if ( param.compare("biot_modulus") == 0 ) {
+            iss >> capacity;
+            capacity = 1/capacity;
+            bbiotm = true;
         }
     }
+    if ( !bbiotm ) {
+        cerr << name << ": material parameter 'biot_modulus' was not specified" << endl;
+        exit(EXIT_FAILURE);
+    }    
     if ( !bturtuosity ) {
         cerr << name << ": material parameter 'crack_turtuosity' was not specified" << endl;
         exit(EXIT_FAILURE);
@@ -231,6 +298,10 @@ void VectTrsprtCoupledMaterial :: readFromLine(istringstream &iss) {
         cerr << name << ": material parameter 'biot_coeff' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
+
+    iss.clear(); // clear string stream
+    iss.seekg(0, iss.beg); //reset position in string stream   
+    TensTrsprtMaterial :: readFromLine(iss); 
 };
 
 //////////////////////////////////////////////////////////

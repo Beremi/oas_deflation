@@ -190,9 +190,6 @@ void Solver :: setTime(double t) {
 
 //////////////////////////////////////////////////////////
 void Solver :: init(string init_r_file, string init_v_file, const bool initial) {
-    ( void ) init_r_file;
-    ( void ) init_v_file;
-
     if ( initial ) {
         step = init_step;
         dt = initdt;
@@ -205,7 +202,6 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     totalDoFnum = nodes->giveTotalNumDoFs();
 
     load = Vector :: Zero(totalDoFnum);
-    r = Vector :: Zero(totalDoFnum);
     f_ext = Vector :: Zero(totalDoFnum);
     f_int = Vector :: Zero(totalDoFnum);
     f_dam = Vector :: Zero(totalDoFnum);
@@ -213,14 +209,28 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
     pbc = Vector :: Zero( totalDoFnum - freeDoFnum - nodes->giveNumConstrDoFs() );
     f = Vector :: Zero(freeDoFnum);
 
-    trial_r = Vector :: Zero(totalDoFnum);
+    //initial conditions
+    if ( init_v_file.compare("") != 0 ) {
+        v = nodes->readInitialConditions(init_v_file);
+    } else {
+        v = Vector :: Zero(totalDoFnum);
+    }
+    if ( init_r_file.compare("") != 0 ) {
+        r = nodes->readInitialConditions(init_r_file);
+    } else {
+        r = Vector :: Zero(totalDoFnum);
+    }
+
+    trial_r = r; 
     residuals = Vector :: Zero(totalDoFnum);
     ddr = Vector :: Zero(freeDoFnum);
     full_ddr = Vector :: Zero(totalDoFnum);
     f_int_old = Vector :: Zero(totalDoFnum);
     f_ext_old = Vector :: Zero(totalDoFnum);
-
-    v = Vector :: Zero(totalDoFnum);
+    
+    //to compute the initial history variables at the element level
+    computeInternalExternalForces(r, load, false, 0, -1);
+    elems->updateMaterialStatuses();    
 }
 
 //////////////////////////////////////////////////////////

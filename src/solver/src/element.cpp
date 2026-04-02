@@ -85,12 +85,18 @@ void Element :: init() {
     setIntegrationPointsAndWeights();
 
     DoFids.resize(totalDoFs);
+    DoFsWhichChangeSignOfInternalForces.resize(0);    
     unsigned i = 0;
     unsigned k;
+    unsigned physField;
     for ( std :: vector< Node * > :: const_iterator n = nodes.begin(); n != nodes.end(); ++n ) {
         k = ( * n )->giveStartingDoF();
         for ( unsigned s = 0; s < ( * n )->giveNumberOfDoFs(); s++, i++ ) {
             DoFids [ i ] = k + s;
+            physField = ( * n )->giveRelativeDoFPhysicalFieldNum(s);
+            if (physField!=0){ //not mechanics, other turn sign
+                DoFsWhichChangeSignOfInternalForces.push_back(i);
+            }
         }
     }
     outDoFs = totalDoFs; //basic elems will alway have input = output
@@ -305,6 +311,11 @@ Vector Element :: giveInternalForces() {
     // cout << name << endl;
     // cout << Bs [ 0 ].transpose() << endl;
     // cout << intF << endl;
+  
+    //correct sign of internal fluxes for Poisson equation
+    for ( vector<unsigned>::const_iterator a = DoFsWhichChangeSignOfInternalForces.begin();  a != DoFsWhichChangeSignOfInternalForces.end(); ++a ) {
+        intF[*a] *= -1;
+    }
 
     //add internal sources
     if ( mat->isProducingInternalSources() ) {
@@ -349,7 +360,7 @@ void Element :: computeDampingMatrix() {
 
 //////////////////////////////////////////////////////////
 Matrix Element :: giveDampingMatrix() {
-    if ( mat->requiresDampingsMatrixUpdate()  || dampC.rows() == 0 ) {
+    if ( mat->requiresDampingMatrixUpdate()  || dampC.rows() == 0 ) {
         computeDampingMatrix();
     }
     return dampC;

@@ -38,12 +38,12 @@ public:
     virtual Vector giveUpdatedStrain() const { return updt_strain; };
     virtual Vector giveTotalTempStrain() const { return temp_strain_total; };
     virtual Vector giveTotalUpdatedStrain() const { return updt_strain_total; };
-    virtual Matrix giveStiffnessTensor(std :: string type) const { ( void ) type; return Matrix(0, 0); };
-    virtual Matrix giveMassTensor() const { return Matrix(0, 0); };
-    virtual Matrix giveDampingTensor() const { return Matrix(0, 0); };
+    virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual Matrix giveMassTensor() const;
+    virtual Matrix giveDampingTensor() const;
     virtual void addToEigenStrain(const Vector &x);
     virtual void addToEigenVolumetricStrain(double x) { ( void ) x; };
-    virtual void removeEigenStrain() { eigenstrain.setZero(); };
+    virtual void removeEigenStrain();
     Vector giveEigenStrain() const {return eigenstrain;};    
     //virtual void setID(unsigned i) { idx = i; };
     virtual std :: string giveLineToSave() const { return "no internal variables to export, you need to implement this possibility for " + this->name; }
@@ -102,7 +102,7 @@ public:
     bool isProducingInternalSources()const { return produceInternalSources; }
     virtual void prepareForStressEvaluation(ElementContainer *elems) { ( void ) elems; };
     bool requiresMassMatrixUpdate() const { return massMatUpdate; };
-    bool requiresDampingsMatrixUpdate() const { return dampMatUpdate; };
+    bool requiresDampingMatrixUpdate() const { return dampMatUpdate; };
     virtual bool requestTetrahedralBackgroundMesh()const { return false; } //for volumetric strain
     virtual Material * giveMechanicalMaterial() { return nullptr; };
     virtual Material * giveTransportMaterial() { return nullptr; };
@@ -125,6 +125,8 @@ public:
     virtual ~CoupledMaterialStatus();
     virtual void init();
     virtual Matrix giveStiffnessTensor(std :: string type) const;
+    virtual Matrix giveMassTensor() const;
+    virtual Matrix giveDampingTensor() const;    
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual void setTotalTempStrain(Vector str);
@@ -137,6 +139,7 @@ public:
     virtual void initializeStressAndStrainVector();
     virtual void addToEigenVolumetricStrain(double x);
     virtual void addToEigenStrain(const Vector &x);
+    virtual void removeEigenStrain();    
 };
 
 //////////////////////////////////////////////////////////

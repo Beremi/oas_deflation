@@ -26,10 +26,9 @@ bool ThermoMechanicalMaterialStatus :: giveValues(std :: string code, Vector &re
 
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus :: computeStress(double timeStep) {
-    addTemperatureEffectToMechanics();
+    addTemperatureEffectToMechanics();    
     CoupledMaterialStatus :: computeStress(timeStep);
 }
-
 
 //////////////////////////////////////////////////////////
 void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, double value) {
@@ -38,7 +37,9 @@ void ThermoMechanicalMaterialStatus :: setParameterValue(std :: string code, dou
         temperature = value;
     } else if ( code.compare("pressure") == 0 ) {
         porePressure = value;
-    }
+    } else if ( code.compare("volumetric_strain") == 0 ) {
+        volumetricStrain = value;
+    }    
 }
 
 //////////////////////////////////////////////////////////
@@ -74,6 +75,7 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     string param;
     bool btec = false;
     bool binitemp = false;
+    bool sheatcapb = false;    
     while (  iss >> param ) {
         if ( param.compare("therm_exp_coeff") == 0 ) {
             btec = true;
@@ -81,6 +83,9 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
         } else if ( param.compare("initial_temperature") == 0 ) {
             binitemp = true;
             iss >> initialTemp;
+        } else if ( param.compare("heat_capacity") == 0 ) {
+            sheatcapb = true;
+            iss >> heatCapacity;
         }
     }
     if ( !btec ) {
@@ -90,6 +95,10 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     if ( !binitemp ) {
         cerr << name << ": material parameter 'initial_temperature' was not specified, considered ZERO" << endl;
     }
+    if ( !binitemp ) {
+        cerr << name << ": material parameter 'solid_heat_capacity' was not specified" << endl;
+        exit(1);
+    }    
 };
 
 //////////////////////////////////////////////////////////

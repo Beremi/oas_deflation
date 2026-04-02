@@ -213,6 +213,12 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
         }
 
         centroid = ( vert [ 0 ]->givePoint() + vert [ 1 ]->givePoint() ) / 2.;
+        
+        g0 = (centroid - nodes[0]->givePoint()).norm();
+        g1 = (centroid - nodes[1]->givePoint()).norm();
+        g0 /= g0+g1;
+        g1 = 1.-g0;
+        
         IntegrDiscrete1 *it = static_cast< IntegrDiscrete1 * >( inttype );
         it->setNumIP(n);
         //Gauss integration, not used
@@ -273,6 +279,11 @@ void RigidBodyContact :: setIntegrationPointsAndWeights() {
             avgPoint = userCentroid;
             centroid = userCentroid;
         }
+
+        g0 = (centroid - nodes[0]->givePoint()).norm();
+        g1 = (centroid - nodes[1]->givePoint()).norm();
+        g0 /= g0+g1;
+        g1 = 1.-g0;
 
         Vector ais(vert.size() );      //projected areas of individual triangles
         Point ni;
@@ -578,15 +589,13 @@ Vector RigidBodyContact :: giveVectorToNode(const unsigned &node_i, const unsign
 }
 
 //////////////////////////////////////////////////////////
-double RigidBodyContact :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
-    if ( nodenum == 0 ) {
-        return ( vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(normal) * area / ndim;
-    } else if ( nodenum == 1 ) {
-        return -( vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint() ).dot(normal) * area / ndim;
-    } else {
+double RigidBodyContact :: giveVolumeAssociatedWithNode(unsigned nodenum) const {    
+    if ( nodenum > 2 ) {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
-    }
+    }else if (nodenum==0) return volume*g0;
+    else if (nodenum==1) return volume*g1;
+    return 0;
 };
 
 //////////////////////////////////////////////////////////
@@ -1219,6 +1228,12 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         //project area
         Point faceNormal = Point(-t.y(), t.x(), 0);
         area = abs(faceNormal.dot(normal) ) * area;
+        
+        Point centroid = (vert[0]->givePoint()+vert[1]->givePoint())/2.; 
+        g0 = (centroid - nodes[0]->givePoint()).norm();
+        g1 = (centroid - nodes[1]->givePoint()).norm();
+        g0 /= g0+g1;
+        g1 = 1.-g0;
     } else {
         //JM: Coplanarity check for vertices on the face
         //JM: checking coplanarity of every consecutive 4 nodes
@@ -1309,6 +1324,11 @@ void DiscreteTrsprtElem :: setIntegrationPointsAndWeights() {
         centroid /= area;
         inttype->setIPLocation(0, centroid);
 
+        g0 = (centroid - nodes[0]->givePoint()).norm();
+        g1 = (centroid - nodes[1]->givePoint()).norm();
+        g0 /= g0+g1;
+        g1 = 1.-g0;
+        
         //JM: Check if integration point is coplanar with face
         currErr = checkCoplanarity( vert [ 0 ]->givePoint(), vert [ 1 ]->givePoint(), vert [ 2 ]->givePoint(), inttype->giveIPLocation(0) );
         if ( abs(currErr) > 1e-10 ) {
@@ -1384,8 +1404,6 @@ Matrix DiscreteTrsprtElem :: giveHMatrix(const Point *x) const {
     //H(0, 1) = l2 / length;
     H(0, 0) = giveVolumeAssociatedWithNode(0) / volume;
     H(0, 1) = giveVolumeAssociatedWithNode(1) / volume;
-
-
     return H;
 }
 
@@ -1413,7 +1431,7 @@ void DiscreteTrsprtElem :: giveValues(string code, Vector &result) const {
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vector &result) const {
     if ( ipnum >= inttype->giveNumIP() ) {
-        std :: cerr << name <<  " Error: intergration point number " << ipnum << " exceeds number of integration points" << std :: endl;
+        std :: cerr << name <<  " Error: integration point number " << ipnum << " exceeds number of integration points" << std :: endl;
         exit(1);
     }
     if ( code.compare("location") == 0 ) {
@@ -1429,17 +1447,19 @@ void DiscreteTrsprtElem :: giveIPValues(std :: string code, unsigned ipnum, Vect
 
 //////////////////////////////////////////////////////////
 void DiscreteTrsprtElem :: computeDampingMatrix() {
-    double s = 0;
-    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {
-        s += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0) * area * length /  ( 2. * ndim );
-    }
-
     dampC = Matrix :: Zero(2, 2);
-    dampC(0, 0) = dampC(1, 1) = s; //finite volume
+    double s = 0;
+    for ( unsigned i = 0; i < inttype->giveNumIP(); i++ ) {       
+        s += inttype->giveIPWeight(i) * stats [ i ]->giveDampingTensor()(0, 0);
+    }
+    dampC(0 , 0) = s*g0;
+    dampC(1 , 1) = s*g1;   
+    /*
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
         dampC(0, 0) = dampC(1, 1) = 2. / 3. * s;
         dampC(1, 0) = dampC(0, 1) = s / 3.;
     }
+    */
 }
 
 //////////////////////////////////////////////////////////
@@ -1449,14 +1469,12 @@ void DiscreteTrsprtElem :: computeMassMatrix() {
 
 //////////////////////////////////////////////////////////
 double DiscreteTrsprtElem :: giveVolumeAssociatedWithNode(unsigned nodenum) const {
-    if ( nodenum == 0 ) {
-        return ( vert [ 0 ]->givePoint() - nodes [ 0 ]->givePoint() ).dot(normal) * area / ndim;
-    } else if ( nodenum == 1 ) {
-        return -( vert [ 0 ]->givePoint() - nodes [ 1 ]->givePoint() ).dot(normal) * area / ndim;
-    } else {
+    if ( nodenum > 2 ) {
         cerr << "Error in " << name << ": attempting to reach node number different form 0 or 1." << endl;
         exit(1);
-    }
+    } else if (nodenum == 0) return g0*volume;
+     else if (nodenum == 1) return g1*volume;
+     return 0;
 };
 
 //////////////////////////////////////////////////////////

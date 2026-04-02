@@ -13,7 +13,7 @@ class ThermoMechanicalMaterial;
 class ThermoMechanicalMaterialStatus : public CoupledMaterialStatus
 {
 protected:
-    double temperature, porePressure;
+    double temperature, porePressure, volumetricStrain;
     void addTemperatureEffectToMechanics();
 public:
     ThermoMechanicalMaterialStatus(ThermoMechanicalMaterial *m, Element *e, unsigned ipnum);
@@ -28,14 +28,16 @@ public:
 class ThermoMechanicalMaterial : public CoupledMaterial
 {
 protected:
-    double tec;  //thermal expansion ceofficient
-    double initialTemp;
+    double tec;  //thermal expansion ceofficient []
+    double initialTemp; //[celsius]
+    double heatCapacity; //[J/K/Kg]
 public:
     ThermoMechanicalMaterial(unsigned dimension) : CoupledMaterial(dimension) { name = "generic discrete coupled  material"; initialTemp = 0; };
     ~ThermoMechanicalMaterial() {};
     void init(MaterialContainer *matcont);
     double giveThermalExpansionCoeff() const { return tec; };
     void setThermalExpansionCoeff(double value) { tec = value; };
+    double giveHeatCapacity() const { return heatCapacity; };    
     double giveInitialTemperature() const { return initialTemp; };
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

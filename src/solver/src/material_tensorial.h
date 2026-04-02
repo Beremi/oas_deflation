@@ -16,7 +16,7 @@ class TensTrsprtMaterial;
 class TensTrsprtMaterialStatus : public MaterialStatus
 {
 protected:
-    double effConductivity, temp_effConductivity;
+    double effConductivity;
     double temp_pressure;
 public:
     TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Element *e, unsigned ipnum);
@@ -39,11 +39,11 @@ class TensTrsprtMaterial : public Material
 protected:
     double permeability; //[m2]
     double viscosity; //[Pa s]
-    double capacity; //[s2/m2]
+    double capacity; //[1/Pa = m s2/kg]
     double density; //[kg/m3]
     double a, m;
 public:
-    TensTrsprtMaterial(unsigned dimension) : Material(dimension) { name = "transport material"; a = -1.; m = 0; };
+    TensTrsprtMaterial(unsigned dimension) : Material(dimension) { name = "transport material"; a = -1.; m = 0; capacity=-1;};
     ~TensTrsprtMaterial() {};
     double giveCapacity() const { return capacity; };
     double giveDensity() const { return density; };
@@ -66,7 +66,7 @@ class TensHeatConductionMaterial;
 class TensHeatConductionMaterialStatus : public MaterialStatus
 {
 protected:
-    double effConductivity, temp_effConductivity;
+    double effConductivity;
     double temp_temperature;
 public:
     TensHeatConductionMaterialStatus(TensHeatConductionMaterial *m, Element *e, unsigned ipnum);
@@ -77,13 +77,16 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
+    virtual double updateEffectiveConductivity() const;    
 };
 
 //////////////////////////////////////////////////////////
 class TensHeatConductionMaterial : public Material
 {
 protected:
-    double conductivity, capacity, density;
+    double conductivity; //[J/s/m/K]
+    double capacity; //[J/K/Kg]
+    double density; //[kg/m3]
 public:
     TensHeatConductionMaterial(unsigned dimension) : Material(dimension) { name = "heat conduction material"; };
     ~TensHeatConductionMaterial() {};

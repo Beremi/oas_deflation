@@ -28,12 +28,6 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
     //nodes->addRHS_nodalLoad(load, 0); //to correctly account for abrupt initial change of BC
     //nodes->updateDirrichletBC(r, 0); //to correctly account for abrupt initial change of BC
 
-    //initial conditions
-    if ( init_r_file.compare("") != 0 ) {
-        r = nodes->readInitialConditions(init_r_file);
-        computeInternalExternalForces(r, load, false, time, -1); //to activate initial conditions at elements
-        elems->updateMaterialStatuses();
-    }
     elems->prepareStiffnessMatrix(K);
 
     updateSystemMatrices(0, 0, 1);
@@ -1336,12 +1330,6 @@ Solver *TransientLinearMechanicalSolver :: readFromFile(const string filename) {
 
 //////////////////////////////////////////////////////////
 void TransientLinearMechanicalSolver :: prepareSystemMatricesAndInitialField(string init_r_file, string init_v_file, const bool initial) {
-    //initial conditions
-    if ( init_v_file.compare("") != 0 ) {
-        v = nodes->readInitialConditions(init_r_file);
-    } else {
-        v = Vector :: Zero(totalDoFnum);
-    }
     v_old = Vector :: Zero(totalDoFnum);
     a_old = Vector :: Zero(totalDoFnum);
     elems->prepareMassMatrix(M, lumpMassM);
@@ -1366,7 +1354,6 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
         nodes->giveConstraints()->transformToConstraintSpace(Mred);
     }
-    v = Vector :: Zero(totalDoFnum);
     Vector v_red = Vector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
     terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);

@@ -48,6 +48,7 @@ public:
     unsigned giveNumFreeDoFs() const { return freeDoFs; };
     unsigned giveNumConstrDoFs() const { return constrDoFs; };
     std :: vector< unsigned >givePhysicalFieldsOfDoFs() const { return physicalFieldsDoF; };
+    unsigned givePhysicalFieldOfDoF(unsigned i) const { return physicalFieldsDoF[i]; };    
     void init();
     void clear();
     void addRHS_nodalLoad(Vector &f, double time) const;
