@@ -436,7 +436,7 @@ void CSLMaterial :: readFromLine(istringstream &iss) {
         cerr << name << ": material parameter 'Gt' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    ;
+    peakTensileStrain = ft/E0;
 };
 
 //////////////////////////////////////////////////////////

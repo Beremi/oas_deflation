@@ -48,14 +48,20 @@ class VectHeatConductionMaterialStatus : public TensHeatConductionMaterialStatus
 {
 protected:
     double relativeNormalStrain = 0.;
+    double temp_volumetricChange, volumetricChange, volumetricRate, temp_crackVolume, crackVolume, crackVolumeRate, temp_temperature, temperature, temperatureRate;        
 public:
     VectHeatConductionMaterialStatus(VectHeatConductionMaterial *m, Element *e, unsigned ipnum);
     virtual ~VectHeatConductionMaterialStatus() {};
+    virtual void computeStress(double timeStep);
+    virtual void computeStressWithFrozenIntVars(double timeStep);    
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual MaterialStatus * giveHeatConductionMaterialStatus() { return this; };
-    virtual double updateEffectiveConductivity() const;
+    virtual void updateEffectiveConductivity();
     virtual void setParameterValue(std :: string code, double value);  
     virtual Vector giveInternalSource() const;
+    virtual void update();    
+    virtual void resetTemporaryVariables();   
+    void updateRateVariables(double timeStep);      
 };
 
 //////////////////////////////////////////////////////////
@@ -64,15 +70,21 @@ class VectHeatConductionMaterial : public TensHeatConductionMaterial
 protected:
     double eta_c = 0.;
     double eta_s = 1.;    
+    double crackSpaceCapacity = 0.;
+    double crackSpaceDensity = 0.;    
 public:
-    VectHeatConductionMaterial(unsigned dimension) : TensHeatConductionMaterial(dimension) { name = "Vect heat conduction material"; };
+    VectHeatConductionMaterial(unsigned dimension) : TensHeatConductionMaterial(dimension) { name = "Vect heat conduction material"; produceInternalSources = true;};
     ~VectHeatConductionMaterial() {};
     void readFromLine(std :: istringstream &iss);    
     virtual void init(MaterialContainer *matcont) { TensHeatConductionMaterial :: init(matcont); strainsize = 1; }
     MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);
     virtual Material * giveHeatConductionMaterial() { return this; };
     double giveEtaS() const {return eta_s;};
-    double giveEtaC() const {return eta_c;};    
+    double giveEtaC() const {return eta_c;};   
+    double giveCrackSpaceCapacity() const {return crackSpaceCapacity;};
+    double giveCrackSpaceDensity() const {return crackSpaceDensity;};    
+    void setCrackSpaceCapacity(double cap) {crackSpaceCapacity = cap;};
+    void setCrackSpaceDensity(double dens) {crackSpaceDensity = dens;};    
 };
 
 
@@ -98,7 +110,7 @@ public:
     virtual Vector giveInternalSource() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
-    virtual double updateEffectiveConductivity() const;
+    virtual void updateEffectiveConductivity();
     void updateRateVariables(double timeStep);
 };
 
@@ -156,6 +168,7 @@ protected:
     double E0; //[Pa]
     double alpha; //[-]
     double density; //[kg/m3] 
+    double peakTensileStrain = 1e99; //[-]
 public:
     VectMechMaterial(unsigned dimension);
     ~VectMechMaterial() {};
@@ -166,6 +179,7 @@ public:
     double giveE0() const { return E0; }
     virtual void init(MaterialContainer *matcont) { Material :: init(matcont); strainsize = dim; }
     virtual Material * giveMechanicalMaterial() { return this; };
+    double givePeakTensileStrain() const {return peakTensileStrain;}
 };
 
 //////////////////////////////////////////////////////////

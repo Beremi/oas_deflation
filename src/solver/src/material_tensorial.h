@@ -27,7 +27,7 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual double giveEffectiveConductivity(std :: string type) const;
-    virtual double updateEffectiveConductivity() const;
+    virtual void updateEffectiveConductivity();
     virtual double calculatePressureDependentPermeability(double pressure) const;
     virtual bool isElastic(const bool &now = false) const;
     virtual void setParameterValue(std :: string code, double value);
@@ -77,7 +77,8 @@ public:
     virtual Matrix giveDampingTensor() const;
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void setParameterValue(std :: string code, double value);
-    virtual double updateEffectiveConductivity() const;    
+    virtual void updateEffectiveConductivity();    
+    virtual double giveEffectiveConductivity(std :: string type) const;    
 };
 
 //////////////////////////////////////////////////////////

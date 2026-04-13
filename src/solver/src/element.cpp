@@ -212,7 +212,7 @@ MaterialStatus *Element :: giveMatStatus(unsigned ipnum) {
 
 //////////////////////////////////////////////////////////
 void Element :: giveValues(std :: string code, Vector &result) const {
-    if ( code.compare("id") == 0 ) {
+    if ( code.compare("id") == 0 || code.compare("elementID") == 0) {
         result.resize(1);
         result [ 0 ] = idx;
     } else if ( code.compare("strain_energy") == 0 ) {
@@ -307,11 +307,7 @@ Vector Element :: giveInternalForces() {
         stress = stats [ i ]->giveTempStress();  //frozen internal variables
         intF  += Bs [ i ].transpose() * (  stress * inttype->giveIPWeight(i) );
     }
-    // Remove cout
-    // cout << name << endl;
-    // cout << Bs [ 0 ].transpose() << endl;
-    // cout << intF << endl;
-  
+
     //correct sign of internal fluxes for Poisson equation
     for ( vector<unsigned>::const_iterator a = DoFsWhichChangeSignOfInternalForces.begin();  a != DoFsWhichChangeSignOfInternalForces.end(); ++a ) {
         intF[*a] *= -1;

@@ -701,7 +701,7 @@ void LDPMMaterial :: readFromLine(istringstream &iss) {
         cerr << name << ": material parameter 'fs0' was not specified" << endl;
         exit(EXIT_FAILURE);
     }
-    ;
+    peakTensileStrain = ft/E0;
 };
 
 //////////////////////////////////////////////////////////

@@ -140,6 +140,7 @@ public:
     virtual void addToEigenVolumetricStrain(double x);
     virtual void addToEigenStrain(const Vector &x);
     virtual void removeEigenStrain();    
+    virtual Vector giveInternalSource() const;    
 };
 
 //////////////////////////////////////////////////////////

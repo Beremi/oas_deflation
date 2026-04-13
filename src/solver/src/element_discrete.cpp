@@ -1454,12 +1454,11 @@ void DiscreteTrsprtElem :: computeDampingMatrix() {
     }
     dampC(0 , 0) = s*g0;
     dampC(1 , 1) = s*g1;   
-    /*
+    
     if ( BolanderCapacityMatrix ) { //from Bolander's papers
         dampC(0, 0) = dampC(1, 1) = 2. / 3. * s;
         dampC(1, 0) = dampC(0, 1) = s / 3.;
-    }
-    */
+    }    
 }
 
 //////////////////////////////////////////////////////////

@@ -61,6 +61,8 @@ void ThermoMechanicalMaterial :: init(MaterialContainer *matcont) {
         cerr << name << "Error: first material must be inherited from VectMechMaterial, the second from VectHeatConductionMaterial." << endl;
         exit(1);
     }
+    vtm -> setCrackSpaceDensity(csdensity);
+    vtm -> setCrackSpaceCapacity(cscapacity);    
 };
 
 //////////////////////////////////////////////////////////
@@ -70,12 +72,11 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     //iss.clear(); // clear string stream
     //iss.seekg(0, iss.beg); //reset position in string stream
 
-    //VectMechMaterial *vmm = static_cast< VectMechMaterial * >( mats [ 0 ] );
-
     string param;
     bool btec = false;
     bool binitemp = false;
-    bool sheatcapb = false;    
+    bool crackdensb = false;
+    bool crackcapb = false;  
     while (  iss >> param ) {
         if ( param.compare("therm_exp_coeff") == 0 ) {
             btec = true;
@@ -83,9 +84,12 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
         } else if ( param.compare("initial_temperature") == 0 ) {
             binitemp = true;
             iss >> initialTemp;
-        } else if ( param.compare("heat_capacity") == 0 ) {
-            sheatcapb = true;
-            iss >> heatCapacity;
+        } else if ( param.compare("crack_space_density") == 0 ) {
+            iss >> csdensity;
+            crackdensb = true;
+        } else if ( param.compare("crack_space_capacity") == 0 ) {
+            iss >> cscapacity;        
+            crackcapb = true;                
         }
     }
     if ( !btec ) {
@@ -95,10 +99,14 @@ void ThermoMechanicalMaterial :: readFromLine(std :: istringstream &iss) {
     if ( !binitemp ) {
         cerr << name << ": material parameter 'initial_temperature' was not specified, considered ZERO" << endl;
     }
-    if ( !binitemp ) {
-        cerr << name << ": material parameter 'solid_heat_capacity' was not specified" << endl;
+    if ( !crackdensb ) {
+        cerr << name << ": material parameter 'crack_space_density' was not specified" << endl;
         exit(1);
-    }    
+    }   
+    if ( !crackcapb ) {
+        cerr << name << ": material parameter 'crack_space_capacity' was not specified" << endl;
+        exit(1);
+    }        
 };
 
 //////////////////////////////////////////////////////////

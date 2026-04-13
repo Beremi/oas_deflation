@@ -30,14 +30,14 @@ class ThermoMechanicalMaterial : public CoupledMaterial
 protected:
     double tec;  //thermal expansion ceofficient []
     double initialTemp; //[celsius]
-    double heatCapacity; //[J/K/Kg]
+    double cscapacity; //[J/K/Kg]
+    double csdensity; //[Kg/m3]    
 public:
     ThermoMechanicalMaterial(unsigned dimension) : CoupledMaterial(dimension) { name = "generic discrete coupled  material"; initialTemp = 0; };
     ~ThermoMechanicalMaterial() {};
     void init(MaterialContainer *matcont);
     double giveThermalExpansionCoeff() const { return tec; };
     void setThermalExpansionCoeff(double value) { tec = value; };
-    double giveHeatCapacity() const { return heatCapacity; };    
     double giveInitialTemperature() const { return initialTemp; };
     virtual void readFromLine(std :: istringstream &iss);
     virtual MaterialStatus *giveNewMaterialStatus(Element *e, unsigned ipnum);

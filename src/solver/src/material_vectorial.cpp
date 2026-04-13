@@ -34,28 +34,38 @@ MaterialStatus *VectTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned
 
 VectHeatConductionMaterialStatus :: VectHeatConductionMaterialStatus(VectHeatConductionMaterial *m, Element *e, unsigned ipnum) : TensHeatConductionMaterialStatus(m, e, ipnum) {
     name = "vectorial heat conduction mat. status";
+    temp_volumetricChange = 0;
+    volumetricChange = 0;
+    volumetricRate = 0;
+    temp_crackVolume = 0;
+    crackVolume = 0;
+    crackVolumeRate = 0;        
 }
 
 
 //////////////////////////////////////////////////////////
 Matrix VectHeatConductionMaterialStatus :: giveStiffnessTensor(string type) const {
-    ( void ) type;
-    VectHeatConductionMaterial *hcm = static_cast< VectHeatConductionMaterial * >( mat );
     Matrix T = Matrix :: Zero(1, 1); //discrete material, only one direction in any dimension
-    T(0, 0) = updateEffectiveConductivity();
+    T(0, 0) = giveEffectiveConductivity(type);
     return T;
 };
 
 //////////////////////////////////////////////////////////
-double VectHeatConductionMaterialStatus :: updateEffectiveConductivity() const {
+void VectHeatConductionMaterialStatus :: updateEffectiveConductivity() {
     VectHeatConductionMaterial *m = static_cast< VectHeatConductionMaterial * >( mat );
-    return m->giveConductivity()*(m->giveEtaS()+(1.-m->giveEtaS())/(1.+pow(relativeNormalStrain, m->giveEtaC() )));   
+    effConductivity = m->giveConductivity()*(m->giveEtaS()+(1.-m->giveEtaS())/(1.+pow(relativeNormalStrain, m->giveEtaC() )));   
 }
 
 //////////////////////////////////////////////////////////
 void VectHeatConductionMaterialStatus :: setParameterValue(std :: string code, double value){
     if ( code.compare("relative_normal_strain") == 0 ) {
         relativeNormalStrain = value;
+    } else if ( code.compare("volumetric_change") == 0 ) {
+        temp_volumetricChange = value;
+    } else if ( code.compare("crack_volume") == 0 ) {
+        temp_crackVolume = value;
+    } else if ( code.compare("temperature") == 0 ) {
+        temp_temperature = value;
     } else {
         TensHeatConductionMaterialStatus :: setParameterValue(code, value);
     }
@@ -65,21 +75,56 @@ void VectHeatConductionMaterialStatus :: setParameterValue(std :: string code, d
 Vector VectHeatConductionMaterialStatus :: giveInternalSource() const {
     Vector ints = Vector :: Zero(1);
     VectHeatConductionMaterial *m = static_cast< VectHeatConductionMaterial * >( mat );
-    /*
 
-    ints [ 0 ]  = -m->giveBiotCoeff() *  3. * volStrainRate; //Biot coeff times volumetric strain rate
-    if ( crackVolumeRate > 0 || pressureRate > 0 ) {
-        DiscreteTrsprtElem *trs = static_cast< DiscreteTrsprtElem * >( element );
-        double vol = trs->giveVolume();
-        if ( temp_crackVolume > 0 ) {
-            ints [ 0 ] -= temp_crackVolume * pressureRate / ( vol * m->giveKw() );
-        }
-        ints [ 0 ] -= crackVolumeRate / vol * ( 1. - m->giveBiotCoeff() +  ( temp_pressure - m->giveReferencePressure() ) / m->giveKw() );
-    }
-    */
-    return ints * m->giveDensity();
+    
+    ints [ 0 ]  = temp_temperature * volumetricRate;
+    ints [ 0 ]  += temp_temperature * crackVolumeRate;    
+    ints [ 0 ]  += temp_crackVolume * temperatureRate;
+        
+    return ints * m->giveCrackSpaceDensity() * m->giveCrackSpaceCapacity();
 }
 
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus :: computeStress(double timeStep) {
+    updateRateVariables(timeStep);
+    updateEffectiveConductivity();
+    TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
+};
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
+    updateRateVariables(timeStep);
+    TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(timeStep);
+};
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus ::  update() {
+    //TensHeatConductionMaterial :: update();
+    volumetricChange = temp_volumetricChange;
+    crackVolume = temp_crackVolume;
+    temperature = temp_temperature;
+}
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus ::  resetTemporaryVariables() {
+    //TensHeatConductionMaterial :: resetTemporaryVariables();
+    temp_volumetricChange = volumetricChange;
+    temp_crackVolume = crackVolume;
+    temp_temperature = temperature;
+}
+
+//////////////////////////////////////////////////////////
+void VectHeatConductionMaterialStatus ::  updateRateVariables(double timeStep) {
+    if ( timeStep > 0 ) {
+        volumetricRate = ( temp_volumetricChange - volumetricChange ) / timeStep;
+        crackVolumeRate = ( temp_crackVolume - crackVolume ) / timeStep;
+        temperatureRate = ( temp_temperature - temperature ) / timeStep;
+    } else {
+        volumetricRate = 0.;
+        crackVolumeRate = 0.;
+        temperatureRate = 0.;
+    }
+}
 
 //////////////////////////////////////////////////////////
 MaterialStatus *VectHeatConductionMaterial :: giveNewMaterialStatus(Element *e, unsigned ipnum) {
@@ -100,7 +145,7 @@ void VectHeatConductionMaterial :: readFromLine(istringstream &iss) {
         } else if ( param.compare("eta_c") == 0 ) {
             eta_cb = true;
             iss >> eta_c;
-        }
+        } 
     }
     if ( !eta_sb ) {
         cerr << name << ": material parameter 'eta_s' was not specified" << endl;
@@ -137,7 +182,7 @@ double VectTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type)
         TensTrsprtMaterial *tmat = static_cast< TensTrsprtMaterial * >( mat );
         return calculatePressureDependentPermeability(0.) * tmat->giveDensity() / tmat->giveViscosity();
     } else if ( type.compare("secant") == 0 || type.compare("unloading") == 0 || type.compare("tangent") == 0 ) {
-        return updateEffectiveConductivity();
+        return effConductivity;
     } else {
         cerr << "Error: VectTrsprtCoupledMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
@@ -146,10 +191,11 @@ double VectTrsprtCoupledMaterialStatus :: giveEffectiveConductivity(string type)
 
 
 //////////////////////////////////////////////////////////
-double VectTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() const {
+void VectTrsprtCoupledMaterialStatus :: updateEffectiveConductivity() {
     VectTrsprtCoupledMaterial *tmat = static_cast< VectTrsprtCoupledMaterial * >( mat );
     DiscreteTrsprtCoupledElem *tc = static_cast< DiscreteTrsprtCoupledElem * >( element );
-    return ( TensTrsprtMaterialStatus :: updateEffectiveConductivity() ) + tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
+    TensTrsprtMaterialStatus :: updateEffectiveConductivity();
+    effConductivity += tmat->giveTurtuosity() * tmat->giveDensity() / ( 12. * tmat->giveViscosity() * tc->giveArea() ) * crackParam;
 }
 
 //////////////////////////////////////////////////////////
@@ -168,10 +214,16 @@ void VectTrsprtCoupledMaterialStatus ::  updateRateVariables(double timeStep) {
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterialStatus :: computeStress(double timeStep) {
     updateRateVariables(timeStep);
-    effConductivity = updateEffectiveConductivity();
+    updateEffectiveConductivity();
     computeStressWithFrozenIntVars(timeStep);
 };
 
+//////////////////////////////////////////////////////////
+void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
+    updateRateVariables(timeStep);
+    computeConstitutiveStrain();
+    temp_stress = -effConductivity * temp_strain;
+};
 
 //////////////////////////////////////////////////////////
 Vector VectTrsprtCoupledMaterialStatus :: giveInternalSource() const {
@@ -205,16 +257,6 @@ void VectTrsprtCoupledMaterialStatus :: setParameterValue(string code, double va
         VectTrsprtMaterialStatus :: setParameterValue(code, value);
     }
 }
-
-
-//////////////////////////////////////////////////////////
-void VectTrsprtCoupledMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
-    updateRateVariables(timeStep);
-    computeConstitutiveStrain();
-    temp_stress = -effConductivity * temp_strain;
-};
-
-
 
 //////////////////////////////////////////////////////////
 void VectTrsprtCoupledMaterialStatus ::  update() {

@@ -440,15 +440,38 @@ void CoupledMaterialStatus :: addToEigenStrain(const Vector &x) {
 }
 
 //////////////////////////////////////////////////////////
+Vector CoupledMaterialStatus :: giveInternalSource() const{
+  if( mat->isProducingInternalSources() ){
+      Vector ints;
+      Vector totints = Vector::Zero (mat->giveStrainSize());
+      unsigned k = 0;
+      unsigned i;
+      for ( auto &s:stats ) {        
+          if (s->giveMaterial()->isProducingInternalSources()){
+              ints = s->giveInternalSource();
+              for ( i = 0; i < ints.size(); i++ ) {
+                totints [ k + i ] = ints [ i ];
+            }              
+          }
+          k += s->giveMaterial()->giveStrainSize();
+      }  
+      return totints;
+  } else {
+      return Vector(0);        
+  }
+}
+
+//////////////////////////////////////////////////////////
 void CoupledMaterial :: init(MaterialContainer *matcont) {
     mats.resize(nmats);
     for ( unsigned i = 0; i < nmats; i++ ) {
         mats [ i ] = matcont->giveMaterial(matnums [ i ]);
     }
-
+    
     strainsize = 0;
     for ( auto &m: mats ) {
         strainsize += m->giveStrainSize();
+        if(m->isProducingInternalSources()) produceInternalSources = true;
     }
 
     for ( auto &i : matnums ) {
@@ -515,10 +538,11 @@ Material * CoupledMaterial :: giveTransportMaterial() {
 
 //////////////////////////////////////////////////////////
 Material * CoupledMaterial :: giveHeatConductionMaterial() {
-    for ( auto &s:mats ) {
+    for ( auto &s:mats ) {  
         if ( s->giveHeatConductionMaterial() ) {
             return s;
         }
     }
     return nullptr;
 }
+

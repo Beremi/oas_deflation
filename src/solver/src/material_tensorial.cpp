@@ -13,13 +13,13 @@ using namespace std;
 TensTrsprtMaterialStatus :: TensTrsprtMaterialStatus(TensTrsprtMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "transport mat. status";
     temp_pressure = 0;
-    effConductivity = updateEffectiveConductivity();
+    updateEffectiveConductivity();
 }
 
 
 //////////////////////////////////////////////////////////
 void TensTrsprtMaterialStatus :: computeStress(double timeStep) {
-    effConductivity = updateEffectiveConductivity(); //nonlinear effect of pressure
+    updateEffectiveConductivity(); //nonlinear effect of pressure
     computeStressWithFrozenIntVars(timeStep);
 };
 
@@ -90,9 +90,9 @@ bool TensTrsprtMaterialStatus :: giveValues(string code, Vector &result) const {
 }
 
 //////////////////////////////////////////////////////////
-double TensTrsprtMaterialStatus :: updateEffectiveConductivity() const {
+void TensTrsprtMaterialStatus :: updateEffectiveConductivity() {
     TensTrsprtMaterial *tmat = static_cast< TensTrsprtMaterial * >( mat );
-    return calculatePressureDependentPermeability(temp_pressure) * tmat->giveDensity() / tmat->giveViscosity();
+    effConductivity = calculatePressureDependentPermeability(temp_pressure) * tmat->giveDensity() / tmat->giveViscosity();
 }
 
 //////////////////////////////////////////////////////////
@@ -170,13 +170,13 @@ MaterialStatus *TensTrsprtMaterial :: giveNewMaterialStatus(Element *e, unsigned
 TensHeatConductionMaterialStatus :: TensHeatConductionMaterialStatus(TensHeatConductionMaterial *m, Element *e, unsigned ipnum) : MaterialStatus(m, e, ipnum) {
     name = "heat conduction mat. status";
     temp_temperature = 0;
-    effConductivity = updateEffectiveConductivity();     
+    updateEffectiveConductivity();     
 }
 
 
 //////////////////////////////////////////////////////////
 void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
-    effConductivity = updateEffectiveConductivity(); 
+    updateEffectiveConductivity(); 
     computeStressWithFrozenIntVars(timeStep);
 };
 
@@ -184,26 +184,36 @@ void TensHeatConductionMaterialStatus :: computeStress(double timeStep) {
 void TensHeatConductionMaterialStatus :: computeStressWithFrozenIntVars(double timeStep) {
     ( void ) timeStep;
     computeConstitutiveStrain();    
-    temp_stress = effConductivity * temp_strain;
+    temp_stress = -effConductivity * temp_strain;
 };
 
 //////////////////////////////////////////////////////////
-double TensHeatConductionMaterialStatus :: updateEffectiveConductivity() const {
+void TensHeatConductionMaterialStatus :: updateEffectiveConductivity() {
     TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
-    return m->giveConductivity();
+    effConductivity = m->giveConductivity();
 }
 
 //////////////////////////////////////////////////////////
 Matrix TensHeatConductionMaterialStatus :: giveStiffnessTensor(string type) const {
     ( void ) type;
-    TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
     unsigned ss = mat->giveStrainSize();
     Matrix T = Matrix :: Zero(ss, ss);
     for ( unsigned i = 0; i < ss; i++ ) {
-        T(i, i) = m->giveConductivity();
+        T(i, i) = giveEffectiveConductivity(type);
     }
     return T;
 };
+
+
+//////////////////////////////////////////////////////////
+double TensHeatConductionMaterialStatus :: giveEffectiveConductivity(string type) const {
+    if ( type.compare("elastic") == 0 ) {
+        TensHeatConductionMaterial *m = static_cast< TensHeatConductionMaterial * >( mat );
+        return m->giveConductivity();
+    } else {
+        return effConductivity;
+    }
+}
 
 //////////////////////////////////////////////////////////
 Matrix TensHeatConductionMaterialStatus :: giveDampingTensor() const {
@@ -244,7 +254,7 @@ void TensHeatConductionMaterial :: readFromLine(istringstream &iss) {
     bcapacity = bconductivity = bdensity = false;
 
     while (  iss >> param ) {
-        if ( param.compare("capacity") == 0 ) {
+        if ( param.compare("capacity") == 0 || param.compare("solid_capacity") == 0) {
             bcapacity = true;
             iss >> capacity;
         } else if ( param.compare("conductivity") == 0 ) {

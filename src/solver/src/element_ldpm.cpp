@@ -590,11 +590,19 @@ Vector LDPMTetraWithTransportAndHeatConduction :: giveMasterVariables(const Poin
 
 //////////////////////////////////////////////////////////
 void LDPMTetraWithTransportAndHeatConduction :: evaluateStrains(const Vector &DoFs) {
-    for (unsigned i = 0; i < 12; i++) {
-        stats [ i ]->setParameterValue( "temperature", DoFs [ 7 * nodecodes [ 2 * i ] + 6 ] * edgeWeights [ i ] + DoFs [ 7 * nodecodes [ 2 * i + 1 ] + 6 ] * ( 1. - edgeWeights [ i ] ) );
+    unsigned i=0;
+    for (auto &s:stats) {
+        s->setParameterValue( "temperature", DoFs [ 7 * nodecodes [ 2 * i ] + 6 ] * edgeWeights [ i ] + DoFs [ 7 * nodecodes [ 2 * i + 1 ] + 6 ] * ( 1. - edgeWeights [ i ] ) );
+        VectMechMaterialStatus *vms = static_cast< VectMechMaterialStatus* > (s->giveMechanicalMaterialStatus());
+        VectMechMaterial *vm = static_cast< VectMechMaterial* > (vms->giveMaterial());        
+        VectHeatConductionMaterialStatus *vhcs = static_cast< VectHeatConductionMaterialStatus* > (s->giveHeatConductionMaterialStatus());
+        double ns = vms->giveTempStrain()[0];
+        vhcs->setParameterValue( "relative_normal_strain", ((ns<0) ? 0: ns/vm->givePeakTensileStrain()));
+        vhcs->setParameterValue( "crack_volume", vms->giveNormalCrackOpening()*areas[i]);
+        i++;
     }
     averageTemperature = DoFs [ 6 ] * nodeWeights [ 0 ] + DoFs [ 13 ] * nodeWeights [ 1 ] + DoFs [ 20 ] * nodeWeights [ 2 ]  + DoFs [ 27 ] * nodeWeights [ 3 ];
-
+    
     LDPMTetraWithTransport :: evaluateStrains(DoFs);
 };
 
@@ -635,25 +643,18 @@ void LDPMTetraWithTransportAndHeatConduction :: computeDampingMatrix() {
     }
     unsigned nodeDoFNum = unsigned(DoFids.size()/4.+0.5);
     
-    VectMechMaterialStatus *mechstat;
-    VectHeatConductionMaterialStatus *thermostat;
-    ThermoMechanicalMaterialStatus *thermomechstat;    
     
     VectMechMaterial *mechmat = static_cast< VectMechMaterial * >( mat->giveMechanicalMaterial() );
-    VectHeatConductionMaterial *thermomat = static_cast< VectHeatConductionMaterial * >( mat->giveHeatConductionMaterial() );
-    ThermoMechanicalMaterial *thermomechmat = static_cast< ThermoMechanicalMaterial * >( mat );     
+    VectHeatConductionMaterial *hcmat = static_cast< VectHeatConductionMaterial * >( mat->giveHeatConductionMaterial() );   
     
     double solidDensity = mechmat->giveDensity();
-    double heatCapacity = thermomechmat->giveHeatCapacity();    
+    double heatCapacity = hcmat->giveCapacity();    
     double tetvol;
     unsigned nodeID;
     vector< Point * >tetnodes(4);
     tetnodes [ 3 ] = vert [ 0 ]->givePointPointer();
 
-    for ( unsigned i = 0; i < 12; i++ ) {
-        mechstat = static_cast< VectMechMaterialStatus * >( stats [ i ]->giveMechanicalMaterialStatus() );
-        thermostat = static_cast< VectHeatConductionMaterialStatus * >( stats [ i ]->giveHeatConductionMaterialStatus() );
-      
+    for ( unsigned i = 0; i < 12; i++ ) {    
         for ( unsigned j = 0; j < 2; j++ ) {
             nodeID = nodecodes [ 2 * i + j ];
             tetnodes [ 0 ] = nodes [ nodeID ]->givePointPointer();
