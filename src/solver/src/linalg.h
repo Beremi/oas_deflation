@@ -227,7 +227,7 @@ public:
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, std :: string solver_type);
+bool StandAloneLinalgSolver(const CoordinateIndexedSparseMatrix &A, Vector &ddr, const Vector &f, double precision, double relmaxit, std::string solver_type);
 
 bool LinalgNonSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector x0, double precision, double relmaxit);
 

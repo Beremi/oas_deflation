@@ -988,63 +988,65 @@ bool CholmodSupernodalLLTSolver :: solve(Vector &x, const Vector &b) {
 
 
 
-bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, const Vector &b, const Vector &x0, double precision, double relmaxit, string solver_type) {
+bool StandAloneLinalgSolver(const CoordinateIndexedSparseMatrix &A, Vector &ddr, const Vector &f, double precision, double relmaxit, string solver_type) {
     std :: cout << "Using solver type: " << solver_type << std :: endl;
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
 #endif
-    if ( b.size() == 0 ) {
+    if ( f.size() == 0 ) {
         return true;                   // when problem is completely constrained (e.g. single facet)
     }
-
-    size_t Maxit = fmax(b.size() * relmaxit, 1);
-
-    bool result = false;
-    if ( solver_type == "EigenConj" ) {
-        //JacobiSVD<MatrixXd> svd(cgb);
-        //double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size()-1);
-        //cout << "condition number is " << cond<< " " << svd.singularValues()(0) << " " << svd.singularValues()(svd.singularValues().size()-1) << endl;
-
-        Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper >cgK;
-        //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
-        cgK.setMaxIterations(Maxit);
-        cgK.setTolerance(precision);
-
-        cgK.compute(A);
-
-        x = cgK.solveWithGuess(b, x0);
-
-        result = size_t( cgK.iterations() ) < Maxit;
-        if ( !result ) {
-            cout << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
-        }
-    } else if ( solver_type == "EigenLDLT" ) {
-        Eigen :: SimplicialLDLT< Eigen :: SparseMatrix< double > >simplicial_ldlt_solver;
-        x = simplicial_ldlt_solver.compute(A).solve(b);
-        //cout << "error " << ( A * x - b ).lpNorm< Eigen :: Infinity >() << endl;
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
-    } else if ( solver_type == "EigenLLT" ) {
-        Eigen :: SimplicialLLT< Eigen :: SparseMatrix< double > >simplicial_llt_solver;
-        x = simplicial_llt_solver.compute(A).solve(b);
-
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
+    std :: unique_ptr< LinAlgSolver >linalgsolver;
+    if ( linalgsolver == nullptr ) {
+        if ( solver_type == "EigenConj" ) {
+            std :: unique_ptr< ConjGradSolver >cgs = std :: make_unique< ConjGradSolver >();
+            cgs->setPrecisionAndRelMaxIters(precision, relmaxit);
+            linalgsolver = std :: move(cgs);
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "EigenLDLT" ) {
+            linalgsolver = std :: make_unique< LDLTSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "EigenLLT" ) {
+            linalgsolver = std :: make_unique< LLTSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "EigenLU" || solver_type == "EigenSparseLU" ) {
+            linalgsolver = std :: make_unique< LUSolver >();
+            linalgsolver->analyzePattern(A);
 #ifdef SUPERLU_FOUND
-    } else if ( solver_type == "SuperLU" ) {
-        Eigen :: SuperLU< Eigen :: SparseMatrix< double > >superlu_solver;
-        superlu_solver.compute(A);
-        result = 1;
+        } else if  ( solver_type == "SuperLU" ) {
+            linalgsolver = std :: make_unique< SuperLUSolver >();
+            linalgsolver->analyzePattern(A);
 #endif
-    } else if ( solver_type == "EigenSparseLU" ) {
-        Eigen :: SparseLU< Eigen :: SparseMatrix< double >, Eigen :: COLAMDOrdering< int > >sparseLU_solver;
-        sparseLU_solver.analyzePattern(A);
-        sparseLU_solver.factorize(A);
-
-        x = sparseLU_solver.solve(b);
-        //result = ( A * x - b ).lpNorm< Eigen :: Infinity >() < precision;
-        result = 1;
+#ifdef PARDISO_FOUND
+        } else if  ( solver_type == "PardisoLU" ) {
+            linalgsolver = std :: make_unique< PardisoLUSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "PardisoLDLT" ) {
+            linalgsolver = std :: make_unique< PardisoLDLTSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "PardisoLLT" ) {
+            linalgsolver = std :: make_unique< PardisoLLTSolver >();
+            linalgsolver->analyzePattern(A);
+#endif
+#ifdef CHOLMOD_FOUND
+        } else if  ( solver_type == "CholmodLLT" ) {
+            linalgsolver = std :: make_unique< CholmodLLTSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "CholmodLDLT" ) {
+            linalgsolver = std :: make_unique< CholmodLDLTSolver >();
+            linalgsolver->analyzePattern(A);
+        } else if  ( solver_type == "CholmodSupernodalLLT" ) {
+            linalgsolver = std :: make_unique< CholmodSupernodalLLTSolver >();
+            linalgsolver->analyzePattern(A);
+#endif
+        } else {
+            cerr << "Solver type " << solver_type << " is not implemented" << endl;
+            exit(1);
+        }
     }
+    linalgsolver->factorize(A);
+    linalgsolver->solve(ddr, f);
+    
 
 #if PRINT_DEBUG_TIME
     now = std :: chrono :: system_clock :: now();
@@ -1054,8 +1056,7 @@ bool LinalgSymmetricSolver(const CoordinateIndexedSparseMatrix &A, Vector &x, co
     cout.flush();
 #endif
 
-
-    return result;
+    return true;
 }
 
 

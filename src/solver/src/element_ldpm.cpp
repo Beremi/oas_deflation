@@ -295,7 +295,7 @@ Matrix LDPMTetra :: giveStiffnessMatrix(string matrixType) const {
 
 //////////////////////////////////////////////////////////
 void LDPMTetra :: computeDampingMatrix() {
-    dampC = giveStiffnessMatrix("elastic") * 1e-15;           //rough fix of zeros, here can be anything
+    dampC = Matrix::Zero(DoFids.size(), DoFids.size());
 }
 
 //////////////////////////////////////////////////////////
@@ -759,7 +759,7 @@ void LDPMTetraWithTransport :: giveValues(string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void LDPMTetraWithTransport :: computeDampingMatrix() {
-    dampC = Matrix :: Zero(DoFids.size(), DoFids.size());    
+    LDPMTetra::computeDampingMatrix();
     
     if (DoFids.size()%4 !=0) {
         cerr << "LDPMTetraWithTransport: variable node type" << endl;

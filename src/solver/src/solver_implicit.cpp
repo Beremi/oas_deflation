@@ -759,15 +759,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
             } else {         //direct controll
-                /*
-                 * if ( LinalgSymmetricSolver(Keff, ddr, f, ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-                 *  std :: cerr << "Conjugate gradients did not converge, attempt to restart step" << endl;
-                 *  it = maxIt;
-                 *  resErr = 1e10;
-                 *  break;
-                 * }
-                 */
-                linalgsolver->solve(ddr, f);
+                  linalgsolver->solve(ddr, f);
             }
 
             //update DoFs
@@ -1104,10 +1096,15 @@ void TransientLinearTransportSolver :: init(string init_r_file, string init_v_fi
     if ( nodes->giveConstraints()->isActive() ) {
         nodes->giveConstraints()->transformToConstraintSpace(Cred);
     }
-    if ( LinalgSymmetricSolver(Cred, ddr, f,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type) == false ) {
-        terminated = true;
-        cerr << "Conjugate gradients did not converge during initialization of solver" << endl;
-        exit(1);
+    //not good, might have zeros at the diagonal
+    //StandAloneLinalgSolver(Cred, ddr, f, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
+    
+    //not ideal but working
+    double k;
+    for(unsigned i=0; i<Cred.rows(); i++){
+        k = Cred.coeff(i,i);
+        if (k == 0) ddr[i] = 0;
+        else ddr[i] = f[i]/k;
     }
     nodes->giveFullDoFArray(ddr, v);
 }
@@ -1357,8 +1354,18 @@ void TransientLinearMechanicalSolver :: init(string init_r_file, string init_v_f
     }
     Vector v_red = Vector :: Zero(freeDoFnum);
     nodes->giveReducedDoFArray(v, v_red);
-    terminated = !LinalgSymmetricSolver(Mred, ddr, f - Cred * v_red,  ddr, conj_grad_precision, conj_grad_relative_maxit, symsolver_type);
-    //terminated = !linalgsolver->solve(ddr, f_last_iter);
+    
+    //not good, might have zeros at the diagonal
+    //StandAloneLinalgSolver(Mred, ddr, f - Cred * v_red, conj_grad_precision, conj_grad_relative_maxit, symsolver_type)
+    
+    //not ideal but working
+    double k;
+    Vector q =  f - Cred * v_red;
+    for(unsigned i=0; i<Mred.rows(); i++){
+        k = Mred.coeff(i,i);
+        if (k == 0) ddr[i] = 0;
+        else ddr[i] = q[i]/k;
+    }
     a = Vector :: Zero(totalDoFnum);
     nodes->giveFullDoFArray(ddr, a);
 }
