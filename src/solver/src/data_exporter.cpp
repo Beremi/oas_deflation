@@ -1020,8 +1020,11 @@ void DisplacementGauge :: init() {
     bool foundB = elems->findElementOwningPoint(& elemB, & natCoordsB, & pointB);
     if ( !foundB ) {
         elemB = nullptr;
-        nodeB = nodes->findClosestMechanicalNode(pointB, & dist);
+        nodeB = nodes->findClosestMechanicalNode(pointB, & dist);       
     }
+    
+    //cout << "A " << elemA << " " << natCoordsA << " P1 " << elemA->giveNode(0)->givePoint() << " P2 " << elemA->giveNode(1)->givePoint() << endl;
+    //cout << "B " << elemA << " " << natCoordsB << " P1 " << elemB->giveNode(0)->givePoint() << " P2 " << elemB->giveNode(1)->givePoint() << endl;    
     maxsize.resize(1);
     maxsize [ 0 ] = 1;
 }
@@ -1046,7 +1049,7 @@ void DisplacementGauge :: exportData(unsigned step, int iteration, fs :: path re
             } else if ( dim > 1 && codes [ 0 ].compare("uy") == 0 ) {
                 valueA = mv [ 1 ];
             } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 ) {
-                valueA = mv [ 2 ];
+                valueA = mv [ 2 ];                
             }
         } else {
             nodeA->giveValues(codes [ 0 ], solver, res);
@@ -1064,7 +1067,7 @@ void DisplacementGauge :: exportData(unsigned step, int iteration, fs :: path re
             } else if ( dim > 1 && codes [ 0 ].compare("uy") == 0 ) {
                 valueB = mv [ 1 ];
             } else if ( dim > 2 && codes [ 0 ].compare("uz") == 0 ) {
-                valueB = mv [ 2 ];
+                valueB = mv [ 2 ]; 
             }
         } else {
             nodeB->giveValues(codes [ 0 ], solver, res);
@@ -1075,6 +1078,7 @@ void DisplacementGauge :: exportData(unsigned step, int iteration, fs :: path re
             }
         }
         outputfile << "\t" << ( valueB - valueA ) * multiplier;
+        
     }
     outputfile.close();
 }

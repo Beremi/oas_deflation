@@ -260,10 +260,12 @@ Matrix LDPMTetra :: giveHMatrix(const Point *x) const {
 Vector LDPMTetra :: giveMasterVariables(const Point *x, const Vector &DoFs) const {
     Vector phi = Vector :: Zero( nodes.size() );
     shafunc->giveShapeF(x, phi);
-    Matrix H = Matrix :: Zero( ndim, DoFids.size() );
-    for ( unsigned i = 0; i < ndim; i++ ) {
-        for ( unsigned j = 0; j < numOfNodes; j++ ) {
-            H(i, ndim * j + i) = phi(j);
+    unsigned k = nodes[0]->giveNumberOfDoFs();
+    for (unsigned i=1; i<4; i++) k = max(k,nodes[0]->giveNumberOfDoFs());
+    Matrix H = Matrix :: Zero( k, DoFids.size() );
+    for ( unsigned j = 0; j < numOfNodes; j++ ) {
+        for ( unsigned i = 0; i < k; i++ ) {
+            H(i, k*j + i) = phi(j);           
         }
     }
     return H * DoFs;
