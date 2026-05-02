@@ -1,0 +1,514 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[a4paper,margin=0.67in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage{makecell}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,urlcolor=blue!55!black,citecolor=blue!55!black}
+\setlist[itemize]{nosep,leftmargin=*}
+\setlist[enumerate]{nosep,leftmargin=*}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{3.8pt}
+\emergencystretch=3em
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{OAS linear solver review}
+\rhead{Compact technical note}
+\cfoot{\thepage\ of \pageref{LastPage}}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{OAS Linear Solver Use and Feasibility of Preconditioned/Deflated CG\\[0.3em]{\large Amended note: current parallelization, AMG, grid hierarchy, and history-based deflation}}
+\author{Source-driven technical dissemination}
+\date{Generated 2026-05-01. Source snapshot: OAS master commit \code{3ce5a809} from 2026-04-27.}
+
+\begin{document}
+\maketitle
+\vspace{-1.2em}
+
+\section*{Executive conclusion}
+
+For the two examples described in the email, Dogbone ($\approx 6.6\,\mathrm{k}$ DOF) and TS-N-65 ($\approx 600\,\mathrm{k}$ DOF), the stated matrices are symmetric positive definite (SPD). Therefore conjugate gradients (CG/PCG) are mathematically admissible, provided that the constrained effective matrix \code{Keff} remains SPD after boundary-condition transformations. The important point is that OAS already contains a CG solver: \code{EigenConj}. It is not a missing algorithm; it is currently a weak instance of PCG using Eigen's diagonal/Jacobi preconditioner. That is consistent with the email's statement that the default CG is practically not useful for the large fracture examples.
+
+The direct solvers in OAS are selected by the input field \code{solver\_type} and implemented in \code{src/solver/src/linalg.h} and \code{src/solver/src/linalg.cpp}. The main implicit solve path is in \code{src/solver/src/solver\_implicit.cpp}; the direct-control nonlinear solve call noted in the email, \code{linalgsolver->solve(ddr, f)}, is indeed in \code{SteadyStateNonLinearSolver::solve()} near line 762 on the inspected master. Exact line numbers can drift after commits, so function names are the stable references.
+
+Current parallelism is mostly solver-internal shared-memory parallelism, not a distributed OAS-level nonlinear solve. OAS builds with OpenMP and exposes a \code{-j} runtime option, but \code{main.cpp} sets the default OpenMP thread count to one when neither \code{-j} nor \code{OMP\_NUM\_THREADS} is supplied. When Pardiso is enabled, the Pardiso wrappers set MKL's thread count from \code{MKL\_NUM\_THREADS}, then \code{OMP\_NUM\_THREADS}, otherwise from \code{mkl\_get\_max\_threads()}. Therefore the production baseline for the large case is a serial nonlinear/load-step loop using a threaded, shared-memory, in-core sparse direct solve inside PardisoLDLT; the comparison baseline for new Krylov work should be both this PardisoLDLT production run and the existing \code{EigenConj} algorithmic baseline.
+
+The strongest conclusion is: replacing Pardiso/CHOLMOD by plain CG is not realistic for TS-N-65. Replacing them by PCG with a problem-aware preconditioner is plausible, but the preconditioner is the project. For Dogbone, incomplete Cholesky PCG is a low-risk first step. For TS-N-65, the most credible route is AMG or domain-decomposition preconditioning, preferably combined with deflation/recycling because OAS solves a sequence of very similar matrices and sometimes two right-hand sides with the same matrix in one nonlinear iteration.
+
+Amended conclusion: a manually designed geometric multigrid hierarchy is probably not the first practical path for the 600k-DOF fracture case unless the input/model pipeline already exposes nested or agglomerated meshes and transfer operators. AMG is more feasible because it can build the hierarchy from the assembled sparse matrix. Hypre/BoomerAMG is a credible target for a production-grade large solve, but it is a larger integration than adding a new Eigen-style solver because hypre expects ParCSR/IJ-style distributed matrices. Deflation based on the last $N$ solution or increment vectors is not a structural blocker for OAS; the current stateful \code{LinAlgSolver} interface can host it. The main required extension is lifecycle information: which solved vectors should enter the recycling space, and when a nonlinear iteration or step is accepted.
+
+\section{Scope and sources}
+
+This report is based on the public OAS repository and its generated documentation, plus the email text supplied by the user. The SharePoint input decks and video were not available locally, so no runtime logs, iteration counts, memory traces, or residual histories were measured. The solve counts below are therefore source-derived formulas and code-path counts, not measured counts for Dogbone or TS-N-65.
+
+Primary source files inspected:
+\begin{itemize}
+  \item \code{src/solver/src/linalg.h}, \code{src/solver/src/linalg.cpp}: solver classes, factory selection, direct-solver wrappers, CG implementation.
+  \item \code{src/solver/src/solver\_implicit.h}, \code{src/solver/src/solver\_implicit.cpp}: implicit static, nonlinear, transient, matrix update, factorization, and solve loops.
+  \item \code{src/solver/src/solver.cpp}, \code{src/solver/src/solver.h}: outer step loop.
+  \item \code{src/solver/src/main.cpp}: command-line thread control and baseline OpenMP behavior.
+  \item \code{CMakeLists.txt}: OpenMP linkage and optional Pardiso/CHOLMOD/SuperLU build switches.
+  \item \code{src/solver/src/solver\_eigenvalue.cpp}: eigenvalue solver preparation; active solver calls are commented in the inspected source.
+\end{itemize}
+
+OAS is documented as a numerical solver mainly for mechanical behavior of solids, also supporting mass transport, heat conduction, Poisson-type scalar problems, coupled multiphysics, and discrete or continuous representations. The documented dependencies and optional backends include Eigen, OpenMP, oneAPI/MKL Pardiso, and SuiteSparse/CHOLMOD. See references \cite{oasrepo,oasdocs,oascmake,oasmain,oaslinalg,eigensparse,eigencg,eigencholmod,eigenpardiso,pardiso}.
+
+\section{Current parallelization, Pardiso usage, and baseline}
+
+\subsection*{Implemented parallelization levels}
+
+The current implementation should be understood as a shared-memory solver-parallel code path. The outer OAS algorithm remains serial at the level relevant for nonlinear mechanics: accepted steps, restart attempts, nonlinear iterations, matrix updates, and load-control decisions proceed in order. Parallel work is delegated to OpenMP-enabled kernels and, most importantly for the large case, to the selected linear-solver library. There is no evidence in the inspected implicit-solver path of a distributed-memory Newton solve, distributed matrix ownership, or a cluster-Pardiso/hypre-style global linear algebra interface.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.24\textwidth} L{0.30\textwidth} Y}
+\toprule
+Layer & What is implemented & Practical meaning \\
+\midrule
+Build-time OpenMP & Top-level CMake requires OpenMP, adds OpenMP compile/link flags, and links the solver target with \code{OpenMP::OpenMP\_CXX}. Optional backends are controlled by switches such as \code{USE\_PARDISO}, \code{USE\_CHOLMOD}, and \code{USE\_SUPERLU}. & OAS is built as a shared-memory executable. OpenMP availability is part of the baseline build, but this alone does not distribute the finite-element problem over MPI ranks. \\
+\addlinespace
+Runtime OpenMP control & \code{main.cpp} parses \code{-j N}, disables dynamic OpenMP thread adjustment via \code{omp\_set\_dynamic(0)}, and then either calls \code{omp\_set\_num\_threads(N)}, respects a user-supplied \code{OMP\_NUM\_THREADS} environment value, or sets one thread by default. & With no \code{-j} and no \code{OMP\_NUM\_THREADS}, the baseline OpenMP setting is one thread. For Eigen CG this is the relevant OAS-level thread control. \\
+\addlinespace
+Pardiso/MKL control & The Pardiso wrappers in \code{linalg.cpp} are compiled only under \code{PARDISO\_FOUND}. The constructors for \code{PardisoLU}, \code{PardisoLDLT}, and \code{PardisoLLT} read \code{MKL\_NUM\_THREADS} first, then \code{OMP\_NUM\_THREADS}, otherwise use \code{mkl\_get\_max\_threads()}, and call \code{mkl\_set\_num\_threads}. & The production large-case path uses thread-parallel MKL Pardiso through Eigen wrappers. For reproducible Pardiso runs, set \code{MKL\_NUM\_THREADS=N} explicitly; \code{-j N} is not a direct Pardiso option. \\
+\addlinespace
+Sparse-direct reuse & OAS creates a \code{LinAlgSolver}, calls \code{analyzePattern(Keff)} once when the solver object is created, and calls \code{factorize(Keff)} whenever the matrix is rebuilt. Pardiso then solves one or more right-hand sides using the current factors. & Parallelism is inside symbolic analysis, numeric factorization, and triangular solves. Reusing symbolic analysis is a major part of the current direct-solver efficiency. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+This matches the OAS documentation: it describes \code{-j} or \code{OMP\_NUM\_THREADS} for OpenMP/Eigen CG usage and recommends setting both \code{MKL\_NUM\_THREADS} and \code{OMP\_NUM\_THREADS} when MKL/Pardiso is used. Intel's oneMKL threading guide also states that MKL-specific controls and function calls are part of the thread-control hierarchy, and OpenMP specifies \code{OMP\_NUM\_THREADS} and \code{omp\_set\_num\_threads} as controls for subsequent OpenMP parallel regions \cite{oasdocs,oasmain,oaslinalg,mklthreads,openmpthreads}.
+
+\subsection*{What Pardiso means in this code}
+
+OAS does not call the low-level Pardiso C interface directly in the inspected source. It uses Eigen's \code{PardisoSupport} classes: \code{PardisoLU}, \code{PardisoLDLT}, and \code{PardisoLLT}. Eigen documents these as sparse direct factorization/solver wrappers around Intel oneMKL Pardiso. OAS exposes them by string-valued \code{solver\_type} choices, so the user's current large-case baseline is best described as:
+\[
+\hbox{fixed OAS nonlinear/step loop} \quad + \quad \hbox{Eigen wrapper} \quad + \quad \hbox{threaded oneMKL Pardiso direct solve.}
+\]
+For the emailed SPD mechanics examples, the most relevant direct baselines are \code{PardisoLDLT} and \code{PardisoLLT}; \code{PardisoLU} remains the general nonsymmetric/indefinite fallback. The email says \code{PardisoLDLT} is the practical production choice, and that is consistent with an SPD or nearly SPD structural-mechanics matrix where LDLT is often more robust to numerical pivots than strict LLT.
+
+\subsection*{Baseline for new CG/AMG/deflation work}
+
+There are two separate baselines and they should not be conflated:
+\begin{itemize}
+  \item \textbf{Production baseline:} \code{PardisoLDLT} on TS-N-65, with explicit \code{MKL\_NUM\_THREADS} and \code{OMP\_NUM\_THREADS}, using the same stiffness-update policy as the target run. Record wall time, peak memory, number of factorizations, number of solves, and thread count. This is the baseline a new preconditioned/deflated Krylov method must beat or approach.
+  \item \textbf{Algorithmic baseline:} existing \code{EigenConj}, which is CG with Eigen's default diagonal/Jacobi preconditioner and a warm start from the previous solution. This is useful for checking correctness and failure modes, but it is not an adequate performance baseline for the 600k-DOF fracture case.
+\end{itemize}
+
+For a fair PCG/AMG comparison, avoid hidden oversubscription. A threaded AMG preconditioner, threaded sparse matrix-vector products, and threaded MKL kernels can all compete for the same cores. The first controlled experiments should therefore use a single shared-memory thread policy per run: for Pardiso, set \code{MKL\_NUM\_THREADS}; for Eigen/AMGCL-style PCG, set \code{OMP\_NUM\_THREADS} or \code{-j}; for hypre/PETSc, decide explicitly whether the experiment is shared-memory, MPI, or hybrid. Moving to hypre's MPI/ParCSR mode would be a structural change beyond the current OAS baseline because OAS presently assembles and solves through an Eigen sparse matrix interface, not distributed row ownership.
+
+\section{What linear systems are solved}
+
+OAS routes the main implicit problems through one abstract interface, \code{LinAlgSolver}. Problem type does not automatically choose the solver; the selected backend comes from \code{solver\_type} in \code{solver.inp}. The same selected solver is then applied to the effective matrix for the current formulation.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.20\textwidth} L{0.32\textwidth} Y}
+\toprule
+Problem family & Effective matrix in source & Meaning and solver implication \\
+\midrule
+Steady/static linear & \code{computeKeff()}: \(K_{\mathrm{eff}}=K\); then constraint transformation. & One linear solve per load/time step in the normal linear path. If \(K_{\mathrm{eff}}\) is SPD, CG/LLT/LDLT/CHOLMOD/Pardiso-LLT/LDLT are applicable. General LU/SuperLU/PardisoLU are for non-SPD or nonsymmetric cases. \\
+\addlinespace
+Steady/static nonlinear mechanics or transport & \code{solve()}: matrix is rebuilt only when the stiffness-update policy calls \code{computeKeff()}. & Newton/secant-style iterations. Direct displacement/load control gives one linear solve per nonlinear iteration. Indirect control gives two solves per nonlinear iteration with the same matrix and different right-hand sides. \\
+\addlinespace
+Transient first-order transport & \code{computeKeff()}: \(K_{\mathrm{eff}}=\frac{1-\alpha_m}{\Delta t\,\gamma}C+(1-\alpha_f)K\). & Heat/mass/transport-type systems. With symmetric diffusion/conduction and positive capacity, matrices are usually SPD. The mass/capacity term can improve conditioning for small \(\Delta t\). \\
+\addlinespace
+Transient mechanics & \code{computeKeff()}: \(K_{\mathrm{eff}}=(1-\alpha_f)K + \frac{(1-\alpha_f)\gamma}{\Delta t\,\beta}C + \frac{1-\alpha_m}{\Delta t^2\beta}M\). & Second-order dynamics. With symmetric positive mass, damping, and stiffness and standard constraints, \(K_{\mathrm{eff}}\) is SPD. For nonlinear dynamics the same nonlinear loop and solve counts apply. \\
+\addlinespace
+Eigenvalue solver & \code{solver\_eigenvalue.cpp}: prepares \(K\) and \(M\). & The inspected source has calls to \code{LinalgEigenSpectraSolver} / \code{LinalgEigenSpectraGENSolver} commented out, so this is not an active main linear-solve path in the inspected revision. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Available solvers and the type of matrix they target}
+
+\small
+\begin{longtable}{L{0.18\textwidth} L{0.25\textwidth} L{0.18\textwidth} L{0.29\textwidth}}
+\toprule
+\code{solver\_type} & OAS/Eigen object & Matrix class & Practical note \\
+\midrule
+\endfirsthead
+\toprule
+\code{solver\_type} & OAS/Eigen object & Matrix class & Practical note \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\code{EigenConj} & \code{ConjGradSolver}; Eigen CG + diagonal preconditioner & SPD/self-adjoint & Default symbolic solver in \code{SteadyStateLinearSolver}. It warm-starts from the previous solution but resets the stored guess on \code{factorize()}. Good baseline, not enough for large ill-conditioned fracture systems. \\
+\code{EigenLDLT} & Eigen simplicial LDLT & Symmetric; typically SPD or mildly indefinite numerically & Sparse direct LDLT. Less memory than dense factorization but still not viable for the largest case if fill-in is large. \\
+\code{EigenLLT} & Eigen simplicial LLT & SPD & Sparse direct Cholesky. Requires positive definiteness. \\
+\code{EigenLU}, \code{EigenSparseLU} & Eigen SparseLU + COLAMD ordering & General square, including nonsymmetric & Fallback for nonsymmetric systems; generally more memory-intensive than SPD Cholesky. \\
+\code{SuperLU} & Eigen SuperLU wrapper, if enabled & General square, including nonsymmetric & External direct LU path. \\
+\code{PardisoLU} & Eigen PardisoLU wrapper, if enabled & General square & Parallel direct LU through Intel oneMKL Pardiso. \\
+\code{PardisoLDLT} & Eigen PardisoLDLT wrapper, if enabled & Symmetric systems; used in practice for OAS mechanics & The email says this is the most commonly used practical option. It is robust and parallel, with reusable symbolic analysis when the sparsity pattern is fixed. \\
+\code{PardisoLLT} & Eigen PardisoLLT wrapper, if enabled & SPD & Parallel direct Cholesky through Pardiso. \\
+\code{CholmodLLT} & CHOLMOD simplicial LLT wrapper & SPD & Sparse Cholesky through SuiteSparse/CHOLMOD. \\
+\code{CholmodLDLT} & CHOLMOD simplicial LDLT; METIS ordering in code & Symmetric/SPD-type systems & The inspected code configures CHOLMOD to use METIS ordering and disables GPU usage. \\
+\makecell[l]{\code{Cholmod}\\\code{SupernodalLLT}} & CHOLMOD supernodal LLT wrapper & SPD; good for 3D FEM or high-order 2D FEM & The email identifies this and Pardiso as fastest/memory-efficient direct options. Eigen also positions supernodal CHOLMOD as appropriate for 3D FEM or high-order 2D FEM. \\
+Utility, not main factory & \code{LinalgNonSymmetricSolver}; Eigen BiCGSTAB & General square nonsymmetric & Present in \code{linalg.h/.cpp}, but not the main implicit \code{solver\_type} factory path seen in \code{factorizeLinearSystem()}. Useful reference if nonsymmetric iterative solves are needed. \\
+\end{longtable}
+\normalsize
+
+\section{Where the solve and factorization happen}
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.23\textwidth} L{0.20\textwidth} Y}
+\toprule
+Source location & Function or object & Role \\
+\midrule
+\code{solver.cpp} & \code{Model::solve()} & Outer loop: repeatedly calls \code{solver->solveStep()} until termination. \\
+\code{solver.h} / \code{solver.cpp} & \code{solveStep()} & Calls \code{runBeforeEachStep()}, \code{solve()}, \code{runAfterEachStep()}. Thus each accepted step enters one solver-specific \code{solve()} routine. \\
+\code{solver\_implicit.cpp} & \code{readFromFile()} & In \code{SteadyStateLinearSolver}: reads \code{solver\_type}, CG tolerances, stiffness-update controls, and other settings from \code{solver.inp}. \\
+\code{solver\_implicit.cpp} & prepare/init & Prepares stiffness matrix and enforces an initial update/factorization. \\
+\code{solver\_implicit.cpp} & \code{computeKeff()} & Builds/transforms \code{Keff} and calls \code{factorizeLinearSystem()}. \\
+\code{solver\_implicit.cpp} & factorize & Creates the selected \code{LinAlgSolver} object if absent, calls \code{analyzePattern(Keff)} once, then calls \code{factorize(Keff)} on every matrix rebuild. \\
+\code{solver\_implicit.cpp} & Linear \code{solve()} & Forms reduced residual/right-hand side and calls \code{linalgsolver->solve(ddr,f)} once. \\
+\code{solver\_implicit.cpp} & Nonlinear \code{solve()} & Inside the iteration loop, matrix updates may call \code{computeKeff()}; then direct control solves once per iteration, while indirect control solves twice per iteration. The email's line-762 call is in this direct-control branch. \\
+\code{solver\_implicit.cpp} & update matrices & Implements the \code{stiffness\_matrix\_*\_update} policy and chooses the stiffness type, e.g. elastic, secant, tangent/consistent. \\
+\code{linalg.h/.cpp} & \code{LinAlgSolver} subclasses & Implements solver-specific \code{analyzePattern}, \code{factorize}, and \code{solve}. \\
+\code{linalg.cpp} & stand-alone wrapper & Separate utility wrapper: create selected solver, analyze, factorize, solve. Not the main nonlinear implicit loop but uses the same solver names. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The most important reuse pattern is that OAS calls \code{analyzePattern()} only when a solver object is first created. Thereafter it calls \code{factorize()} when \code{Keff} is rebuilt. This is a standard sparse-direct pattern: symbolic analysis is reused when the nonzero pattern is unchanged and only numeric values change. It also means the code implicitly assumes a fixed sparsity graph for the lifetime of the solver object. That assumption is likely correct for damage/crack evolution represented by changing element/material values on a fixed mesh, but it should be checked if remeshing, contact activation, constraint topology changes, or new couplings can introduce new nonzeros.
+
+\section{How many linear solves occur}
+
+The exact count for a run requires either runtime logs or counters, because nonlinear iteration counts and restarts are data-dependent. The source gives the following deterministic structure.
+
+Let \(N_s\) be the number of accepted solver steps. For a nonlinear step \(s\), let \(A_s\) be the number of attempts including restart attempts, and let \(I_{s,a}\) be the number of nonlinear iterations in attempt \(a\). Let \(R\) be the number of explicit rebuild/reset events that recreate or refactorize matrices.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.25\textwidth} L{0.28\textwidth} Y}
+\toprule
+Case & Number of calls to \code{linalgsolver->solve} & Factorization count \\
+\midrule
+Steady/transient linear, normal path & \(N_s\). One solve per step. & Initial factorization during preparation, plus explicit rebuilds/resets. The normal linear \code{solve()} path does not itself refactor each step. \\
+\addlinespace
+Nonlinear, direct control & \(\displaystyle \sum_{s=1}^{N_s}\sum_{a=1}^{A_s} I_{s,a}\). One solve per nonlinear iteration. & Initial factorization plus every accepted matrix update triggered by \code{updateSystemMatrices()}; restart attempts repeat iteration solves and may trigger additional factorizations. \\
+\addlinespace
+Nonlinear, indirect displacement/load control & \(\displaystyle 2\sum_{s=1}^{N_s}\sum_{a=1}^{A_s} I_{s,a}\). Two solves per iteration: one for the previous residual/load state and one for the added-load direction. & Same matrix-update/factorization count as direct control, but two right-hand sides can use the same factorization/preconditioner inside one iteration. \\
+\addlinespace
+Stand-alone utility solve & One solve per call to \code{StandAloneLinalgSolver}. & One analyze/factorize cycle per utility call. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+For direct solvers, multiple right-hand sides with the same matrix are cheap after factorization. For iterative solvers, repeated right-hand sides still require iterations, but the same preconditioner can be reused. This matters in the indirect-control branch, where two solves use the same \code{Keff} in immediate succession.
+
+\textbf{Instrumentation recommended.} Add counters to \code{LinAlgSolver} or to the implicit solver class: \code{nAnalyzePattern}, \code{nFactorize}, \code{nSolve}, total CG iterations, last relative residual, and failure count. The existing code prints timing in some debug macros, but it does not provide a compact accounting of solver calls and iteration counts.
+
+\section{Matrix update policy and matrix similarity}
+
+The stiffness update policy is implemented in \code{updateSystemMatrices(...)} in \code{SteadyStateLinearSolver} and controlled by input keys including:
+\begin{itemize}
+  \item \code{stiffness\_matrix\_step\_update}
+  \item \code{stiffness\_matrix\_iter\_update}
+  \item \code{stiffness\_matrix\_cumul\_iter\_update} (present in the source, not mentioned in the email excerpt)
+  \item \code{stiffness\_matrix\_type} and \code{stiffness\_matrix\_type\_first\_iter}
+\end{itemize}
+
+The email examples are consistent with the source, with one implementation nuance: when an iteration-based update interval is positive, iteration zero satisfies \(0 \bmod m = 0\). Because the nonlinear loop calls the update test when \code{step > 0 || it > 0}, a positive iteration update may also update at iteration zero of later steps, not only after every \(m\) completed iterations.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.25\textwidth} L{0.26\textwidth} Y}
+\toprule
+Configuration & Source behavior & Matrix-similarity consequence \\
+\midrule
+\code{iter=-1}, \code{step=-1} & No scheduled stiffness update after initial/enforced setup. & Static matrix or fixed effective matrix; strongest reuse. Direct symbolic/numeric factors or iterative preconditioner can be reused for many solves unless other rebuilds occur. \\
+\code{iter=-1}, \code{step=3} & Update at iteration zero of steps whose step number is a multiple of 3. & Same sparsity pattern, different values at selected steps. Good symbolic reuse; preconditioner may be rebuilt only at updates. \\
+\code{iter=5}, \code{step=-1} & Update when \code{iteration \% 5 == 0} in calls that pass the guard condition. & Matrix values change within nonlinear solve attempts. Pattern should remain fixed for standard fixed-mesh damage/fracture; conditioning can change sharply near crack growth. \\
+\code{iter=0} & Update every nonlinear iteration after the guard condition. & Most accurate tangent/secant updates but least reuse. Direct solvers pay repeated numeric factorization; iterative solvers pay repeated preconditioner setup. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Similarity by graph.} For a fixed finite-element mesh and fixed constraint topology, the nonzero pattern of \code{Keff} should be essentially identical over time. This is exactly the condition that allows reuse of symbolic factorization in Pardiso/CHOLMOD and justifies OAS's one-time \code{analyzePattern()} call.
+
+\textbf{Similarity by values.} Matrix entries are identical when no update occurs. Under scheduled updates, most changes are value changes caused by constitutive stiffness, damage/cracking, time-step scalars, mass/capacity/damping terms, or boundary transformations. In fracture, local stiffness degradation can create large condition-number changes even when the sparsity pattern is unchanged. That is the main reason CG with a diagonal preconditioner can be poor despite SPD structure.
+
+\textbf{Audit metrics.} For a few representative updates, export \(A_k=K_{\mathrm{eff},k}\) and compute: pattern equality via hashes of \code{outerIndexPtr()} and \code{innerIndexPtr()}, relative value change \(\lVert A_k-A_{k-1}\rVert_F/\lVert A_{k-1}\rVert_F\), diagonal scaling range, estimated extreme eigenvalues, and CG iteration counts under identical tolerance. This will quantify whether deflation/recycling is likely to pay off.
+
+\section{Feasibility of replacing direct solvers by CG}
+
+\subsection*{Mathematical feasibility}
+
+For the two emailed benchmark examples, CG is valid because the matrices are stated to be SPD. For other OAS problems, the following checks are mandatory:
+\begin{itemize}
+  \item CG requires a symmetric/self-adjoint positive definite effective matrix after all constraint transformations.
+  \item If Lagrange multipliers or saddle-point formulations are introduced, the matrix may be symmetric indefinite; then use MINRES, LDLT, or a block method, not CG.
+  \item If coupled multiphysics or transport/advection creates nonsymmetry, use GMRES/BiCGSTAB with ILU/AMG/block preconditioning, or use direct LU/PardisoLU/SuperLU.
+\end{itemize}
+
+\subsection*{Software feasibility}
+
+The software change is localized. The existing architecture already has \code{analyzePattern()}, \code{factorize()}, and \code{solve()} hooks. For an iterative method, \code{factorize()} is naturally the place to build or update the preconditioner. Solver selection is string-based, so new options can be added without disturbing existing direct solvers.
+
+Minimum change path:
+\begin{enumerate}
+  \item Add one or more new subclasses in \code{linalg.h/.cpp}, e.g. \code{EigenConjIC}, \code{EigenConjAMG}, \code{DeflatedPCG}.
+  \item Add dispatch cases in \code{SteadyStateLinearSolver::factorizeLinearSystem()} and \code{StandAloneLinalgSolver}.
+  \item Preserve existing \code{EigenConj} as the Jacobi baseline for comparison.
+  \item Record per-solve iteration count and residual. A CG implementation that only returns \(x\) without iteration diagnostics is not sufficient for this project.
+  \item Add a pattern-change guard. If the nonzero graph changes, rerun \code{analyzePattern()} or recreate the solver object.
+\end{enumerate}
+
+\subsection*{Practical feasibility by example}
+
+Dogbone at about 6,600 DOF is small enough that Eigen direct solvers, CHOLMOD, Pardiso, and PCG variants can all be tested quickly. It is the right debugging target for implementation, residual checking, pattern hashing, and preconditioner comparison.
+
+TS-N-65 at about 600,000 DOF is the real test. The email says Pardiso is currently the only usable option and consumes about 20 GB RAM over days. A CG swap can reduce memory dramatically only if the iteration count is controlled. Plain Jacobi PCG is unlikely to be competitive. Incomplete Cholesky may or may not be enough. AMG, Schwarz/domain decomposition, and deflated/recycled PCG are the credible candidates.
+
+
+\section{Amendment: multigrid hierarchy and AMG for TS-N-65}
+
+The TS-N-65 case is described as an SPD structural/fracture problem with roughly $6\times 10^5$ unknowns. This size is large enough that direct sparse factorization can be dominated by fill-in memory, but it is still small enough that a well-configured PCG+AMG run should be a realistic test on a workstation or shared-memory node if the iteration count remains controlled. The distinction is important: multigrid is attractive, but the feasible implementation route is almost certainly algebraic multigrid (AMG), not a hand-built geometric grid hierarchy.
+
+\subsection*{Geometric hierarchy verdict}
+
+A true geometric multigrid implementation would need, for each level $\ell$, a coarse model or coarse space, prolongation $P_\ell$, restriction $R_\ell$ (usually $P_\ell^T$ for SPD problems), a coarse operator $A_{\ell-1}=P_\ell^T A_\ell P_\ell$ or a reliable coarse rediscretization, transfer of Dirichlet/constraint handling, and a consistent treatment of damage/crack/internal variables. The inspected OAS linear-solver path exposes an assembled sparse effective matrix \code{Keff} and a solver object; it does not expose a multilevel mesh or inter-level transfer operators in the solver interface. Therefore, a geometric hierarchy is not a local change in \code{linalg.cpp}; it would touch mesh/model data structures, assembly, constraints, and nonlinear history variables.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.22\textwidth} L{0.28\textwidth} L{0.21\textwidth} Y}
+\toprule
+Hierarchy option & Data required & Code impact & Recommendation for TS-N-65 \\
+\midrule
+Nested geometric multigrid & Existing nested meshes or refinement tree; node/element maps between levels; prolongation/restriction; damage/crack transfer. & High; affects mesh, assembly, constraints, and nonlinear state. & Only pursue if TS-N-65 input generation already contains nested geometry. Otherwise it is too large as the first solver experiment. \\
+Agglomerated geometric/algebraic coarse mesh & Graph/element aggregation, coarse DOF construction, coarse Galerkin operators. & Medium-high to high; less geometry than nested MG but still requires coarse-space design. & Possible research direction, especially if aggregates follow subdomains/crack regions, but not a minimal OAS swap. \\
+Pure AMG hierarchy & Only sparse matrix plus optional block/near-nullspace metadata. & Medium for shared-memory libraries; medium-high for hypre with MPI/ParCSR. & Best first multigrid route. It matches the current assembled-matrix architecture and avoids building coarse meshes manually. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{AMG feasibility}
+
+AMG is feasible in principle because it constructs coarse levels from the matrix graph and coefficients rather than from an explicit nested mesh. For scalar OAS problems such as Poisson, heat conduction, and diffusion-like mass transport, the near-nullspace is usually the constant vector, so black-box AMG is often a reasonable starting point. For vector elasticity, black-box scalar AMG may perform poorly because the near-nullspace contains rigid-body translations and rotations, not only constants. Hypre's BoomerAMG documentation explicitly supports systems AMG through function/DOF metadata and nodal options, and it can incorporate near-nullspace vectors such as rigid-body modes for linear elasticity. PETSc's GAMG documentation similarly requires setting the matrix block size and near-nullspace for vector-valued elasticity, including rotational rigid-body modes for optimal performance \cite{hypreboomer,petscksp,petscnear,petscgamg}.
+
+For TS-N-65, the credible AMG configuration is therefore not just ``call AMG''. It is:
+\begin{itemize}
+  \item preserve or reconstruct node-major DOF grouping, e.g. $(u_x,u_y,u_z)$ per node for 3D elasticity;
+  \item provide the number of displacement components per node and, if using hypre, nodal/system information such as functions or DOF function labels;
+  \item build near-nullspace vectors: three translations in 3D plus three rotations where coordinates and boundary conditions make them meaningful; in 2D, two translations plus one rotation;
+  \item use AMG as a preconditioner inside PCG, not necessarily as a standalone solver;
+  \item rebuild AMG only when \code{Keff} is updated or when the matrix graph changes; reuse it across repeated right-hand sides and repeated nonlinear iterations with the same matrix.
+\end{itemize}
+
+\subsection*{Hypre versus lower-friction prototypes}
+
+Hypre/BoomerAMG is a strong candidate for the final large-case solver, but it is not the smallest code modification. Hypre's IJ interface expects distributed row blocks and produces a ParCSR matrix object; the documentation describes row-wise ownership by MPI processes and conversion through \code{HYPRE\_IJMatrixGetObject()} to a ParCSR matrix \cite{hypreij,hypreparcsr}. OAS currently uses Eigen sparse matrices in the inspected linear-solver path. If OAS remains single-process/shared-memory, hypre can still be tested on one MPI rank, but that does not exploit hypre's distributed-memory strength. A production hypre route should eventually assemble or convert into distributed ParCSR row blocks.
+
+AMGCL is a lower-friction first prototype because it is a C++ AMG library designed for large sparse systems, can operate as a Krylov preconditioner, and has an adapter for Eigen sparse matrices, although the Eigen matrix must be row-major for that adapter \cite{amgcl,amgcladapter}. Since OAS defines \code{CoordinateIndexedSparseMatrix} as an Eigen column-major sparse matrix, an AMGCL prototype would either convert \code{Keff} to row-major once per matrix update or pass explicit CSR arrays. This is still a smaller structural change than introducing MPI/ParCSR assembly.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.20\textwidth} L{0.22\textwidth} L{0.25\textwidth} Y}
+\toprule
+AMG path & Integration effort & Strength & OAS-specific risk \\
+\midrule
+AMGCL + Eigen/CSR & Medium. New \code{LinAlgSolver} subclass plus row-major/CSR conversion. & Fastest way to test PCG+AMG in the current shared-memory architecture. & May be less robust than a tuned hypre/PETSc route for difficult elasticity/fracture; must validate. \\
+Hypre BoomerAMG, one MPI rank & Medium-high. Build/link hypre, convert matrix/vector to IJ/ParCSR. & Tests the same AMG package that could later scale out. & Still serial from OAS's perspective; setup overhead and data conversion may dominate on smaller cases. \\
+Hypre BoomerAMG, distributed & High. Requires row partitioning, vector ownership, likely assembly/distribution changes. & Best long-term route for the 600k+ case and larger future cases. & Largest architectural change; needs MPI-aware matrix assembly or robust repartition/conversion. \\
+PETSc KSP/GAMG/hypre through PETSc & High. PETSc matrix/vector ownership and KSP integration. & Mature solver stack, easy switching between GAMG, hypre, fieldsplit, diagnostics. & More intrusive than a single hypre wrapper; may be overkill unless broader solver infrastructure is desired. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Practical verdict.} For TS-N-65, AMG is feasible and should be prioritized over geometric multigrid. The safest staged path is: first test AMGCL or another shared-memory AMG wrapper on exported \code{Keff}; then implement it as an OAS \code{LinAlgSolver}; then decide whether hypre/PETSc is needed for distributed memory or better robustness. For elasticity, collect node coordinates and DOF-block metadata early, because near-nullspace information is often the difference between merely running AMG and obtaining scalable convergence.
+
+\section{Recommended preconditioners}
+
+\begin{longtable}{L{0.22\textwidth} L{0.16\textwidth} L{0.22\textwidth} L{0.30\textwidth}}
+\toprule
+Preconditioner & Effort & Best fit & Assessment \\
+\midrule
+\endfirsthead
+\toprule
+Preconditioner & Effort & Best fit & Assessment \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Diagonal/Jacobi & Already implemented & Baseline only; mildly scaled SPD systems & Current \code{EigenConj}. Cheap but too weak for ill-conditioned fracture mechanics. Keep as reference, not as final solver. \\
+Incomplete Cholesky, IC(0)/ICT/MIC & Low to medium & Dogbone; medium SPD mechanics/transport; first serious PCG test & Eigen has \code{IncompleteCholesky}. Add AMD/METIS ordering if available, drop/shift controls, and residual failure handling. Risk: breakdown or stagnation when damage creates near-singular modes or severe contrast. \\
+AMG, preferably smoothed aggregation & Medium to high & Large SPD scalar diffusion, elasticity, and transient effective matrices & Most promising for TS-N-65. For elasticity, provide near-nullspace vectors: translations and rotations per connected component where appropriate. Candidate libraries: AMGCL, hypre/BoomerAMG, PETSc/GAMG. Integration is larger but payoff is highest. \\
+Block Jacobi / additive Schwarz with local IC or Cholesky & Medium & Threaded shared-memory mechanics; fixed mesh partitioning & Natural for large finite-element matrices. Can be combined with a coarse/deflation space. Less effective without a global coarse correction. \\
+Deflation or Krylov recycling + PCG & Medium to high & Sequences of similar matrices; crack growth; indirect-control two-RHS iterations & Highly relevant here. Use a coarse subspace from rigid-body/low-energy modes, previous Krylov/eigenvectors, aggregate indicators, or crack-localized modes. Best used with IC/AMG/Schwarz, not alone. \\
+Exact/partial direct factorization as preconditioner & Medium & Subdomain solves or coarse solves & A full Pardiso/CHOLMOD factorization as a preconditioner defeats the memory objective, but local or coarse exact solves are valuable inside Schwarz/deflation. \\
+ILU/ILUT with BiCGSTAB or GMRES & Low to medium & Nonsymmetric or non-SPD OAS problems & Not CG. Use when symmetry or positive definiteness is lost. Eigen already exposes BiCGSTAB utility code in OAS. \\
+Block/field-split Schur preconditioning & High & Coupled multiphysics or saddle-point systems & Needed if the effective matrix is not a single SPD block. Use MINRES/GMRES depending on symmetry. \\
+\end{longtable}
+
+For the emailed SPD fracture problems, the recommended test ladder is:
+\begin{enumerate}
+  \item \textbf{Baseline:} current \code{EigenConj} with Jacobi, but instrument iterations and residuals.
+  \item \textbf{Low-effort improvement:} \code{EigenConjIC} with incomplete Cholesky and robust shifts.
+  \item \textbf{Large-case target:} PCG with AMG or Schwarz+coarse correction.
+  \item \textbf{Research target:} deflated/recycled PCG on top of AMG/IC/Schwarz, exploiting fixed sparsity and slowly changing matrices.
+\end{enumerate}
+
+
+\section{Amendment: history-based deflation from the last $N$ solutions}
+
+The source structure is favorable for deflation/recycling because:
+\begin{itemize}
+  \item the sparsity pattern is normally fixed over many steps and iterations;
+  \item matrix values often change gradually, except near crack-growth events;
+  \item the nonlinear indirect-control branch solves two right-hand sides using the same matrix in one iteration;
+  \item low-energy and near-nullspace components are precisely what slow CG in mechanics.
+\end{itemize}
+
+\subsection*{Is last-$N$ solution deflation structurally hard?}
+
+No: adding a deflated PCG solver based on the last $N$ solution-like vectors is not a fundamental structural problem for the current codebase. The existing \code{LinAlgSolver} interface is already stateful and has the right phases: \code{analyzePattern(A)}, \code{factorize(A)}, and \code{solve(x,b)}. A new subclass can store a sliding basis $Z$, build the small coarse matrix $E=Z^T A Z$ during \code{factorize(A)}, and apply a deflated/two-level preconditioner during \code{solve(x,b)}.
+
+The part that does require care is not the algebra but the lifecycle semantics. A vector obtained from every call to \code{solve()} is not automatically a good recycling vector. In OAS nonlinear mechanics, the vector at \code{linalgsolver->solve(ddr,f)} may be a Newton correction, a residual-control direction, a load-direction vector in indirect control, or a vector from a nonlinear attempt that later fails or restarts. These vectors should not all be mixed blindly. The cleaner design is to add minimal context or callbacks so the nonlinear solver can tell the linear solver which vectors are accepted and what role they played.
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabularx}{\textwidth}{L{0.24\textwidth} L{0.30\textwidth} Y}
+\toprule
+Implementation level & Required changes & Assessment \\
+\midrule
+Prototype inside \code{solve()} only & Store each returned \code{x} or \code{ddr}; keep last $N$; rebuild $E$ when \code{factorize(A)} is called. & Smallest change; useful for Dogbone experiments. Risk: history pollution from rejected nonlinear attempts and from semantically different right-hand sides. \\
+Context-aware deflation & Add a small solve context: step, nonlinear iteration, matrix version, RHS role; update history only after accepted/converged vectors. & Recommended production design. Still localized: \code{linalg.h/.cpp} plus a few calls in \code{solver\_implicit.cpp}. \\
+Deflation + AMG/hypre & Deflated PCG wraps an AMG preconditioner; history basis plus AMG setup are both maintained across matrix versions. & Numerically strongest for TS-N-65, but code effort is dominated by AMG/hypre integration rather than by the deflation basis itself. \\
+Deflation + distributed hypre/PETSc & Basis vectors, coarse matrix, dot products, and projections become distributed. & Feasible but higher effort. Needs MPI reductions for $Z^T r$ and distributed storage for $Z$ and $AZ$. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection*{What vectors should be used?}
+
+Using the last $N$ full displacement solutions $u_k$ directly is possible but often suboptimal because the vectors can be nearly collinear along a monotone loading path. Better candidate columns for $Z$ are:
+\begin{itemize}
+  \item accepted displacement increments $\Delta u_k=u_k-u_{k-1}$;
+  \item accepted Newton corrections $\delta u$ from slow linear solves;
+  \item load-direction vectors from indirect control, stored in a separate class or with lower priority;
+  \item approximate low modes extracted from previous Krylov residuals;
+  \item rigid-body or near-nullspace modes for elasticity, if node coordinates and DOF components are available;
+  \item subdomain/aggregate indicator vectors, especially when cracks nearly disconnect parts of the body.
+\end{itemize}
+
+A robust history policy is: keep $N=10$--$30$ candidate vectors, normalize them, remove near-linear dependencies by modified Gram-Schmidt or small SVD/QR, and drop old vectors after a major stiffness change or crack event if they no longer reduce iterations. For a 600k-DOF system, one double-precision vector costs
+\[
+600000\cdot 8\ \mathrm{bytes}=4.58\ \mathrm{MiB}.
+\]
+Storing both $Z$ and $AZ$ costs about $9.16N$ MiB. Thus $N=20$ costs about $183$ MiB for $Z$ and $AZ$, which is modest compared with a reported direct-solver memory footprint around 20 GB, but it is large enough that the basis should not grow without bound.
+
+\subsection*{Suggested deflated PCG operator}
+
+Let $A$ be the current SPD \code{Keff}, let $M^{-1}$ be a base preconditioner such as IC, AMG, or Schwarz, and let $Z\in\mathbb{R}^{n\times m}$ be the recycled basis. Define
+\[
+E = Z^T A Z.
+\]
+If $Z$ has independent columns and $A$ is SPD, then $E$ is a small SPD dense matrix and can be solved by dense Cholesky. A symmetry-preserving two-level preconditioner is the balanced form
+\[
+M_{\mathrm{bal}}^{-1}
+= \left(I-ZE^{-1}Z^T A\right)M^{-1}\left(I-AZE^{-1}Z^T\right)+ZE^{-1}Z^T.
+\]
+This is the preferred form for PCG because it maintains symmetry when the base preconditioner is SPD. Operationally, each preconditioner application requires a base-preconditioner solve plus a few dense-vector products involving $Z$, $AZ$, and $E^{-1}$. The setup after a matrix update requires $m$ sparse matrix-vector products to compute $AZ$ and one dense $m\times m$ factorization of $E$; for $m\leq 30$, the dense factorization is negligible.
+
+\subsection*{Where this fits in OAS}
+
+The natural implementation location is a new solver class in \code{linalg.h/.cpp}, for example \code{DeflatedPCGSolver}. It should not replace the current \code{EigenConj}; it should be an additional \code{solver\_type} value. A good minimal interface is:
+\begin{itemize}
+  \item \code{analyzePattern(A)}: cache graph hash, allocate row-major/CSR structure if a custom PCG loop is used;
+  \item \code{factorize(A)}: build/update the base preconditioner; compute $AZ$ and $E=Z^TAZ$ for the current matrix; factor $E$;
+  \item \code{solve(x,b)}: run PCG with the balanced two-level preconditioner; record iterations and residual;
+  \item \code{acceptVector(v, role)} or equivalent: add an accepted vector to the history, orthogonalize/compress, and mark the coarse basis dirty.
+\end{itemize}
+
+If the public \code{LinAlgSolver} interface should stay unchanged, \code{DeflatedPCGSolver::solve()} can update history internally from the returned solution. That is acceptable for a first Dogbone test. For TS-N-65, context-aware history is preferable, especially because the indirect-control branch has two solves per nonlinear iteration with the same matrix but different meanings. Without RHS labeling, the second solve can accidentally seed the next first solve with a poor history component.
+
+\subsection*{Failure modes and safeguards}
+
+Deflation can hurt if the basis is stale, rank deficient, or dominated by a few loading vectors. The implementation should therefore include:
+\begin{itemize}
+  \item rank detection for $E$; drop vectors if $E$ is ill-conditioned;
+  \item a maximum basis size and age limit;
+  \item iteration-count based acceptance: keep vectors from solves that were slow or informative, not every cheap solve;
+  \item matrix-change based flushing: if $\lVert A_k-A_{k-1}\rVert_F/\lVert A_{k-1}\rVert_F$ or diagonal contrast changes sharply, compress or reset the basis;
+  \item fallback to the base preconditioner or Pardiso/CHOLMOD if deflated PCG stagnates.
+\end{itemize}
+
+\textbf{Size of the code change.} Deflation based on last-$N$ vectors is a medium-sized solver extension, not a rewrite. It mainly touches \code{linalg.h/.cpp}, the solver factory selection in \code{factorizeLinearSystem()}, and optionally a few calls in \code{solver\_implicit.cpp} to notify accepted vectors and RHS roles. By contrast, a full geometric multigrid hierarchy is a high-impact model/mesh/assembly project, and a fully distributed hypre route is a high-impact linear-algebra infrastructure project.
+
+\section{Code risks and specific implementation notes}
+
+\begin{itemize}
+  \item \textbf{Single initial guess in current CG.} \code{ConjGradSolver} stores one \code{initialGuess}. After each \code{solve()}, it sets \code{initialGuess=x}. In the indirect-control branch, the second RHS solve may start from the first RHS solution, which is not necessarily a meaningful guess for the load-direction solve. A better interface would allow the caller to pass a per-RHS guess or reset the guess between semantically different RHS solves.
+  \item \textbf{Pattern-change assumption.} \code{analyzePattern()} is called only once per solver object. This is efficient but requires fixed sparsity. Add a cheap pattern hash and rerun analysis if the graph changes.
+  \item \textbf{Transient time-step dependence.} Transient \code{Keff} depends on \(\Delta t\). If adaptive time stepping changes \(\Delta t\), the matrix/preconditioner is stale unless \code{computeKeff()} is called. This should be explicitly audited when combining adaptive stepping with iterative preconditioners.
+  \item \textbf{Failure handling.} The current CG exits if the maximum iteration count is reached. For production tests, prefer returning a solver status so OAS can fall back to direct solve, rebuild a stronger preconditioner, regularize, or cut the time step.
+  \item \textbf{Tolerance.} The source uses input \code{conj\_grad\_precision} and \code{conj\_grad\_relative\_maxit}; defaults seen in code are stringent in some constructors. Nonlinear mechanics often benefits from forcing terms/inexact Newton tolerances rather than always solving to a fixed very small relative residual.
+\end{itemize}
+
+\section{Compact action plan}
+
+\begin{enumerate}
+  \item Instrument current OAS: counts for analyze/factorize/solve, CG iterations, residuals, matrix size, nonzeros, and pattern hash.
+  \item Run Dogbone with \code{EigenConj}, \code{EigenLLT/LDLT}, \code{CholmodSupernodalLLT}, and \code{PardisoLDLT}. Export a few \code{Keff} matrices and quantify pattern/value similarity.
+  \item Add \code{EigenConjIC}. Test on Dogbone first. Compare total time, iterations, and residuals against direct solvers.
+  \item For TS-N-65, do not expect Jacobi or simple IC to be final. Prototype shared-memory AMG first (AMGCL or equivalent), then hypre/PETSc if distributed memory or stronger elasticity AMG is needed. Add deflation/recycling after the base AMG/Schwarz preconditioner is stable.
+  \item Add fallback logic: if PCG stagnates or preconditioner construction fails, switch to PardisoLDLT/CHOLMOD for that step and log the failure reason. For AMG, log setup time, operator complexity, grid levels, smoother, and final iteration count.
+  \item Only after stable preconditioned runs, test deflated/recycled PCG on matrix sequences using the same update policy as the target production run. Use $N=10$--$30$ basis vectors initially, preferably accepted increments/corrections rather than raw full displacement histories.
+\end{enumerate}
+
+\section*{Bottom line}
+
+The OAS source is already structured around a reusable linear solver interface, so adding better PCG variants is feasible and localized. The main challenge is numerical, not architectural. The current production parallelization is shared-memory and solver-internal: the nonlinear OAS loop is serial, while Pardiso supplies the parallel direct solve. For the SPD examples in the email, CG is allowed, but the current diagonal-preconditioned \code{EigenConj} is too weak. For TS-N-65, a hand-built geometric multigrid hierarchy is unlikely to be the efficient first step unless nested meshes already exist. AMG is feasible and should be the main large-case preconditioning path. History-based deflation from the last $N$ accepted increments/solutions is a manageable medium-sized solver extension and is memory-cheap at 600k DOF. The matrix sequence in OAS is well suited to such methods because sparsity is usually fixed and values evolve over steps/iterations, but the implementation must verify pattern stability, manage accepted-vector history carefully, collect iteration diagnostics, and report thread counts explicitly.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{oasrepo} OAS public repository, GitLab. \url{https://gitlab.com/kelidas/OAS}. Inspected source snapshot: master commit \code{3ce5a809c5cdc19bd057e96efac2e47bc167bd68}, committed 2026-04-27.
+\bibitem{oasdocs} OAS generated documentation. \url{https://kelidas.gitlab.io/OAS-site/}. Generated 2026-04-27 according to the inspected documentation page; includes OpenMP/MKL runtime notes and optional Pardiso/CHOLMOD build switches.
+\bibitem{oascmake} OAS top-level \code{CMakeLists.txt}, GitLab raw source. \url{https://gitlab.com/kelidas/OAS/-/raw/master/CMakeLists.txt}.
+\bibitem{oasmain} OAS \code{src/solver/src/main.cpp}, GitLab raw source. \url{https://gitlab.com/kelidas/OAS/-/raw/master/src/solver/src/main.cpp}.
+\bibitem{oaslinalg} OAS \code{src/solver/src/linalg.cpp}, GitLab raw source. \url{https://gitlab.com/kelidas/OAS/-/raw/master/src/solver/src/linalg.cpp}.
+\bibitem{eigensparse} Eigen documentation: Sparse linear algebra and decompositions. \url{https://eigen.tuxfamily.org/dox/group__TopicSparseSystems.html}.
+\bibitem{eigencg} Eigen documentation: \code{ConjugateGradient}. \url{https://eigen.tuxfamily.org/dox/classEigen_1_1ConjugateGradient.html}.
+\bibitem{eigencholmod} Eigen documentation: CHOLMOD support and \code{CholmodSupernodalLLT}. \url{https://eigen.tuxfamily.org/dox/group__CholmodSupport__Module.html}.
+\bibitem{eigenpardiso} Eigen documentation: PardisoSupport module. \url{https://libeigen.gitlab.io/eigen/docs-nightly/group__PardisoSupport__Module.html}.
+\bibitem{pardiso} Intel oneMKL documentation: PARDISO sparse solver. \url{https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2025-0/onemkl-pardiso-parallel-direct-sparse-solver-iface.html}.
+\bibitem{mklthreads} Intel oneMKL Developer Guide: techniques to set the number of threads using \code{MKL\_NUM\_THREADS}, \code{OMP\_NUM\_THREADS}, and MKL/OpenMP thread-control calls. \url{https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/techniques-to-set-the-number-of-threads.html}.
+\bibitem{openmpthreads} OpenMP API Specification 5.0: \code{OMP\_NUM\_THREADS} and \code{omp\_set\_num\_threads}. \url{https://www.openmp.org/spec-html/5.0/openmpse50.html}; \url{https://www.openmp.org/spec-html/5.0/openmpsu110.html}.
+
+\bibitem{hypreboomer} hypre documentation: BoomerAMG, systems AMG, nodal coarsening, and near-nullspace vectors. \url{https://hypre.readthedocs.io/en/latest/solvers-boomeramg.html}.
+\bibitem{hypreij} hypre documentation: Linear-Algebraic System Interface (IJ), distributed row-block matrix interface. \url{https://hypre.readthedocs.io/en/latest/ch-ij.html}.
+\bibitem{hypreparcsr} hypre documentation: ParCSR object interface. \url{https://hypre.readthedocs.io/en/latest/api-int-parcsr.html}.
+\bibitem{petscksp} PETSc documentation: KSP linear solvers; AMG requirements for vector-valued elasticity, block size, and near-nullspace. \url{https://petsc.org/release/manual/ksp/}.
+\bibitem{petscnear} PETSc documentation: \code{MatSetNearNullSpace}. \url{https://petsc.org/release/manualpages/Mat/MatSetNearNullSpace/}.
+\bibitem{petscgamg} PETSc documentation: \code{PCGAMGAGG} notes on block size and near-nullspace for vector-valued problems. \url{https://petsc.org/release/manualpages/PC/PCGAMGAGG/}.
+\bibitem{amgcl} AMGCL repository and documentation summary: header-only C++ AMG library for large sparse systems and AMG as a Krylov preconditioner. \url{https://github.com/ddemidov/amgcl}.
+\bibitem{amgcladapter} AMGCL matrix adapter documentation: CRS, zero-copy, and Eigen sparse-matrix adapters. \url{https://github.com/ddemidov/amgcl/blob/master/docs/components/adapters.rst}.
+
+\end{thebibliography}
+
+\end{document}

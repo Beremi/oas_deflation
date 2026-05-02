@@ -162,6 +162,7 @@ CMakeFiles
 CMakeScripts
 Testing
 Makefile
+!/Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -217,6 +218,15 @@ $RECYCLE.BIN/
 ########### Kdevelop
 *.kdev4
 .kdev4/
+
+########### OAS deflation local workspace
+data/
+agents.md
+.agent_context/
+.oas-runs/
+run-logs/
+oas_deflation-build/
+*-build/
 
 ######## Vim
 # Swap
