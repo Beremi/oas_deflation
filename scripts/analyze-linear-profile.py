@@ -296,7 +296,7 @@ def main() -> int:
             ["threads", args.threads],
             ["profile_dir", str(profile_dir)],
             ["total_wall_seconds", total_wall],
-            ["input_solver_type", solver_inp.get("solver_type", "")],
+            ["current_solver_inp_type", solver_inp.get("solver_type", "")],
             ["profiled_solver_type", ", ".join(sorted(str(x) for x in solve["solver_type"].dropna().unique()))],
             ["linear_solver_class", ", ".join(sorted(str(x) for x in solve["solver_name"].dropna().unique()))],
             ["oas_solver_class", solver_inp.get("oas_solver_class", "")],
