@@ -15,6 +15,7 @@ set (solver_files
     geometry.cpp
     globals.cpp
     linalg.cpp
+    linalg_profile.cpp
     material_container.cpp
     material_coulomb_friction.cpp
     material.cpp

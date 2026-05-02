@@ -76,6 +76,14 @@ make dogbone THREADS=8
 
 For MKL/Pardiso runs, the Makefile sets both `MKL_NUM_THREADS` and `OMP_NUM_THREADS`.
 
+Profile the current linear-solve behavior with local-only outputs:
+
+```sh
+make dogbone-profile USE_VTK=OFF THREADS=4 SOLVER=EigenLDLT
+```
+
+This temporarily enables `linear_solver_profile 1` in the ignored Dogbone `solver.inp`, writes raw TSV files under `data/cases/Dogbone/results/`, restores the input file, and generates a Markdown/PNG exchange report under `results/dogbone-<solver>-<timestamp>/`. The `results/` directory is excluded through `.git/info/exclude` so quick experiment reports stay out of project history.
+
 ## First Solver Goals
 
 The immediate engineering target is not to replace Pardiso with plain CG. The reviewed OAS source already has `EigenConj`, but it is a weak Jacobi-preconditioned CG baseline. The staged solver plan is:

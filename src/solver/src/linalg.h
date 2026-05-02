@@ -62,6 +62,8 @@ public:
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
     virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
     std :: string giveName()const { return name; };
+    virtual long long giveLastIterations() const { return 0; };
+    virtual double giveLastError() const { return 0.; };
 };
 
 //////////////////////////////////////////////////////////
@@ -72,6 +74,8 @@ class ConjGradSolver : public LinAlgSolver
 protected:
     Vector initialGuess;
     double relMaxIT, maxIT, precision;
+    long long lastIterations;
+    double lastError;
     Eigen :: ConjugateGradient< Eigen :: SparseMatrix< double >, Eigen :: Lower | Eigen :: Upper, Eigen :: DiagonalPreconditioner< double > >cgK;
     //ConjugateGradient< SparseMatrix< double >, Lower | Upper, IncompleteCholesky< double > >cgK;
 public:
@@ -81,6 +85,8 @@ public:
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
     virtual bool solve(Vector &x, const Vector &b);
     void setPrecisionAndRelMaxIters(double p, double rmi);
+    virtual long long giveLastIterations() const { return lastIterations; };
+    virtual double giveLastError() const { return lastError; };
 };
 
 //////////////////////////////////////////////////////////

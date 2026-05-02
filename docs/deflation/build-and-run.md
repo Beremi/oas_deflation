@@ -88,6 +88,41 @@ make dogbone THREADS=8
 
 For Pardiso, the Makefile sets `MKL_NUM_THREADS` and `OMP_NUM_THREADS`. The `-j` OAS argument is also passed for OpenMP-controlled paths.
 
+## Linear-Solve Profiling
+
+Enable the optional OAS profiler for a Dogbone run and generate a local exchange report:
+
+```sh
+make dogbone-profile USE_VTK=OFF THREADS=4 SOLVER=EigenLDLT
+```
+
+The target temporarily adds these keys to the ignored Dogbone `solver.inp` and restores the original file after the run:
+
+```text
+linear_solver_profile 1
+linear_solver_profile_matrix_delta 1
+linear_solver_profile_file linear_profile
+```
+
+Raw profile data stays with the OAS case output:
+
+```text
+data/cases/Dogbone/results/linear_profile_events.tsv
+data/cases/Dogbone/results/linear_profile_iterations.tsv
+```
+
+The human-readable Markdown report and PNG plots are written under ignored local `results/`:
+
+```text
+results/dogbone-eigenldlt-<timestamp>/linear-profile.md
+```
+
+Regenerate a report from an existing profile without re-running OAS:
+
+```sh
+make linear-profile-report PROFILE_DIR=data/cases/Dogbone/results OUT_DIR=results/dogbone-eigenldlt-manual SOLVER=EigenLDLT
+```
+
 ## Upstream Sync
 
 ```sh

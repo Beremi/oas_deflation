@@ -1,5 +1,6 @@
 #include "solver_implicit.h"
 #include "adaptivity.h"
+#include "model.h"
 #define numPhysicalFields 4
 
 using namespace std;
@@ -38,6 +39,8 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
     Solver :: init(init_r_file, init_v_file, initial);
+    initializeLinearProfiler();
+    setLinearProfileContext(name, -1, 0);
     prepareSystemMatricesAndInitialField(init_r_file, init_v_file, initial);
     computeKeff();
 }
@@ -45,8 +48,49 @@ void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, con
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: rebuild() {
     Solver :: rebuild();
+    setLinearProfileContext(name, -1, 0);
     prepareSystemMatricesAndInitialField("", "", false);
     computeKeff();
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: initializeLinearProfiler() {
+    fs :: path resultDir = masterModel ? masterModel->giveResultDirectory() : fs :: path(".");
+    linearProfiler.configure(linearProfileEnabled, linearProfileMatrixDelta, resultDir, linearProfileFileBase);
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: setLinearProfileContext(string systemKind, int iteration, unsigned cumulIteration) {
+    linearProfileSystemKind = systemKind;
+    linearProfileIteration = iteration;
+    linearProfileCumulIteration = cumulIteration;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateLinearSolver :: profiledAnalyzePattern() {
+    auto start = std :: chrono :: steady_clock :: now();
+    bool result = linalgsolver->analyzePattern(Keff);
+    auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+    linearProfiler.recordMatrixEvent("analyze", step, linearProfileIteration, linearProfileCumulIteration, linearProfileSystemKind, symsolver_type, linalgsolver->giveName(), Keff, elapsed, result);
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateLinearSolver :: profiledFactorize() {
+    auto start = std :: chrono :: steady_clock :: now();
+    bool result = linalgsolver->factorize(Keff);
+    auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+    linearProfiler.recordMatrixEvent("factorize", step, linearProfileIteration, linearProfileCumulIteration, linearProfileSystemKind, symsolver_type, linalgsolver->giveName(), Keff, elapsed, result);
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateLinearSolver :: profiledLinearSolve(Vector &x, const Vector &b, const string &rhsKind) {
+    auto start = std :: chrono :: steady_clock :: now();
+    bool result = linalgsolver->solve(x, b);
+    auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+    linearProfiler.recordSolveEvent(step, linearProfileIteration, linearProfileCumulIteration, linearProfileSystemKind, rhsKind, symsolver_type, linalgsolver->giveName(), b, x, linalgsolver->giveLastIterations(), linalgsolver->giveLastError(), elapsed, result);
+    return result;
 }
 
 //////////////////////////////////////////////////////////
@@ -73,7 +117,8 @@ void SteadyStateLinearSolver :: reset() {
      *  exit(1);
      * }
      */
-    linalgsolver->solve(ddr, f);
+    setLinearProfileContext(name, 0, 0);
+    profiledLinearSolve(ddr, f, "reset_residual");
 
     updateFieldVariables();
     computeForcesAtIntegrationTime(true);
@@ -111,6 +156,16 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> this->init_step;
             } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
+            } else if ( param.compare("linear_solver_profile") == 0 ) {
+                int value = 0;
+                iss >> value;
+                linearProfileEnabled = ( value != 0 );
+            } else if ( param.compare("linear_solver_profile_matrix_delta") == 0 ) {
+                int value = 0;
+                iss >> value;
+                linearProfileMatrixDelta = ( value != 0 );
+            } else if ( param.compare("linear_solver_profile_file") == 0 ) {
+                iss >> linearProfileFileBase;
             } else if ( param.compare("silent") == 0 ) {
                 silent = true;
             } else if ( param.compare("pertrubation") == 0 ) {
@@ -152,7 +207,8 @@ void SteadyStateLinearSolver :: solve() {
      * }
      */
 
-    linalgsolver->solve(ddr, f);
+    setLinearProfileContext(name, 0, 0);
+    profiledLinearSolve(ddr, f, "linear_residual");
 
     /*
      * cout << "----- K ----" << endl;
@@ -209,49 +265,39 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             std :: unique_ptr< ConjGradSolver >cgs = std :: make_unique< ConjGradSolver >();
             cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
             linalgsolver = std :: move(cgs);
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenLDLT" ) {
             linalgsolver = std :: make_unique< LDLTSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenLLT" ) {
             linalgsolver = std :: make_unique< LLTSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "EigenLU" || symsolver_type == "EigenSparseLU" ) {
             linalgsolver = std :: make_unique< LUSolver >();
-            linalgsolver->analyzePattern(Keff);
 #ifdef SUPERLU_FOUND
         } else if  ( symsolver_type == "SuperLU" ) {
             linalgsolver = std :: make_unique< SuperLUSolver >();
-            linalgsolver->analyzePattern(Keff);
 #endif
 #ifdef PARDISO_FOUND
         } else if  ( symsolver_type == "PardisoLU" ) {
             linalgsolver = std :: make_unique< PardisoLUSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "PardisoLDLT" ) {
             linalgsolver = std :: make_unique< PardisoLDLTSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "PardisoLLT" ) {
             linalgsolver = std :: make_unique< PardisoLLTSolver >();
-            linalgsolver->analyzePattern(Keff);
 #endif
 #ifdef CHOLMOD_FOUND
         } else if  ( symsolver_type == "CholmodLLT" ) {
             linalgsolver = std :: make_unique< CholmodLLTSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "CholmodLDLT" ) {
             linalgsolver = std :: make_unique< CholmodLDLTSolver >();
-            linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "CholmodSupernodalLLT" ) {
             linalgsolver = std :: make_unique< CholmodSupernodalLLTSolver >();
-            linalgsolver->analyzePattern(Keff);
 #endif
         } else {
             cerr << "Solver type " << symsolver_type << " is not implemented" << endl;
             exit(1);
         }
+        profiledAnalyzePattern();
     }
-    linalgsolver->factorize(Keff);
+    profiledFactorize();
 }
 
 //////////////////////////////////////////////////////////
@@ -588,6 +634,7 @@ void SteadyStateNonLinearSolver :: reset() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
+            setLinearProfileContext(name, it, cumul_it);
             if ( updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
@@ -602,7 +649,7 @@ void SteadyStateNonLinearSolver :: reset() {
              * }
              */
 
-            linalgsolver->solve(ddr, f);
+            profiledLinearSolve(ddr, f, "reset_residual");
 
             //update DoFs
             updateFieldVariables();
@@ -702,6 +749,7 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
+            setLinearProfileContext(name, it, cumul_it);
             if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
@@ -717,8 +765,8 @@ void SteadyStateNonLinearSolver :: solve() {
                 computeForcesAtIntegrationTime(true);
                 nodes->giveReducedForceArray(residuals, f);
 
-                linalgsolver->solve(ddr, f_last_iter); //A: original, no additiona load, time idc_time
-                linalgsolver->solve(ddf, f - f_last_iter); //B: added load, time idc_time + idc_dt
+                profiledLinearSolve(ddr, f_last_iter, "idc_residual"); //A: original, no additiona load, time idc_time
+                profiledLinearSolve(ddf, f - f_last_iter, "idc_load_increment"); //B: added load, time idc_time + idc_dt
 
                 if ( !restart_now ) {
                     nodes->giveFullDoFArray(ddf, full_ddf);
@@ -759,7 +807,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
             } else {         //direct controll
-                  linalgsolver->solve(ddr, f);
+                  profiledLinearSolve(ddr, f, "direct_residual");
             }
 
             //update DoFs

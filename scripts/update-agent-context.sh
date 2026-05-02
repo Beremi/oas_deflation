@@ -34,6 +34,7 @@ make build
 make dogbone
 make dogbone-solver SOLVER=EigenLDLT
 make dogbone-solver SOLVER=PardisoLDLT
+make dogbone-profile USE_VTK=OFF THREADS=4 SOLVER=EigenLDLT
 ```
 
 Default build directory:
@@ -47,16 +48,28 @@ Dogbone input:
 ```text
 data/cases/Dogbone/master.inp
 ```
+
+Linear profiling:
+
+```sh
+make linear-profile-report PROFILE_DIR=data/cases/Dogbone/results OUT_DIR=results/dogbone-eigenldlt-manual SOLVER=EigenLDLT
+```
+
+Raw profile TSVs live in `data/cases/Dogbone/results/`. Markdown/PNG exchange reports live in ignored `results/`.
 EOF
 
 cat > "$ctx/repo_map.md" <<'EOF'
 # Repo Map
 
 - `src/solver/src/linalg.h`, `src/solver/src/linalg.cpp`: linear solver interface and solver wrappers.
+- `src/solver/src/linalg_profile.h`, `src/solver/src/linalg_profile.cpp`: optional linear-solve profiling data collector.
 - `src/solver/src/solver_implicit.cpp`: implicit solve loops, matrix update policy, factorization calls, and `linalgsolver->solve(...)` call sites.
 - `docs/deflation/`: human-facing deflation project documentation.
+- `scripts/analyze-linear-profile.py`: converts profiler TSV files and `solver.out` into Markdown/PNG reports.
+- `scripts/run-dogbone-profile.sh`: local Dogbone profiling run wrapper that temporarily edits ignored `solver.inp`.
 - `scripts/update-agent-context.sh`: regenerates ignored agent context.
 - `data/`: ignored benchmark archives, extracted cases, and run outputs.
+- `results/`: ignored local experiment exchange reports; check the newest `results/*/linear-profile.md`.
 EOF
 
 {
@@ -73,6 +86,25 @@ EOF
   else
     printf -- '- No `data/cases` directory found.\n'
   fi
+  printf '\n## Latest Linear Profile Reports\n\n'
+  if [[ -d "$root/results" ]]; then
+    mapfile -t reports < <(find "$root/results" -mindepth 2 -maxdepth 2 -name 'linear-profile.md' -printf '%T@ %p\n' | sort -nr | head -5 | cut -d' ' -f2-)
+    if (( ${#reports[@]} )); then
+      for report in "${reports[@]}"; do
+        rel="${report#"$root"/}"
+        title="$(sed -n '1s/^# //p' "$report" 2>/dev/null || true)"
+        printf -- '- `%s`' "$rel"
+        if [[ -n "$title" ]]; then
+          printf ' - %s' "$title"
+        fi
+        printf '\n'
+      done
+    else
+      printf -- '- No `results/*/linear-profile.md` reports found.\n'
+    fi
+  else
+    printf -- '- No local `results/` directory found.\n'
+  fi
 } > "$ctx/benchmark_state.md"
 
 cat > "$ctx/decision_log.md" <<'EOF'
@@ -81,7 +113,8 @@ cat > "$ctx/decision_log.md" <<'EOF'
 - Repository shape: OAS source at repository root, with `upstream` pointing to `https://gitlab.com/kelidas/OAS.git`.
 - Data policy: Dogbone and TS-N_65 archives plus extracted cases are local-only under ignored `data/`.
 - Build policy: use out-of-source CMake through the root Makefile; default generator is Unix Makefiles.
-- Solver policy: bootstrap makes no OAS C++ behavior changes. First implementation work should add instrumentation, then PCG/IC, then AMG, then deflation/recycling.
+- Solver policy: first implementation work adds optional instrumentation, then PCG/IC, then AMG, then deflation/recycling.
+- Profiling policy: `linear_solver_profile 1` writes raw TSVs into the OAS case `results/` directory; generated Markdown/PNG reports stay local-only under ignored `results/`.
 - Agent policy: keep `agents.md` and `.agent_context/` ignored; refresh `.agent_context/` after meaningful build, run, or code changes.
 EOF
 
@@ -101,6 +134,14 @@ Read these files first:
 7. `.agent_context/decision_log.md`
 
 Keep OAS C++ changes focused. The first solver implementation phase should instrument current solver behavior before adding new algorithms.
+
+Before answering profiling questions, check the newest local report matching:
+
+```sh
+ls -td results/* 2>/dev/null | head
+```
+
+Then read `results/<latest>/linear-profile.md` if it exists.
 
 After meaningful changes to source, build configuration, benchmark state, or test results, run:
 

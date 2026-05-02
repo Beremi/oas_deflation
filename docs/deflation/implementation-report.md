@@ -26,7 +26,7 @@ Use two separate baselines:
 
 ## Recommended Solver Path
 
-1. Add solver instrumentation first: matrix size, nonzeros, pattern hash, analyze/factorize/solve counts, CG iterations, final residual, failure status, and timing.
+1. Use the optional `linear_solver_profile 1` instrumentation first: matrix size, nonzeros, pattern/value hash, analyze/factorize/solve counts, RHS/solution norms, CG iterations, final residual, failure status, timing, and matrix value deltas.
 2. Add an incomplete-Cholesky PCG variant for Dogbone-level validation.
 3. Prototype shared-memory AMG as a PCG preconditioner for the large case. AMGCL is the lowest-friction first integration; hypre/PETSc are stronger long-term options but more intrusive.
 4. Add deflated or recycled PCG once the base preconditioner is stable.

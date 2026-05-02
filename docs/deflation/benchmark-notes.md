@@ -31,6 +31,14 @@ make dogbone-solver SOLVER=PardisoLDLT
 make dogbone-solver SOLVER=EigenConj
 ```
 
+For timing and matrix-evolution questions, use the optional profiler:
+
+```sh
+make dogbone-profile USE_VTK=OFF THREADS=4 SOLVER=EigenLDLT
+```
+
+The first report should answer, for the active solver, how many systems were solved, which RHS/system kind each solve belonged to, how much time went into `analyzePattern`, `factorize`, and `solve`, and how the matrix values changed between factorizations. Generated reports are local-only under `results/`; check the newest `results/*/linear-profile.md` before starting follow-up profiling work.
+
 ## TS-N_65
 
 TS-N_65 is the hard benchmark and should not be extracted by default. The archive is local and ignored:

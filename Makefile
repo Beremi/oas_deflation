@@ -11,13 +11,17 @@ VTK_DIR ?= /usr/lib/cmake/vtk
 USE_VTK ?= ON
 OAS_CXX_FLAGS ?= -DEIGEN_MKL_NO_DIRECT_CALL
 SOLVER ?= EigenLDLT
+PROFILE_DIR ?= $(DOGBONE_CASE)/results
+PROFILE_SOLVER ?= $(shell printf '%s' '$(SOLVER)' | tr '[:upper:]' '[:lower:]')
+PROFILE_STAMP ?= $(shell date +%Y%m%d-%H%M%S)
+OUT_DIR ?= results/dogbone-$(PROFILE_SOLVER)-$(PROFILE_STAMP)
 
 OAS_BIN := $(BUILD_DIR)/bin/OAS
 DOGBONE_ARCHIVE := data/archives/Dogbone.zip
 DOGBONE_CASE := data/cases/Dogbone
 DOGBONE_MASTER := $(DOGBONE_CASE)/master.inp
 
-.PHONY: configure build configure-fast clean-build dogbone dogbone-solver extract-dogbone sync-upstream status agent-context
+.PHONY: configure build configure-fast clean-build dogbone dogbone-solver dogbone-profile linear-profile-report extract-dogbone sync-upstream status agent-context
 
 configure:
 	MKLROOT="$(MKLROOT)" cmake -S . -B "$(BUILD_DIR)" -G "Unix Makefiles" \
@@ -61,6 +65,18 @@ dogbone: build extract-dogbone
 dogbone-solver: extract-dogbone
 	perl -i -pe 's/^solver_type\s+\S+/solver_type\t$(SOLVER)/' "$(DOGBONE_CASE)/solver.inp"
 	$(MAKE) dogbone
+
+dogbone-profile: build extract-dogbone
+	scripts/run-dogbone-profile.sh "$(DOGBONE_CASE)" "$(DOGBONE_MASTER)" "$(OAS_BIN)" "$(MKLROOT)" "$(THREADS)" "$(SOLVER)"
+	$(MAKE) linear-profile-report PROFILE_DIR="$(PROFILE_DIR)" OUT_DIR="$(OUT_DIR)" SOLVER="$(SOLVER)"
+
+linear-profile-report:
+	python3 scripts/analyze-linear-profile.py \
+		--profile-dir "$(PROFILE_DIR)" \
+		--out-dir "$(OUT_DIR)" \
+		--title "Dogbone $(SOLVER) Linear-Solve Profile" \
+		--case Dogbone \
+		--threads "$(THREADS)"
 
 sync-upstream:
 	git fetch upstream

@@ -15,6 +15,8 @@ ConjGradSolver :: ConjGradSolver() {
     name = "EigenConj";
     relMaxIT = 1.;
     precision = 1e-12;
+    lastIterations = -1;
+    lastError = -1.;
 }
 
 //////////////////////////////////////////////////////////
@@ -84,6 +86,8 @@ bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
     bool result = false;
     if ( b.size() > 0 ) {
         x = cgK.solveWithGuess(b, initialGuess);
+        lastIterations = cgK.iterations();
+        lastError = cgK.error();
         result = size_t( cgK.iterations() ) < maxIT;
         if ( !result ) {
             cerr << "Eigen Conjugate Gradients performed " << cgK.iterations() << " iterations and reached error " << cgK.error() << ", required precision is " << precision << endl;
@@ -91,6 +95,8 @@ bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
         }
         initialGuess = x;
     } else {
+        lastIterations = 0;
+        lastError = 0.;
         result = true;
     }
 

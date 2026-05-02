@@ -2,6 +2,7 @@
 #define _SOLVER_IMPLICIT_H
 
 #include "solver.h"
+#include "linalg_profile.h"
 
 //////////////////////////////////////////////////////////
 class SteadyStateLinearSolver : public Solver
@@ -12,6 +13,13 @@ protected:
     CoordinateIndexedSparseMatrix Keff, K;
     std :: unique_ptr< LinAlgSolver >linalgsolver;
     std :: string symsolver_type = "EigenConj";
+    LinearSolverProfiler linearProfiler;
+    bool linearProfileEnabled = false;
+    bool linearProfileMatrixDelta = false;
+    std :: string linearProfileFileBase = "linear_profile";
+    int linearProfileIteration = -1;
+    unsigned linearProfileCumulIteration = 0;
+    std :: string linearProfileSystemKind = "steady_state_linear";
 
     int stiffnessMatrixIterUpdate; //update matrices every X iteration
     int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
@@ -24,6 +32,11 @@ protected:
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, time, -1); };
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
+    void initializeLinearProfiler();
+    void setLinearProfileContext(std :: string systemKind, int iteration, unsigned cumulIteration);
+    bool profiledAnalyzePattern();
+    bool profiledFactorize();
+    bool profiledLinearSolve(Vector &x, const Vector &b, const std :: string &rhsKind);
 private:
 public:
     SteadyStateLinearSolver();
