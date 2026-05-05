@@ -66,6 +66,9 @@ public:
     virtual long long giveLastIterations() const { return 0; };
     virtual double giveLastError() const { return 0.; };
     virtual double giveLastTrueRelativeResidual() const { return giveLastError(); };
+    virtual void setRuntimeTolerance(double tolerance, double trueTolerance) { ( void ) tolerance; ( void ) trueTolerance; };
+    virtual double giveRuntimeTolerance() const { return 0.; };
+    virtual double giveRuntimeTrueTolerance() const { return giveRuntimeTolerance(); };
     virtual void collectDeflationVector(const Vector &v) { ( void ) v; };
     virtual unsigned giveDeflationBasisSize() const { return 0; };
     virtual unsigned giveDeflationDiscardedCount() const { return 0; };
@@ -205,6 +208,9 @@ public:
     virtual long long giveLastIterations() const { return lastIterations; };
     virtual double giveLastError() const { return lastError; };
     virtual double giveLastTrueRelativeResidual() const { return lastTrueRelativeResidual; };
+    virtual void setRuntimeTolerance(double tolerance, double trueTolerance);
+    virtual double giveRuntimeTolerance() const { return precision; };
+    virtual double giveRuntimeTrueTolerance() const { return precision; };
 };
 
 //////////////////////////////////////////////////////////
@@ -232,6 +238,9 @@ public:
     virtual long long giveLastIterations() const { return lastIterations; };
     virtual double giveLastError() const { return lastError; };
     virtual double giveLastTrueRelativeResidual() const { return lastTrueRelativeResidual; };
+    virtual void setRuntimeTolerance(double tolerance, double trueTolerance);
+    virtual double giveRuntimeTolerance() const { return options.tolerance; };
+    virtual double giveRuntimeTrueTolerance() const { return options.trueTolerance > 0. ? options.trueTolerance : options.tolerance; };
 };
 #endif
 
@@ -277,6 +286,9 @@ public:
     virtual long long giveLastIterations() const { return lastIterations; };
     virtual double giveLastError() const { return lastError; };
     virtual double giveLastTrueRelativeResidual() const { return lastTrueRelativeResidual; };
+    virtual void setRuntimeTolerance(double tolerance, double trueTolerance);
+    virtual double giveRuntimeTolerance() const { return options.tolerance; };
+    virtual double giveRuntimeTrueTolerance() const { return options.trueTolerance > 0. ? options.trueTolerance : options.tolerance; };
     virtual unsigned giveDeflationBasisSize() const;
     virtual unsigned giveDeflationDiscardedCount() const;
     virtual unsigned giveDeflationRawCandidateCount() const;
@@ -320,6 +332,9 @@ public:
     virtual long long giveLastIterations() const { return lastIterations; };
     virtual double giveLastError() const { return lastError; };
     virtual double giveLastTrueRelativeResidual() const { return lastTrueRelativeResidual; };
+    virtual void setRuntimeTolerance(double tolerance, double trueTolerance);
+    virtual double giveRuntimeTolerance() const { return options.tolerance; };
+    virtual double giveRuntimeTrueTolerance() const { return options.tolerance; };
 };
 #endif
 

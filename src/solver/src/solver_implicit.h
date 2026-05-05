@@ -44,6 +44,7 @@ protected:
     bool profiledAnalyzePattern();
     bool profiledFactorize();
     bool profiledLinearSolve(Vector &x, const Vector &b, const std :: string &rhsKind);
+    void setLinearSolverRuntimeTolerance(double tolerance, double trueTolerance);
     void collectLinearDeflationVector(const Vector &x, const std :: string &rhsKind, bool success);
     ElasticDofMap buildElasticDofMap() const;
     void dumpLinearReplayCase(const Vector &rhs, const Vector &solution, const std :: string &rhsKind, bool success);
@@ -86,9 +87,18 @@ protected:
     Vector eigen_trial_rPF, eigen_f_extPF, eigen_WextPF; //RVE fields to transfer macroscopic data to error evaluation
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
+    bool linearAdaptiveTolerance = false;
+    bool linearAdaptiveRequireTightConvergence = true;
+    bool linearAdaptiveForceTightNextSolve = false;
+    double linearAdaptiveLooseTolerance = 1e-1;
+    double linearAdaptiveTightTolerance = 1e-6;
+    double linearAdaptiveTriggerRatio = 10.;
+    double linearAdaptiveLastTolerance = -1.;
     void printAllVectors();
     void checkAllVectorsForNaNs();
     void evaluateErrors();
+    double currentNonlinearErrorRatio() const;
+    void updateAdaptiveLinearTolerance(const std :: string &rhsKind);
     virtual void reset();
     virtual void giveValues(std :: string code, Vector &result) const;
 

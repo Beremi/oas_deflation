@@ -302,6 +302,15 @@ void ConjGradSolver :: setPrecisionAndRelMaxIters(double p, double rmi) {
 }
 
 //////////////////////////////////////////////////////////
+void ConjGradSolver :: setRuntimeTolerance(double tolerance, double trueTolerance) {
+    ( void ) trueTolerance;
+    if ( tolerance > 0. ) {
+        precision = tolerance;
+        cgK.setTolerance(precision);
+    }
+}
+
+//////////////////////////////////////////////////////////
 bool ConjGradSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
 #if PRINT_DEBUG_TIME
     auto start = std :: chrono :: system_clock :: now();
@@ -406,6 +415,18 @@ AmgclCGSolver :: ~AmgclCGSolver() {}
 //////////////////////////////////////////////////////////
 void AmgclCGSolver :: setOptions(const AmgclSolverOptions &opts) {
     options = opts;
+}
+
+//////////////////////////////////////////////////////////
+void AmgclCGSolver :: setRuntimeTolerance(double tolerance, double trueTolerance) {
+    if ( tolerance > 0. ) {
+        options.tolerance = tolerance;
+    }
+    if ( trueTolerance > 0. ) {
+        options.trueTolerance = trueTolerance;
+    } else if ( tolerance > 0. ) {
+        options.trueTolerance = tolerance;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -866,6 +887,18 @@ DeflatedFGMRESSolver :: ~DeflatedFGMRESSolver() {}
 //////////////////////////////////////////////////////////
 void DeflatedFGMRESSolver :: setOptions(const DeflatedFGMRESOptions &opts) {
     options = opts;
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: setRuntimeTolerance(double tolerance, double trueTolerance) {
+    if ( tolerance > 0. ) {
+        options.tolerance = tolerance;
+    }
+    if ( trueTolerance > 0. ) {
+        options.trueTolerance = trueTolerance;
+    } else if ( tolerance > 0. ) {
+        options.trueTolerance = tolerance;
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -1769,6 +1802,17 @@ HypreBoomerAMGCGSolver :: ~HypreBoomerAMGCGSolver() {}
 //////////////////////////////////////////////////////////
 void HypreBoomerAMGCGSolver :: setOptions(const HypreBoomerAMGOptions &opts) {
     options = opts;
+}
+
+//////////////////////////////////////////////////////////
+void HypreBoomerAMGCGSolver :: setRuntimeTolerance(double tolerance, double trueTolerance) {
+    const double selectedTolerance = trueTolerance > 0. ? trueTolerance : tolerance;
+    if ( selectedTolerance > 0. ) {
+        options.tolerance = selectedTolerance;
+        if ( impl && impl->solver ) {
+            HYPRE_ParCSRPCGSetTol(impl->solver, options.tolerance);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////

@@ -1,6 +1,7 @@
 #include "solver_implicit.h"
 #include "adaptivity.h"
 #include "model.h"
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <fstream>
@@ -80,6 +81,25 @@ void SteadyStateLinearSolver :: setLinearProfileContext(string systemKind, int i
 }
 
 //////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: setLinearSolverRuntimeTolerance(double tolerance, double trueTolerance) {
+    if ( !( tolerance > 0. ) || !std :: isfinite(tolerance) ) {
+        return;
+    }
+    if ( !( trueTolerance > 0. ) || !std :: isfinite(trueTolerance) ) {
+        trueTolerance = tolerance;
+    }
+    conj_grad_precision = tolerance;
+    amgclOptions.tolerance = tolerance;
+    amgclOptions.trueTolerance = trueTolerance;
+    dfgmresOptions.tolerance = tolerance;
+    dfgmresOptions.trueTolerance = trueTolerance;
+    hypreOptions.tolerance = trueTolerance;
+    if ( linalgsolver ) {
+        linalgsolver->setRuntimeTolerance(tolerance, trueTolerance);
+    }
+}
+
+//////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: profiledAnalyzePattern() {
     auto start = std :: chrono :: steady_clock :: now();
     bool result = linalgsolver->analyzePattern(Keff);
@@ -114,6 +134,7 @@ bool SteadyStateLinearSolver :: profiledLinearSolve(Vector &x, const Vector &b, 
         x,
         linalgsolver->giveLastIterations(),
         linalgsolver->giveLastError(),
+        linalgsolver->giveRuntimeTrueTolerance(),
         linalgsolver->giveDeflationBasisSize(),
         linalgsolver->giveDeflationDiscardedCount(),
         linalgsolver->giveDeflationRawCandidateCount(),
@@ -1067,6 +1088,20 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                     cerr << "Error: first_iteration_stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
                     exit(1);
                 }
+            } else if ( param.compare("linear_solver_adaptive_tolerance") == 0 || param.compare("adaptive_linear_solver_tolerance") == 0 ) {
+                int value = 0;
+                iss >> value;
+                linearAdaptiveTolerance = ( value != 0 );
+            } else if ( param.compare("linear_solver_adaptive_loose_tolerance") == 0 || param.compare("linear_solver_tolerance_loose") == 0 ) {
+                iss >> linearAdaptiveLooseTolerance;
+            } else if ( param.compare("linear_solver_adaptive_tight_tolerance") == 0 || param.compare("linear_solver_tolerance_tight") == 0 || param.compare("linear_solver_final_tolerance") == 0 ) {
+                iss >> linearAdaptiveTightTolerance;
+            } else if ( param.compare("linear_solver_adaptive_trigger_ratio") == 0 || param.compare("linear_solver_tolerance_trigger_ratio") == 0 ) {
+                iss >> linearAdaptiveTriggerRatio;
+            } else if ( param.compare("linear_solver_adaptive_require_tight_convergence") == 0 ) {
+                int value = 0;
+                iss >> value;
+                linearAdaptiveRequireTightConvergence = ( value != 0 );
             }
         }
         inputfile.close();
@@ -1103,6 +1138,18 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     if ( !bsh ) {
         shortenIt = maxIt / 2;
     }
+    if ( !( linearAdaptiveLooseTolerance > 0. ) || !std :: isfinite(linearAdaptiveLooseTolerance) ) {
+        linearAdaptiveLooseTolerance = 1e-1;
+    }
+    if ( !( linearAdaptiveTightTolerance > 0. ) || !std :: isfinite(linearAdaptiveTightTolerance) ) {
+        linearAdaptiveTightTolerance = 1e-6;
+    }
+    if ( linearAdaptiveLooseTolerance < linearAdaptiveTightTolerance ) {
+        std :: swap(linearAdaptiveLooseTolerance, linearAdaptiveTightTolerance);
+    }
+    if ( !( linearAdaptiveTriggerRatio > 0. ) || !std :: isfinite(linearAdaptiveTriggerRatio) ) {
+        linearAdaptiveTriggerRatio = 10.;
+    }
 
     return this;
 };
@@ -1133,6 +1180,40 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
         result [ 0 ] = fully_converged;
     } else {
         SteadyStateLinearSolver :: giveValues(code, result);
+    }
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearErrorRatio() const {
+    double ratio = 0.;
+    bool hasRatio = false;
+    auto updateRatio = [&](double value, double tolerance) {
+        if ( tolerance > 0. && std :: isfinite(value) && std :: isfinite(tolerance) ) {
+            ratio = std :: max(ratio, value / tolerance);
+            hasRatio = true;
+        }
+    };
+    updateRatio(resErr, maxResErr);
+    if ( it > 0 ) {
+        updateRatio(disErr, maxDisErr);
+    }
+    updateRatio(eneErr, maxEneErr);
+    return hasRatio ? ratio : std :: numeric_limits< double > :: infinity();
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: updateAdaptiveLinearTolerance(const string &rhsKind) {
+    if ( !linearAdaptiveTolerance || rhsKind != "direct_residual" ) {
+        return;
+    }
+    double selectedTolerance = linearAdaptiveLooseTolerance;
+    if ( linearAdaptiveForceTightNextSolve || ( it > 0 && currentNonlinearErrorRatio() <= linearAdaptiveTriggerRatio ) ) {
+        selectedTolerance = linearAdaptiveTightTolerance;
+    }
+    setLinearSolverRuntimeTolerance(selectedTolerance, selectedTolerance);
+    linearAdaptiveLastTolerance = selectedTolerance;
+    if ( selectedTolerance <= linearAdaptiveTightTolerance * ( 1. + 1e-12 ) ) {
+        linearAdaptiveForceTightNextSolve = false;
     }
 }
 
@@ -1241,6 +1322,8 @@ void SteadyStateNonLinearSolver :: reset() {
         computeForcesAtIntegrationTime(true);
 
         it = 0;
+        linearAdaptiveForceTightNextSolve = false;
+        linearAdaptiveLastTolerance = -1.;
         while ( !converged && it < maxIt ) {
             setLinearProfileContext(name, it, cumul_it);
             if ( updateSystemMatrices(it, cumul_it, false) ) {
@@ -1361,6 +1444,8 @@ void SteadyStateNonLinearSolver :: solve() {
         }
 
         it = 0;
+        linearAdaptiveForceTightNextSolve = false;
+        linearAdaptiveLastTolerance = -1.;
         while ( !converged && it < maxIt ) {
             setLinearProfileContext(name, it, cumul_it);
             if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, false) ) {
@@ -1444,6 +1529,7 @@ void SteadyStateNonLinearSolver :: solve() {
                     }
                 }
             } else {         //direct controll
+                  updateAdaptiveLinearTolerance("direct_residual");
                   const bool directSolveSuccess = profiledLinearSolve(ddr, f, "direct_residual");
                   collectLinearDeflationVector(ddr, "direct_residual", directSolveSuccess);
                   if ( !directSolveSuccess ) {
@@ -1501,7 +1587,14 @@ void SteadyStateNonLinearSolver :: solve() {
 
             it++;
             cumul_it++;
-            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it >= minIt ) {
+            const bool nonlinearCandidateConverged = ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it >= minIt );
+            if ( nonlinearCandidateConverged && linearAdaptiveTolerance && linearAdaptiveRequireTightConvergence && linearAdaptiveLastTolerance > linearAdaptiveTightTolerance * ( 1. + 1e-12 ) ) {
+                converged = false;
+                linearAdaptiveForceTightNextSolve = true;
+                if ( not silent ) {
+                    std :: cout << "adaptive linear tolerance: forcing strict correction before accepting step" << std :: endl;
+                }
+            } else if ( nonlinearCandidateConverged ) {
                 converged = true;
             } else {
                 converged = false;

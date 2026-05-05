@@ -92,7 +92,7 @@ void LinearSolverProfiler :: writeEventHeader() {
         << "event_index\tphase\tstep\titeration\tcumulative_iteration\tsystem_kind\trhs_kind"
         << "\tsolver_type\tsolver_name\trows\tcols\tnnz\tpattern_hash\tvalue_hash"
         << "\tmatrix_norm\tmatrix_relative_delta\trhs_norm\trhs_relative_delta"
-        << "\tsolution_norm\tsolver_iterations\tsolver_error\tdeflation_basis_size"
+        << "\tsolution_norm\tsolver_iterations\tsolver_error\trequested_tolerance\tdeflation_basis_size"
         << "\tdeflation_discarded_count\tdeflation_raw_candidate_count"
         << "\tdeflation_capacity_eviction_count\tdeflation_low_anorm_discard_count"
         << "\tdeflation_last_initial_anorm\tdeflation_last_final_anorm"
@@ -171,6 +171,7 @@ void LinearSolverProfiler :: recordEvent(
     double solutionNorm,
     long long solverIterations,
     double solverError,
+    double requestedTolerance,
     unsigned deflationBasisSize,
     unsigned deflationDiscardedCount,
     unsigned deflationRawCandidateCount,
@@ -217,6 +218,7 @@ void LinearSolverProfiler :: recordEvent(
         << solutionNorm << '\t'
         << solverIterations << '\t'
         << solverError << '\t'
+        << requestedTolerance << '\t'
         << deflationBasisSize << '\t'
         << deflationDiscardedCount << '\t'
         << deflationRawCandidateCount << '\t'
@@ -326,6 +328,7 @@ void LinearSolverProfiler :: recordMatrixEvent(
         -1.,
         -1,
         -1.,
+        -1.,
         0,
         0,
         0,
@@ -359,6 +362,7 @@ void LinearSolverProfiler :: recordSolveEvent(
     const Vector &solution,
     long long solverIterations,
     double solverError,
+    double requestedTolerance,
     unsigned deflationBasisSize,
     unsigned deflationDiscardedCount,
     unsigned deflationRawCandidateCount,
@@ -403,6 +407,7 @@ void LinearSolverProfiler :: recordSolveEvent(
         vectorNorm(solution),
         solverIterations,
         solverError,
+        requestedTolerance,
         deflationBasisSize,
         deflationDiscardedCount,
         deflationRawCandidateCount,

@@ -23,6 +23,9 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
+from vtkmodules.util.numpy_support import vtk_to_numpy
+from vtkmodules.vtkIOXML import vtkXMLUnstructuredGridReader
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +33,8 @@ CASE_DIR = ROOT / "data/cases/TS-N_65"
 MASTER_FILE = CASE_DIR / "master.inp"
 PROFILE_DIR = CASE_DIR / "results"
 DEFAULT_OAS_BIN = ROOT.parent / "oas_deflation-build/release/bin/OAS"
+DEFAULT_REFERENCE_DIR = ROOT / "results/tsn65-two-step-comparison-20260503-093031/pardisoldlt-reference"
+VTK_EXPORT_LINE = "VTKElementExporter state saveSteps 2 1 2 ascii pointData 1 displacements"
 
 
 @dataclass
@@ -127,6 +132,18 @@ def patch_key_value_file(path: Path, updates: dict[str, str], marker: str) -> st
     return original
 
 
+def patch_exporters(path: Path) -> str:
+    original = path.read_text(encoding="utf-8", errors="replace")
+    lines = original.splitlines()
+    if not any(line.strip().startswith("VTKElementExporter state ") for line in lines):
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("# Local TS-N_65 DFGMRES adaptive-tolerance VTK export.")
+        lines.append(VTK_EXPORT_LINE)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return original
+
+
 def clean_case_results() -> None:
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     for pattern in [
@@ -136,14 +153,29 @@ def clean_case_results() -> None:
         "runtime_profile_summary.tsv",
         "solver.out",
         "LD.out",
+        "state_*.vtu",
+        "state_*.pvtu",
+        "state_*.pvd",
+        "*.visit",
     ]:
         for path in PROFILE_DIR.glob(pattern):
             if path.is_file():
                 path.unlink()
 
 
-def solver_updates(nvec: int, eps: str, total_time: str) -> dict[str, str]:
-    return {
+def solver_updates(
+    nvec: int,
+    eps: str,
+    total_time: str,
+    linear_tol: str,
+    true_tol: str,
+    adaptive: bool,
+    loose_tol: str,
+    tight_tol: str,
+    trigger_ratio: str,
+    require_tight_convergence: bool,
+) -> dict[str, str]:
+    updates = {
         "total_time": total_time,
         "solver_type": "DeflatedFGMRES",
         "linear_solver_profile": "1",
@@ -154,8 +186,8 @@ def solver_updates(nvec: int, eps: str, total_time: str) -> dict[str, str]:
         "stiffness_matrix_iter_update": "-5",
         "stiffness_matrix_step_update": "1",
         "max_iterations": "1000",
-        "dfgmres_tolerance": "1e-6",
-        "dfgmres_true_tolerance": "1e-6",
+        "dfgmres_tolerance": linear_tol,
+        "dfgmres_true_tolerance": true_tol,
         "dfgmres_max_iterations": "500",
         "dfgmres_restart": "80",
         "dfgmres_deflation_vectors": str(nvec),
@@ -176,6 +208,17 @@ def solver_updates(nvec: int, eps: str, total_time: str) -> dict[str, str]:
         "hypre_use_dof_functions": "0",
         "hypre_use_interp_vectors": "0",
     }
+    if adaptive:
+        updates.update(
+            {
+                "linear_solver_adaptive_tolerance": "1",
+                "linear_solver_adaptive_loose_tolerance": loose_tol,
+                "linear_solver_adaptive_tight_tolerance": tight_tol,
+                "linear_solver_adaptive_trigger_ratio": trigger_ratio,
+                "linear_solver_adaptive_require_tight_convergence": "1" if require_tight_convergence else "0",
+            }
+        )
+    return updates
 
 
 def copy_artifacts(run_dir: Path) -> None:
@@ -186,6 +229,8 @@ def copy_artifacts(run_dir: Path) -> None:
         "runtime_profile_summary.tsv",
         "solver.out",
         "LD.out",
+        "state_00001.vtu",
+        "state_00002.vtu",
         "version.txt",
     ]:
         src = PROFILE_DIR / name
@@ -221,6 +266,11 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     analyze = [row for row in events if row.get("phase") == "analyze"]
     iterations = [as_int(row.get("solver_iterations"), -1) for row in solve if as_int(row.get("solver_iterations"), -1) >= 0]
     residuals = [as_float(row.get("solver_error")) for row in solve if as_float(row.get("solver_error")) >= 0]
+    requested_tolerances: dict[str, int] = {}
+    for row in solve:
+        tolerance = row.get("requested_tolerance") or ""
+        if tolerance:
+            requested_tolerances[tolerance] = requested_tolerances.get(tolerance, 0) + 1
     successes = [as_int(row.get("success"), 0) for row in solve]
     max_step = max([as_int(row.get("step"), 0) for row in solver_rows], default=0)
     nonlinear_iterations = sum(as_int(row.get("iterations"), 0) for row in solver_rows)
@@ -246,7 +296,14 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     discarded = max([as_int(row.get("deflation_discarded_count"), 0) for row in solve], default=0)
     capacity_evictions = max([as_int(row.get("deflation_capacity_eviction_count"), 0) for row in solve], default=0)
     status = "completed_2_steps" if returncode == 0 and max_step >= 2 else "partial"
-    if solve and (not all(successes) or max(residuals, default=math.inf) > 1e-6):
+    residual_failed = False
+    for row in solve:
+        residual = as_float(row.get("solver_error"))
+        requested = as_float(row.get("requested_tolerance"), 1e-6)
+        if math.isfinite(residual) and math.isfinite(requested) and residual > requested * (1. + 1e-8):
+            residual_failed = True
+            break
+    if solve and (not all(successes) or residual_failed):
         status = "linear_failed"
     if returncode != 0 and max_step == 0 and not solve:
         status = "failed"
@@ -266,6 +323,7 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
         "median_iterations": median(iterations) if iterations else None,
         "max_iterations": max(iterations, default=None),
         "max_true_residual": max(residuals, default=None),
+        "requested_tolerances": requested_tolerances,
         "max_basis": max_basis,
         "final_basis": final_basis,
         "discarded": discarded,
@@ -287,6 +345,51 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     }
 
 
+def read_vtu_displacements(path: Path, array_name: str = "displacements") -> np.ndarray | None:
+    if not path.exists():
+        return None
+    reader = vtkXMLUnstructuredGridReader()
+    reader.SetFileName(str(path))
+    reader.Update()
+    grid = reader.GetOutput()
+    if grid is None or grid.GetNumberOfPoints() == 0:
+        return None
+    arr = grid.GetPointData().GetArray(array_name)
+    if arr is None:
+        return None
+    data = vtk_to_numpy(arr).astype(float, copy=False)
+    if data.ndim == 1:
+        data = data[:, None]
+    return data
+
+
+def compare_vtu(candidate: Path, reference: Path) -> dict[str, Any]:
+    cand = read_vtu_displacements(candidate)
+    ref = read_vtu_displacements(reference)
+    if cand is None or ref is None:
+        return {"available": False}
+    if cand.shape != ref.shape:
+        return {"available": False, "reason": f"shape {cand.shape} != {ref.shape}"}
+    diff = cand - ref
+    node_norm = np.linalg.norm(diff, axis=1)
+    denom = float(np.linalg.norm(ref))
+    return {
+        "available": True,
+        "relative_l2": float(np.linalg.norm(diff) / denom) if denom > 0 else None,
+        "rms_nodal": float(np.sqrt(np.mean(node_norm * node_norm))),
+        "max_nodal": float(np.max(node_norm)),
+        "max_component": float(np.max(np.abs(diff))),
+    }
+
+
+def add_reference_comparisons(manifest: dict[str, Any], run_dir: Path, reference_dir: Path | None) -> None:
+    comparisons: dict[str, Any] = {}
+    if reference_dir and reference_dir.exists():
+        for step in (1, 2):
+            comparisons[f"step_{step}"] = compare_vtu(run_dir / f"state_{step:05d}.vtu", reference_dir / f"state_{step:05d}.vtu")
+    manifest["pardiso_vtu_comparison"] = comparisons
+
+
 def top_runtime_hotspots(run_dir: Path, limit: int = 8) -> list[dict[str, Any]]:
     rows = read_tsv(run_dir / "runtime_profile_summary.tsv")
     parsed: list[dict[str, Any]] = []
@@ -305,18 +408,53 @@ def top_runtime_hotspots(run_dir: Path, limit: int = 8) -> list[dict[str, Any]]:
     return parsed[:limit]
 
 
-def run_spec(spec: RunSpec, out_dir: Path, oas_bin: Path, threads: int, eps: str, total_time: str) -> dict[str, Any]:
+def run_spec(
+    spec: RunSpec,
+    out_dir: Path,
+    oas_bin: Path,
+    threads: int,
+    eps: str,
+    total_time: str,
+    linear_tol: str,
+    true_tol: str,
+    adaptive: bool,
+    loose_tol: str,
+    tight_tol: str,
+    trigger_ratio: str,
+    require_tight_convergence: bool,
+    reference_dir: Path | None,
+) -> dict[str, Any]:
     run_dir = out_dir / spec.name
     run_dir.mkdir(parents=True, exist_ok=True)
     solver_inp = CASE_DIR / "solver.inp"
+    exporters_inp = CASE_DIR / "exporters.inp"
     original = solver_inp.read_text(encoding="utf-8", errors="replace")
+    exporters_original = exporters_inp.read_text(encoding="utf-8", errors="replace")
     (run_dir / "solver.inp.original").write_text(original, encoding="utf-8")
+    (run_dir / "exporters.inp.original").write_text(exporters_original, encoding="utf-8")
     started = datetime.now().isoformat(timespec="seconds")
     start_time = time.monotonic()
     returncode = 999
     try:
-        patch_key_value_file(solver_inp, solver_updates(spec.nvec, eps, total_time), "Local TS-N_65 DFGMRES-hypre deflation settings.")
+        patch_key_value_file(
+            solver_inp,
+            solver_updates(
+                spec.nvec,
+                eps,
+                total_time,
+                linear_tol,
+                true_tol,
+                adaptive,
+                loose_tol,
+                tight_tol,
+                trigger_ratio,
+                require_tight_convergence,
+            ),
+            "Local TS-N_65 DFGMRES-hypre deflation settings.",
+        )
+        patch_exporters(exporters_inp)
         (run_dir / "solver.inp.effective").write_text(solver_inp.read_text(encoding="utf-8"), encoding="utf-8")
+        (run_dir / "exporters.inp.effective").write_text(exporters_inp.read_text(encoding="utf-8"), encoding="utf-8")
         clean_case_results()
         log_path = run_dir / "oas.log"
         env = os.environ.copy()
@@ -331,6 +469,10 @@ def run_spec(spec: RunSpec, out_dir: Path, oas_bin: Path, threads: int, eps: str
             log.write(f"Threads: {threads}\n")
             log.write(f"Deflation vectors: {spec.nvec}\n")
             log.write(f"Deflation eps: {eps}\n")
+            log.write(f"Linear tolerance: {linear_tol}\n")
+            log.write(f"True tolerance: {true_tol}\n")
+            if adaptive:
+                log.write(f"Adaptive tolerance: loose={loose_tol}, tight={tight_tol}, trigger_ratio={trigger_ratio}\n")
             log.flush()
             process = subprocess.Popen(cmd, cwd=str(ROOT), env=env, stdout=log, stderr=subprocess.STDOUT, text=True)
             while True:
@@ -346,11 +488,13 @@ def run_spec(spec: RunSpec, out_dir: Path, oas_bin: Path, threads: int, eps: str
         print(f"[{datetime.now().isoformat(timespec='seconds')}] finished {spec.name} with status {returncode}", flush=True)
     finally:
         solver_inp.write_text(original, encoding="utf-8")
+        exporters_inp.write_text(exporters_original, encoding="utf-8")
 
     elapsed = time.monotonic() - start_time
     copy_artifacts(run_dir)
     analyze_linear_profile(run_dir, f"TS-N_65 DeflatedFGMRES hypre N={spec.nvec} Two-Step Profile", threads)
     manifest = summarize_run(run_dir, spec, returncode, elapsed, eps)
+    add_reference_comparisons(manifest, run_dir, reference_dir)
     (run_dir / "run.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
@@ -394,6 +538,7 @@ def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
     plots = make_plots(out_dir, manifests)
     run_rows = []
     timing_rows = []
+    comparison_rows = []
     hotspot_rows = []
     for row in manifests:
         run_rows.append([
@@ -410,12 +555,24 @@ def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
             row["median_iterations"],
             row["max_iterations"],
             row["max_true_residual"],
+            ", ".join(f"{format_cell(float(k))}:{v}" for k, v in sorted(row.get("requested_tolerances", {}).items())),
             row["max_basis"],
             row["final_basis"],
             row["discarded"],
             row["capacity_evictions"],
             row["max_offdiag"],
         ])
+        for key, cmp_row in row.get("pardiso_vtu_comparison", {}).items():
+            comparison_rows.append([
+                row["name"],
+                key.replace("_", " "),
+                cmp_row.get("available"),
+                cmp_row.get("relative_l2"),
+                cmp_row.get("rms_nodal"),
+                cmp_row.get("max_nodal"),
+                cmp_row.get("max_component"),
+                cmp_row.get("reason", ""),
+            ])
         timing_rows.append([
             row["name"],
             row["wall_seconds"],
@@ -445,8 +602,13 @@ def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
         handle.write("Outer solver is native `DeflatedFGMRES`; hypre BoomerAMG is used only as a right preconditioner. Runs target the first two TS-N_65 load steps with `total_time=0.01`, 16 shared-memory threads, and matrix-delta profiling disabled.\n\n")
         handle.write("## Run Summary\n\n")
         handle.write(md_table([
-            "run", "N", "eps", "status", "steps", "nonlinear iters", "linear solves", "factorizations", "unique matrices", "outer iters", "median iter", "max iter", "max true relres", "max basis", "final basis", "discarded", "capacity evictions", "max offdiag",
+            "run", "N", "eps", "status", "steps", "nonlinear iters", "linear solves", "factorizations", "unique matrices", "outer iters", "median iter", "max iter", "max true relres", "requested tol counts", "max basis", "final basis", "discarded", "capacity evictions", "max offdiag",
         ], run_rows) + "\n\n")
+        if comparison_rows:
+            handle.write("## VTU Displacement Closeness vs Pardiso\n\n")
+            handle.write(md_table([
+                "run", "step", "available", "relative L2", "RMS nodal", "max nodal", "max component", "reason",
+            ], comparison_rows) + "\n\n")
         handle.write("## Timing\n\n")
         handle.write(md_table([
             "run", "wall s", "setup s", "solve s", "precond apply s", "orth s", "matvec s", "least squares s", "deflation s", "other s", "linear share",
@@ -479,6 +641,14 @@ def main() -> int:
     parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--eps", default="1e-15")
     parser.add_argument("--total-time", default="1.000000e-02")
+    parser.add_argument("--linear-tol", default="1e-6")
+    parser.add_argument("--true-tol", default=None)
+    parser.add_argument("--adaptive-tolerance", action="store_true")
+    parser.add_argument("--loose-tol", default="1e-1")
+    parser.add_argument("--tight-tol", default="1e-6")
+    parser.add_argument("--trigger-ratio", default="10")
+    parser.add_argument("--allow-loose-step-acceptance", action="store_true")
+    parser.add_argument("--reference-dir", type=Path, default=DEFAULT_REFERENCE_DIR)
     parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--only", action="append", default=[])
     parser.add_argument("--report-only", type=Path, default=None)
@@ -513,7 +683,22 @@ def main() -> int:
     for spec in specs:
         if spec.name in seen:
             continue
-        manifest = run_spec(spec, out_dir, args.oas_bin, args.threads, args.eps, args.total_time)
+        manifest = run_spec(
+            spec,
+            out_dir,
+            args.oas_bin,
+            args.threads,
+            args.eps,
+            args.total_time,
+            args.linear_tol,
+            args.true_tol or args.linear_tol,
+            args.adaptive_tolerance,
+            args.loose_tol,
+            args.tight_tol,
+            args.trigger_ratio,
+            not args.allow_loose_step_acceptance,
+            args.reference_dir,
+        )
         manifests.append(manifest)
         write_summary(out_dir, manifests)
     write_summary(out_dir, manifests)
