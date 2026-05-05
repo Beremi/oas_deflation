@@ -1,6 +1,13 @@
 #include "solver_implicit.h"
 #include "adaptivity.h"
 #include "model.h"
+#include <array>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <limits>
+#include <map>
+#include <set>
 #define numPhysicalFields 4
 
 using namespace std;
@@ -12,6 +19,9 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     name = "SteadyStateLinearSolver";
     conj_grad_precision = 1e-14;
     conj_grad_relative_maxit = 0.85;
+    amgclOptions.tolerance = 1e-6;
+    dfgmresOptions.tolerance = 1e-6;
+    dfgmresOptions.trueTolerance = 1e-6;
     isTimeReal = false;
     stiffMatType = "elastic";
     stiffMatTypeFirstIT = "void";
@@ -38,6 +48,8 @@ void SteadyStateLinearSolver :: prepareSystemMatricesAndInitialField(string init
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: init(string init_r_file, string init_v_file, const bool initial) {
+    initializeRuntimeProfiler();
+    setRuntimeProfileContext(name, -1, 0);
     Solver :: init(init_r_file, init_v_file, initial);
     initializeLinearProfiler();
     setLinearProfileContext(name, -1, 0);
@@ -64,6 +76,7 @@ void SteadyStateLinearSolver :: setLinearProfileContext(string systemKind, int i
     linearProfileSystemKind = systemKind;
     linearProfileIteration = iteration;
     linearProfileCumulIteration = cumulIteration;
+    setRuntimeProfileContext(systemKind, iteration, cumulIteration);
 }
 
 //////////////////////////////////////////////////////////
@@ -89,17 +102,381 @@ bool SteadyStateLinearSolver :: profiledLinearSolve(Vector &x, const Vector &b, 
     auto start = std :: chrono :: steady_clock :: now();
     bool result = linalgsolver->solve(x, b);
     auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
-    linearProfiler.recordSolveEvent(step, linearProfileIteration, linearProfileCumulIteration, linearProfileSystemKind, rhsKind, symsolver_type, linalgsolver->giveName(), b, x, linalgsolver->giveLastIterations(), linalgsolver->giveLastError(), elapsed, result);
+    linearProfiler.recordSolveEvent(
+        step,
+        linearProfileIteration,
+        linearProfileCumulIteration,
+        linearProfileSystemKind,
+        rhsKind,
+        symsolver_type,
+        linalgsolver->giveName(),
+        b,
+        x,
+        linalgsolver->giveLastIterations(),
+        linalgsolver->giveLastError(),
+        linalgsolver->giveDeflationBasisSize(),
+        linalgsolver->giveDeflationDiscardedCount(),
+        linalgsolver->giveDeflationRawCandidateCount(),
+        linalgsolver->giveDeflationCapacityEvictionCount(),
+        linalgsolver->giveDeflationLowANormDiscardCount(),
+        linalgsolver->giveDeflationLastInitialANorm(),
+        linalgsolver->giveDeflationLastFinalANorm(),
+        linalgsolver->giveDeflationOrthogonalityMaxOffdiag(),
+        linalgsolver->giveDeflationOrthogonalityMaxDiagError(),
+        linalgsolver->giveDeflationLastDiscardReason(),
+        linalgsolver->giveLastPreconditionerApplySeconds(),
+        linalgsolver->giveLastOrthogonalizationSeconds(),
+        linalgsolver->giveLastLeastSquaresSeconds(),
+        linalgsolver->giveLastMatvecSeconds(),
+        linalgsolver->giveLastDeflationSeconds(),
+        elapsed,
+        result
+    );
+    dumpLinearReplayCase(b, x, rhsKind, result);
     return result;
 }
 
 //////////////////////////////////////////////////////////
-void SteadyStateLinearSolver :: computeKeff() {
-    Keff = K;
-    if ( nodes->giveConstraints()->isActive() ) {
-        nodes->giveConstraints()->transformToConstraintSpace(Keff);
+void SteadyStateLinearSolver :: collectLinearDeflationVector(const Vector &x, const string &rhsKind, bool success) {
+    if ( !success || !linalgsolver || rhsKind != "direct_residual" ) {
+        return;
     }
+    linalgsolver->collectDeflationVector(x);
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: dumpLinearReplayCase(const Vector &rhs, const Vector &solution, const string &rhsKind, bool success) {
+    if ( !linearReplayDumpEnabled || linearReplayDumpCount >= linearReplayDumpLimit ) {
+        return;
+    }
+
+    fs :: path resultDir = masterModel ? masterModel->giveResultDirectory() : fs :: path(".");
+    fs :: path dumpDir = resultDir / linearReplayDumpDir / ( "solve_" + std :: to_string(linearReplayDumpCount + 1) );
+    fs :: create_directories(dumpDir);
+
+    ElasticDofMap elasticMap = buildElasticDofMap();
+
+    {
+        std :: ofstream out(dumpDir / "matrix.mtx");
+        out << "%%MatrixMarket matrix coordinate real general\n";
+        out << Keff.rows() << " " << Keff.cols() << " " << Keff.nonZeros() << "\n";
+        for ( int outer = 0; outer < Keff.outerSize(); outer++ ) {
+            for ( CoordinateIndexedSparseMatrix :: InnerIterator it(Keff, outer); it; ++it ) {
+                out << ( it.row() + 1 ) << " " << ( it.col() + 1 ) << " " << std :: setprecision(17) << it.value() << "\n";
+            }
+        }
+    }
+
+    auto writeVector = [](const fs :: path &path, const Vector &vector) {
+        std :: ofstream out(path);
+        out << "index\tvalue\n";
+        for ( Eigen :: Index i = 0; i < vector.size(); i++ ) {
+            out << i << "\t" << std :: setprecision(17) << vector [ i ] << "\n";
+        }
+    };
+    writeVector(dumpDir / "rhs.tsv", rhs);
+    writeVector(dumpDir / "solution.tsv", solution);
+
+    {
+        std :: ofstream out(dumpDir / "summary.tsv");
+        out << "key\tvalue\n";
+        out << "step\t" << step << "\n";
+        out << "iteration\t" << linearProfileIteration << "\n";
+        out << "cumulative_iteration\t" << linearProfileCumulIteration << "\n";
+        out << "system_kind\t" << linearProfileSystemKind << "\n";
+        out << "rhs_kind\t" << rhsKind << "\n";
+        out << "solver_type\t" << symsolver_type << "\n";
+        out << "solver_name\t" << linalgsolver->giveName() << "\n";
+        out << "success\t" << ( success ? 1 : 0 ) << "\n";
+        out << "solver_iterations\t" << linalgsolver->giveLastIterations() << "\n";
+        out << "solver_error\t" << std :: setprecision(17) << linalgsolver->giveLastError() << "\n";
+        out << "true_relative_residual\t" << std :: setprecision(17) << linalgsolver->giveLastTrueRelativeResidual() << "\n";
+        out << "rows\t" << Keff.rows() << "\n";
+        out << "nnz\t" << Keff.nonZeros() << "\n";
+        out << "elastic_map_valid\t" << ( elasticMap.isValid() ? 1 : 0 ) << "\n";
+        out << "elastic_full_rows\t" << elasticMap.fullRows << "\n";
+        out << "elastic_block_size\t" << elasticMap.blockSize << "\n";
+        out << "elastic_dimension\t" << elasticMap.dimension << "\n";
+        out << "near_nullspace_columns\t" << elasticMap.nearNullspaceColumns << "\n";
+    }
+
+    {
+        std :: ofstream out(dumpDir / "metadata.tsv");
+        out << "reduced_row\tfull_dof\tnode_id\trelative_dof\tphysical_field\tx\ty\tz\tfull_elastic_row\n";
+        for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+            const unsigned fullDoF = nodes->giveInvDoFid(i);
+            const Node *node = nodes->giveNodePointerOfDoFID(fullDoF);
+            const unsigned relativeDoF = fullDoF - node->giveStartingDoF();
+            const Point point = node->givePoint();
+            const unsigned elasticRow = ( elasticMap.isValid() && i < elasticMap.reducedToFull.size() ) ? elasticMap.reducedToFull [ i ] : std :: numeric_limits< unsigned > :: max();
+            out << i << "\t" << fullDoF << "\t" << node->giveID() << "\t" << relativeDoF << "\t"
+                << nodes->givePhysicalFieldOfDoF(fullDoF) << "\t"
+                << std :: setprecision(17) << point.x() << "\t" << point.y() << "\t" << point.z() << "\t"
+                << elasticRow << "\n";
+        }
+    }
+
+    if ( elasticMap.isValid() && !elasticMap.nearNullspace.empty() ) {
+        std :: ofstream out(dumpDir / "near_nullspace.tsv");
+        out << "full_elastic_row";
+        for ( int col = 0; col < elasticMap.nearNullspaceColumns; col++ ) {
+            out << "\tmode_" << col;
+        }
+        out << "\n";
+        for ( unsigned row = 0; row < elasticMap.fullRows; row++ ) {
+            out << row;
+            for ( int col = 0; col < elasticMap.nearNullspaceColumns; col++ ) {
+                out << "\t" << std :: setprecision(17) << elasticMap.nearNullspace [ size_t( row ) * elasticMap.nearNullspaceColumns + col ];
+            }
+            out << "\n";
+        }
+    }
+
+    linearReplayDumpCount++;
+}
+
+//////////////////////////////////////////////////////////
+ElasticDofMap SteadyStateLinearSolver :: buildElasticDofMap() const {
+    ElasticDofMap map;
+    if ( !nodes || freeDoFnum == 0 ) {
+        return map;
+    }
+
+    unsigned dim = 0;
+    std :: array< unsigned, numPhysicalFields >freeRowsByField {};
+    unsigned unclassifiedRows = 0;
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        const unsigned fullDoF = nodes->giveInvDoFid(i);
+        const unsigned physicalField = nodes->givePhysicalFieldOfDoF(fullDoF);
+        if ( physicalField < freeRowsByField.size() ) {
+            freeRowsByField [ physicalField ]++;
+        } else {
+            unclassifiedRows++;
+        }
+        const Node *node = nodes->giveNodePointerOfDoFID(fullDoF);
+        if ( node->doesMechanics() ) {
+            dim = node->giveDimension();
+        }
+    }
+    if ( dim != 2 && dim != 3 ) {
+        return map;
+    }
+
+    unsigned blockSize = dim;
+    std :: vector< const Node * >mechanicalNodes;
+    std :: map< unsigned, unsigned >nodeIdToElasticBlock;
+    for ( auto nodeIt = nodes->begin(); nodeIt != nodes->end(); ++nodeIt ) {
+        const Node *node = *nodeIt;
+        if ( !node->doesMechanics() ) {
+            continue;
+        }
+        const unsigned nodeDofs = node->giveNumberOfDoFs();
+        if ( dim == 2 && nodeDofs >= 3 ) {
+            blockSize = 3;
+        } else if ( dim == 3 && nodeDofs >= 6 ) {
+            blockSize = 6;
+        }
+        nodeIdToElasticBlock [ node->giveID() ] = mechanicalNodes.size();
+        mechanicalNodes.push_back(node);
+    }
+
+    if ( mechanicalNodes.empty() ) {
+        return map;
+    }
+
+    map.dimension = dim;
+    map.blockSize = blockSize;
+    map.fullRows = mechanicalNodes.size() * blockSize;
+    map.reducedToFull.assign(freeDoFnum, std :: numeric_limits< unsigned > :: max() );
+    std :: vector< char >fullRowIsFree(map.fullRows, 0);
+
+    unsigned translationalMechanicalRows = 0;
+    unsigned rotationalMechanicalRows = 0;
+    unsigned mappedRows = 0;
+    unsigned unsupportedRows = 0;
+
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        const unsigned fullDoF = nodes->giveInvDoFid(i);
+        const Node *node = nodes->giveNodePointerOfDoFID(fullDoF);
+        const unsigned relativeDoF = fullDoF - node->giveStartingDoF();
+        if ( !node->doesMechanics() ) {
+            unsupportedRows++;
+            continue;
+        }
+        if ( relativeDoF >= blockSize ) {
+            unsupportedRows++;
+            continue;
+        }
+        const auto found = nodeIdToElasticBlock.find(node->giveID() );
+        if ( found == nodeIdToElasticBlock.end() ) {
+            unsupportedRows++;
+            continue;
+        }
+        map.reducedToFull [ i ] = found->second * blockSize + relativeDoF;
+        fullRowIsFree [ map.reducedToFull [ i ] ] = 1;
+        mappedRows++;
+        if ( relativeDoF < dim ) {
+            translationalMechanicalRows++;
+        } else {
+            rotationalMechanicalRows++;
+        }
+    }
+
+    if ( unsupportedRows > 0 || mappedRows != freeDoFnum ) {
+        std :: cout << "AMG elasticity map unavailable: mapped_rows=" << mappedRows
+                    << ", free_rows=" << freeDoFnum
+                    << ", unsupported_rows=" << unsupportedRows << std :: endl;
+        map.reducedToFull.clear();
+        map.fullRows = 0;
+        return map;
+    }
+
+    Point center = Point :: Zero();
+    for ( const Node *node : mechanicalNodes ) {
+        center += node->givePoint();
+    }
+    center /= double(mechanicalNodes.size() );
+
+    double radius2 = 0.;
+    map.coordinates.assign(size_t( mechanicalNodes.size() ) * dim, 0.);
+    for ( unsigned nodeIndex = 0; nodeIndex < mechanicalNodes.size(); nodeIndex++ ) {
+        Point point = mechanicalNodes [ nodeIndex ]->givePoint() - center;
+        radius2 += point.squaredNorm();
+        map.coordinates [ size_t( nodeIndex ) * dim + 0 ] = point.x();
+        map.coordinates [ size_t( nodeIndex ) * dim + 1 ] = point.y();
+        if ( dim == 3 ) {
+            map.coordinates [ size_t( nodeIndex ) * dim + 2 ] = point.z();
+        }
+    }
+    const double scale = sqrt(radius2 / std :: max<size_t>(mechanicalNodes.size(), 1) );
+    if ( scale > 0. ) {
+        for ( double &value : map.coordinates ) {
+            value /= scale;
+        }
+    }
+
+    const int rawColumns = ( dim == 2 ) ? 3 : 6;
+    std :: vector< double >raw(size_t( map.fullRows ) * rawColumns, 0.);
+    for ( unsigned nodeIndex = 0; nodeIndex < mechanicalNodes.size(); nodeIndex++ ) {
+        const double x = map.coordinates [ size_t( nodeIndex ) * dim + 0 ];
+        const double y = map.coordinates [ size_t( nodeIndex ) * dim + 1 ];
+        const double z = ( dim == 3 ) ? map.coordinates [ size_t( nodeIndex ) * dim + 2 ] : 0.;
+        for ( unsigned relativeDoF = 0; relativeDoF < blockSize; relativeDoF++ ) {
+            const size_t row = size_t( nodeIndex ) * blockSize + relativeDoF;
+            if ( !fullRowIsFree [ row ] ) {
+                continue;
+            }
+            if ( relativeDoF < dim ) {
+                raw [ row * rawColumns + relativeDoF ] = 1.;
+            }
+            if ( dim == 2 ) {
+                if ( relativeDoF == 0 ) {
+                    raw [ row * rawColumns + 2 ] = -y;
+                } else if ( relativeDoF == 1 ) {
+                    raw [ row * rawColumns + 2 ] = x;
+                } else if ( relativeDoF == 2 ) {
+                    raw [ row * rawColumns + 2 ] = 1.;
+                }
+            } else {
+                if ( relativeDoF == 0 ) {
+                    raw [ row * rawColumns + 4 ] = z;
+                    raw [ row * rawColumns + 5 ] = -y;
+                } else if ( relativeDoF == 1 ) {
+                    raw [ row * rawColumns + 3 ] = -z;
+                    raw [ row * rawColumns + 5 ] = x;
+                } else if ( relativeDoF == 2 ) {
+                    raw [ row * rawColumns + 3 ] = y;
+                    raw [ row * rawColumns + 4 ] = -x;
+                } else if ( relativeDoF >= 3 && relativeDoF < 6 ) {
+                    raw [ row * rawColumns + relativeDoF ] = 1.;
+                }
+            }
+        }
+    }
+
+    int columns = 0;
+    std :: vector< double >orthonormal(size_t( map.fullRows ) * rawColumns, 0.);
+    for ( int col = 0; col < rawColumns; col++ ) {
+        std :: vector< double >candidate(map.fullRows, 0.);
+        for ( unsigned row = 0; row < map.fullRows; row++ ) {
+            candidate [ row ] = raw [ size_t( row ) * rawColumns + col ];
+        }
+
+        for ( int previous = 0; previous < columns; previous++ ) {
+            double dot = 0.;
+            for ( unsigned row = 0; row < map.fullRows; row++ ) {
+                dot += candidate [ row ] * orthonormal [ size_t( row ) * rawColumns + previous ];
+            }
+            for ( unsigned row = 0; row < map.fullRows; row++ ) {
+                candidate [ row ] -= dot * orthonormal [ size_t( row ) * rawColumns + previous ];
+            }
+        }
+
+        double norm2 = 0.;
+        for ( double value : candidate ) {
+            norm2 += value * value;
+        }
+        const double norm = sqrt(norm2);
+        if ( norm <= 1e-12 ) {
+            continue;
+        }
+        for ( unsigned row = 0; row < map.fullRows; row++ ) {
+            orthonormal [ size_t( row ) * rawColumns + columns ] = candidate [ row ] / norm;
+        }
+        columns++;
+    }
+
+    if ( columns == 0 ) {
+        map.reducedToFull.clear();
+        map.fullRows = 0;
+        return map;
+    }
+
+    map.nearNullspaceColumns = columns;
+    map.nearNullspace.assign(size_t( map.fullRows ) * columns, 0.);
+    for ( unsigned row = 0; row < map.fullRows; row++ ) {
+        for ( int col = 0; col < columns; col++ ) {
+            map.nearNullspace [ size_t( row ) * columns + col ] = orthonormal [ size_t( row ) * rawColumns + col ];
+        }
+    }
+
+    std :: cout << "AMG elasticity map: full_rows=" << map.fullRows
+                << ", reduced_rows=" << freeDoFnum
+                << ", lifted_identity_rows=" << ( map.fullRows - mappedRows )
+                << ", block_size=" << map.blockSize
+                << ", dimension=" << map.dimension
+                << ", centered_coordinate_scale=" << scale << std :: endl;
+    std :: cout << "AMG elasticity map: prepared " << columns << " near-nullspace modes from "
+                << translationalMechanicalRows << " translational and " << rotationalMechanicalRows
+                << " rotational mechanical free DOF rows out of " << freeDoFnum << " free DOFs" << std :: endl;
+    std :: cout << "AMG elasticity map: free reduced rows by physical field: mechanics=" << freeRowsByField [ 0 ]
+                << ", transport=" << freeRowsByField [ 1 ]
+                << ", thermal=" << freeRowsByField [ 2 ]
+                << ", humidity=" << freeRowsByField [ 3 ]
+                << ", unclassified=" << unclassifiedRows << std :: endl;
+    return map;
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: computeKeff() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
+    Keff = K;
+    if ( profile ) {
+        recordRuntimePhase("matrix.compute_keff_copy", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    if ( nodes->giveConstraints()->isActive() ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
+        nodes->giveConstraints()->transformToConstraintSpace(Keff);
+        if ( profile ) {
+            recordRuntimePhase("matrix.constraint_transform", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+        }
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     factorizeLinearSystem();
+    if ( profile ) {
+        recordRuntimePhase("matrix.factorize_linear_system_total", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -148,6 +525,9 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> termination_time;
             } else if ( param.compare("conj_grad_precision") == 0 ) {
                 iss >> conj_grad_precision;
+                amgclOptions.tolerance = conj_grad_precision;
+                dfgmresOptions.tolerance = conj_grad_precision;
+                dfgmresOptions.trueTolerance = conj_grad_precision;
             } else if ( param.compare("conj_grad_relative_maxit") == 0 ) {
                 iss >> conj_grad_relative_maxit;
             } else if ( param.compare("init_time") == 0 ) {
@@ -166,6 +546,168 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 linearProfileMatrixDelta = ( value != 0 );
             } else if ( param.compare("linear_solver_profile_file") == 0 ) {
                 iss >> linearProfileFileBase;
+            } else if ( param.compare("runtime_phase_profile") == 0 || param.compare("nonlinear_solver_profile") == 0 ) {
+                int value = 0;
+                iss >> value;
+                runtimeProfileEnabled = ( value != 0 );
+            } else if ( param.compare("runtime_phase_profile_file") == 0 || param.compare("nonlinear_solver_profile_file") == 0 ) {
+                iss >> runtimeProfileFileBase;
+            } else if ( param.compare("linear_solver_replay_dump") == 0 ) {
+                int value = 0;
+                iss >> value;
+                linearReplayDumpEnabled = ( value != 0 );
+            } else if ( param.compare("linear_solver_replay_limit") == 0 ) {
+                iss >> linearReplayDumpLimit;
+            } else if ( param.compare("linear_solver_replay_dir") == 0 ) {
+                iss >> linearReplayDumpDir;
+            } else if ( param.compare("amgcl_tolerance") == 0 ) {
+                iss >> amgclOptions.tolerance;
+            } else if ( param.compare("amgcl_true_tolerance") == 0 ) {
+                iss >> amgclOptions.trueTolerance;
+            } else if ( param.compare("amgcl_max_iterations") == 0 ) {
+                iss >> amgclOptions.maxIterations;
+            } else if ( param.compare("amgcl_eps_strong") == 0 ) {
+                iss >> amgclOptions.epsStrong;
+            } else if ( param.compare("amgcl_relax") == 0 ) {
+                iss >> amgclOptions.relax;
+            } else if ( param.compare("amgcl_block_size") == 0 ) {
+                iss >> amgclOptions.blockSize;
+            } else if ( param.compare("amgcl_coarse_enough") == 0 ) {
+                iss >> amgclOptions.coarseEnough;
+            } else if ( param.compare("amgcl_npre") == 0 ) {
+                iss >> amgclOptions.npre;
+            } else if ( param.compare("amgcl_npost") == 0 ) {
+                iss >> amgclOptions.npost;
+            } else if ( param.compare("amgcl_ncycle") == 0 ) {
+                iss >> amgclOptions.ncycle;
+            } else if ( param.compare("amgcl_coarsening") == 0 ) {
+                iss >> amgclOptions.coarsening;
+            } else if ( param.compare("amgcl_krylov") == 0 || param.compare("amgcl_iterative_solver") == 0 ) {
+                iss >> amgclOptions.krylov;
+            } else if ( param.compare("amgcl_gmres_restart") == 0 || param.compare("amgcl_fgmres_restart") == 0 ) {
+                iss >> amgclOptions.gmresRestart;
+            } else if ( param.compare("amgcl_estimate_spectral_radius") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.estimateSpectralRadius = ( value != 0 );
+            } else if ( param.compare("amgcl_power_iterations") == 0 || param.compare("amgcl_power_iters") == 0 ) {
+                iss >> amgclOptions.powerIterations;
+            } else if ( param.compare("amgcl_near_nullspace") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.nearNullspace = ( value != 0 );
+            } else if ( param.compare("amgcl_elastic_full_lift") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.elasticFullLift = ( value != 0 );
+            } else if ( param.compare("amgcl_diagonal_scale") == 0 || param.compare("amgcl_diag_scale") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.diagonalScale = ( value != 0 );
+            } else if ( param.compare("amgcl_use_block_backend") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.useBlockBackend = ( value != 0 );
+            } else if ( param.compare("amgcl_backend") == 0 || param.compare("amgcl_backend_mode") == 0 ) {
+                iss >> amgclOptions.backend;
+            } else if ( param.compare("amgcl_block_relaxation") == 0 ) {
+                iss >> amgclOptions.blockRelaxation;
+            } else if ( param.compare("amgcl_reuse_initial_guess") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.reuseInitialGuess = ( value != 0 );
+            } else if ( param.compare("amgcl_check_matrix") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.checkMatrix = ( value != 0 );
+            } else if ( param.compare("amgcl_verbose") == 0 ) {
+                int value = 0;
+                iss >> value;
+                amgclOptions.verbose = ( value != 0 );
+            } else if ( param.compare("dfgmres_tolerance") == 0 ) {
+                iss >> dfgmresOptions.tolerance;
+            } else if ( param.compare("dfgmres_true_tolerance") == 0 ) {
+                iss >> dfgmresOptions.trueTolerance;
+            } else if ( param.compare("dfgmres_max_iterations") == 0 ) {
+                iss >> dfgmresOptions.maxIterations;
+            } else if ( param.compare("dfgmres_restart") == 0 ) {
+                iss >> dfgmresOptions.restart;
+            } else if ( param.compare("dfgmres_deflation_vectors") == 0 ) {
+                iss >> dfgmresOptions.deflationVectors;
+            } else if ( param.compare("dfgmres_deflation_eps") == 0 ) {
+                iss >> dfgmresOptions.deflationEps;
+            } else if ( param.compare("dfgmres_collect_newton_steps") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.collectNewtonSteps = ( value != 0 );
+            } else if ( param.compare("dfgmres_preconditioner") == 0 ) {
+                iss >> dfgmresOptions.preconditioner;
+            } else if ( param.compare("dfgmres_reorthogonalize_on_matrix_change") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.reorthogonalizeOnMatrixChange = ( value != 0 );
+            } else if ( param.compare("dfgmres_reorthogonalize") == 0 || param.compare("dfgmres_reorthogonalize_krylov") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.reorthogonalizeKrylov = ( value != 0 );
+            } else if ( param.compare("dfgmres_verbose") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.verbose = ( value != 0 );
+            } else if ( param.compare("hypre_tolerance") == 0 ) {
+                iss >> hypreOptions.tolerance;
+            } else if ( param.compare("hypre_max_iterations") == 0 ) {
+                iss >> hypreOptions.maxIterations;
+            } else if ( param.compare("hypre_coarsen_type") == 0 ) {
+                iss >> hypreOptions.coarsenType;
+            } else if ( param.compare("hypre_interp_type") == 0 ) {
+                iss >> hypreOptions.interpType;
+            } else if ( param.compare("hypre_strong_threshold") == 0 ) {
+                iss >> hypreOptions.strongThreshold;
+            } else if ( param.compare("hypre_nodal") == 0 ) {
+                iss >> hypreOptions.nodal;
+            } else if ( param.compare("hypre_num_functions") == 0 ) {
+                iss >> hypreOptions.numFunctions;
+            } else if ( param.compare("hypre_relax_type") == 0 ) {
+                iss >> hypreOptions.relaxType;
+            } else if ( param.compare("hypre_relax_order") == 0 ) {
+                iss >> hypreOptions.relaxOrder;
+            } else if ( param.compare("hypre_p_max") == 0 || param.compare("hypre_pmax") == 0 ) {
+                iss >> hypreOptions.pMaxElmts;
+            } else if ( param.compare("hypre_agg_levels") == 0 || param.compare("hypre_agg_num_levels") == 0 ) {
+                iss >> hypreOptions.aggNumLevels;
+            } else if ( param.compare("hypre_boomer_max_iterations") == 0 ) {
+                iss >> hypreOptions.boomerMaxIterations;
+            } else if ( param.compare("hypre_print_level") == 0 ) {
+                iss >> hypreOptions.printLevel;
+            } else if ( param.compare("hypre_skip_break") == 0 ) {
+                iss >> hypreOptions.skipBreak;
+            } else if ( param.compare("hypre_flex") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.flex = ( value != 0 );
+            } else if ( param.compare("hypre_recompute_residual") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.recomputeResidual = ( value != 0 );
+            } else if ( param.compare("hypre_recompute_residual_period") == 0 ) {
+                iss >> hypreOptions.recomputeResidualPeriod;
+            } else if ( param.compare("hypre_non_galerkin_tol") == 0 ) {
+                iss >> hypreOptions.nonGalerkinTol;
+            } else if ( param.compare("hypre_use_dof_functions") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.useDofFunctions = ( value != 0 );
+            } else if ( param.compare("hypre_use_interp_vectors") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.useInterpVectors = ( value != 0 );
+            } else if ( param.compare("hypre_interp_vec_variant") == 0 ) {
+                iss >> hypreOptions.interpVecVariant;
+            } else if ( param.compare("hypre_check_matrix") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.checkMatrix = ( value != 0 );
             } else if ( param.compare("silent") == 0 ) {
                 silent = true;
             } else if ( param.compare("pertrubation") == 0 ) {
@@ -227,10 +769,18 @@ void SteadyStateLinearSolver :: solve() {
 //////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
     if ( enforce || ( iteration == 0 && ( stiffnessMatrixStepUpdate == 0 || ( stiffnessMatrixStepUpdate > 0 && step % stiffnessMatrixStepUpdate == 0 ) ) ) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % stiffnessMatrixIterUpdate == 0 ) || ( stiffnessMatrixCumulIterUpdate > 0 && cumul_iteration % stiffnessMatrixCumulIterUpdate == 0 ) ) {
+        const bool profile = runtimeProfiler.isEnabled();
+        auto phaseStart = std :: chrono :: steady_clock :: now();
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
             elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
+            if ( profile ) {
+                recordRuntimePhase("matrix.stiffness_update", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), stiffMatTypeFirstIT);
+            }
         } else {
             elems->updateStiffnessMatrix(K, stiffMatType);
+            if ( profile ) {
+                recordRuntimePhase("matrix.stiffness_update", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), stiffMatType);
+            }
         }
         return true;
     } else {
@@ -241,7 +791,13 @@ bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigne
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runBeforeEachStep() {
+    setRuntimeProfileContext(name, -1, linearProfileCumulIteration);
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     Solver :: runBeforeEachStep();
+    if ( profile ) {
+        recordRuntimePhase("step.run_before_each_step", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
     trial_r = r;
     if ( not silent ) {
         cout << "######### Solving step " << step << " at time " << time << "; time step " << dt << " #########" << endl;
@@ -250,7 +806,12 @@ void SteadyStateLinearSolver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: runAfterEachStep() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     Solver :: runAfterEachStep();
+    if ( profile ) {
+        recordRuntimePhase("step.run_after_each_step", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 }
 
 
@@ -265,6 +826,36 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             std :: unique_ptr< ConjGradSolver >cgs = std :: make_unique< ConjGradSolver >();
             cgs->setPrecisionAndRelMaxIters(conj_grad_precision, conj_grad_relative_maxit);
             linalgsolver = std :: move(cgs);
+#ifdef AMGCL_FOUND
+        } else if  ( symsolver_type == "AmgclCG" || symsolver_type == "AmgclCGElastic" || symsolver_type == "AMGCLCG" || symsolver_type == "AMGCL" || symsolver_type == "AmgclCGScalarDebug" ) {
+            std :: unique_ptr< AmgclCGSolver >amgcl = std :: make_unique< AmgclCGSolver >();
+            if ( symsolver_type == "AmgclCGScalarDebug" ) {
+                amgclOptions.nearNullspace = false;
+                amgclOptions.elasticFullLift = false;
+                amgclOptions.useBlockBackend = false;
+            }
+            amgcl->setOptions(amgclOptions);
+            if ( amgclOptions.nearNullspace || amgclOptions.elasticFullLift || amgclOptions.useBlockBackend ) {
+                amgcl->setElasticDofMap(buildElasticDofMap() );
+            }
+            linalgsolver = std :: move(amgcl);
+        } else if  ( symsolver_type == "DeflatedFGMRES" || symsolver_type == "DFGMRES" || symsolver_type == "DeflatedFlexibleGMRES" ) {
+            std :: unique_ptr< DeflatedFGMRESSolver >dfgmres = std :: make_unique< DeflatedFGMRESSolver >();
+            dfgmres->setOptions(dfgmresOptions);
+            dfgmres->setAmgclOptions(amgclOptions);
+            dfgmres->setHypreOptions(hypreOptions);
+            if ( amgclOptions.nearNullspace || amgclOptions.elasticFullLift || amgclOptions.useBlockBackend ) {
+                dfgmres->setElasticDofMap(buildElasticDofMap() );
+            }
+            linalgsolver = std :: move(dfgmres);
+#endif
+#ifdef HYPRE_FOUND
+        } else if  ( symsolver_type == "HypreBoomerAMGCG" || symsolver_type == "HypreBoomerAMG" || symsolver_type == "BoomerAMGCG" ) {
+            std :: unique_ptr< HypreBoomerAMGCGSolver >hypre = std :: make_unique< HypreBoomerAMGCGSolver >();
+            hypre->setOptions(hypreOptions);
+            hypre->setElasticDofMap(buildElasticDofMap() );
+            linalgsolver = std :: move(hypre);
+#endif
         } else if  ( symsolver_type == "EigenLDLT" ) {
             linalgsolver = std :: make_unique< LDLTSolver >();
         } else if  ( symsolver_type == "EigenLLT" ) {
@@ -547,8 +1138,14 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
 
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: evaluateErrors() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     computeTotalInternalAndExternalAndKineticEnergy();
+    if ( profile ) {
+        recordRuntimePhase("error.energy_update", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     vector< unsigned >pf  = nodes->givePhysicalFieldsOfDoFs();
     Vector f_extPF = Vector :: Zero(numPhysicalFields);
     Vector f_intPF = Vector :: Zero(numPhysicalFields);
@@ -558,7 +1155,11 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     Vector full_ddrPF = Vector :: Zero(numPhysicalFields);
     Vector trial_rPF = Vector :: Zero(numPhysicalFields);
     Vector energyPF = Vector :: Zero(numPhysicalFields);
+    if ( profile ) {
+        recordRuntimePhase("error.prepare_buffers", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     unsigned pff;
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         pff = pf [ i ];
@@ -571,7 +1172,11 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
         trial_rPF [ pff ] += pow(trial_r [ i ], 2);
         energyPF [ pff ] += residuals [ i ] * full_ddr [ i ];
     }
+    if ( profile ) {
+        recordRuntimePhase("error.accumulate_norms", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     resErr = disErr = eneErr = 0;
     for ( unsigned i = 0; i < numPhysicalFields; i++ ) {
         trial_rPF [ i ] += eigen_trial_rPF [ i ] + 2 * sqrt(eigen_trial_rPF [ i ] * trial_rPF [ i ]);
@@ -585,6 +1190,9 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
     eneErr = sqrt(eneErr);
+    if ( profile ) {
+        recordRuntimePhase("error.finalize", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -729,6 +1337,7 @@ void SteadyStateNonLinearSolver :: solve() {
     bool converged = false;
     bool restarted = false;
     bool restart_now = false;
+    const bool profile = runtimeProfiler.isEnabled();
     Vector help_idc_r, help_idc_f;
 
     //MyVector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
@@ -738,8 +1347,12 @@ void SteadyStateNonLinearSolver :: solve() {
         //setup loading
 
         if ( !idc ) {
+            auto phaseStart = std :: chrono :: steady_clock :: now();
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
+            if ( profile ) {
+                recordRuntimePhase("load.direct_step_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+            }
             updateFieldVariables();      //with ddr=0
             computeForcesAtIntegrationTime(true);
         } else {
@@ -753,17 +1366,29 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, false) ) {
                 computeKeff();                                    //only if required
             }
+            auto phaseStart = std :: chrono :: steady_clock :: now();
             nodes->giveReducedForceArray(residuals, f);
+            if ( profile ) {
+                recordRuntimePhase("residual.reduce_force_array", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+            }
 
             if ( idc ) {      //indirect displacement control
                 Vector trial_r_last_iter = trial_r;
                 f_last_iter = f;
 
                 load.setZero();
+                phaseStart = std :: chrono :: steady_clock :: now();
                 nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time + idc_dt); //give prescribed DoFs
+                if ( profile ) {
+                    recordRuntimePhase("load.idc_increment_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+                }
                 computeForcesAtIntegrationTime(true);
+                phaseStart = std :: chrono :: steady_clock :: now();
                 nodes->giveReducedForceArray(residuals, f);
+                if ( profile ) {
+                    recordRuntimePhase("residual.reduce_force_array", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "idc_increment");
+                }
 
                 profiledLinearSolve(ddr, f_last_iter, "idc_residual"); //A: original, no additiona load, time idc_time
                 profiledLinearSolve(ddf, f - f_last_iter, "idc_load_increment"); //B: added load, time idc_time + idc_dt
@@ -778,7 +1403,11 @@ void SteadyStateNonLinearSolver :: solve() {
                     Vector fext_B;
                     if ( idc->requireForces() ) {
                         load.setZero();
+                        phaseStart = std :: chrono :: steady_clock :: now();
                         nodes->addRHS_nodalLoad(load, idc_time + idc_dt); //add nodal load
+                        if ( profile ) {
+                            recordRuntimePhase("load.idc_force_b_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+                        }
                         computeInternalExternalForces(trial_r_B, load, false, idc_time + idc_dt, idc_dt);
                         fext_B = f_ext;
                     }
@@ -788,7 +1417,11 @@ void SteadyStateNonLinearSolver :: solve() {
                     Vector fext_A;
                     if ( idc->requireForces() ) {
                         load.setZero();
+                        phaseStart = std :: chrono :: steady_clock :: now();
                         nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
+                        if ( profile ) {
+                            recordRuntimePhase("load.idc_force_a_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+                        }
                         computeInternalExternalForces(trial_r_A, load, false, idc_time, idc_dt);
                         fext_A = f_ext;
                     }
@@ -803,11 +1436,21 @@ void SteadyStateNonLinearSolver :: solve() {
                     trial_r = trial_r_last_iter;
 
                     load.setZero();
+                    phaseStart = std :: chrono :: steady_clock :: now();
                     nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                    if ( profile ) {
+                        recordRuntimePhase("load.idc_corrected_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+                    }
                 }
             } else {         //direct controll
-                  profiledLinearSolve(ddr, f, "direct_residual");
+                  const bool directSolveSuccess = profiledLinearSolve(ddr, f, "direct_residual");
+                  collectLinearDeflationVector(ddr, "direct_residual", directSolveSuccess);
+                  if ( !directSolveSuccess ) {
+                      std :: cerr << "Linear solver did not converge during direct-control residual solve" << endl;
+                      terminated = true;
+                      return;
+                  }
             }
 
             //update DoFs
@@ -864,13 +1507,21 @@ void SteadyStateNonLinearSolver :: solve() {
                 converged = false;
             }
 
+            auto exportStart = std :: chrono :: steady_clock :: now();
             exporters->exportData(step, it, time, 0); //to export data during iterations
+            if ( profile ) {
+                recordRuntimePhase("export.iteration_data", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - exportStart).count() );
+            }
         }
 
-        if ( converged ) {
-            this->fully_converged = true;
-            computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
-        }
+            if ( converged ) {
+                this->fully_converged = true;
+                auto phaseStart = std :: chrono :: steady_clock :: now();
+                computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+                if ( profile ) {
+                    recordRuntimePhase("forces.step_end", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "converged");
+                }
+            }
 
         if ( !converged && dt > dtmin * 1.00001 ) {
             time -= dt;
@@ -880,11 +1531,19 @@ void SteadyStateNonLinearSolver :: solve() {
             f_ext = f_ext_old;
             load.setZero(); // std :: fill(begin(load), end(load), 0);
             ddr.setZero(); // std :: fill(begin(ddr), end(ddr), 0);            //ddr *= 0;
+            auto phaseStart = std :: chrono :: steady_clock :: now();
             elems->resetMaterialStatuses();   ///> reset material internal vars to the last converged state
+            if ( profile ) {
+                recordRuntimePhase("restart.reset_material_statuses", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+            }
             if ( idc ) { //idc solver needs residuals from last converged step
                 idc_time = idc_time_converged;
+                phaseStart = std :: chrono :: steady_clock :: now();
                 nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                 nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                if ( profile ) {
+                    recordRuntimePhase("load.idc_restart_setup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+                }
                 updateFieldVariables();      //with ddr=0
                 computeForcesAtIntegrationTime(true);
             }
@@ -903,7 +1562,11 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
                 converged = true;
                 this->fully_converged = false;
+                auto phaseStart = std :: chrono :: steady_clock :: now();
                 computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+                if ( profile ) {
+                    recordRuntimePhase("forces.step_end", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "relaxed_tolerance");
+                }
             } else {
                 std :: cerr << "Error: " << name << " did not converge to the solution" << endl;
                 terminated = true;

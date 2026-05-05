@@ -34,6 +34,24 @@ Solver :: ~Solver() {
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: initializeRuntimeProfiler() {
+    fs :: path resultDir = masterModel ? masterModel->giveResultDirectory() : fs :: path(".");
+    runtimeProfiler.configure(runtimeProfileEnabled, resultDir, runtimeProfileFileBase);
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: setRuntimeProfileContext(string systemKind, int iteration, unsigned cumulIteration) {
+    runtimeProfileSystemKind = systemKind;
+    runtimeProfileIteration = iteration;
+    runtimeProfileCumulIteration = cumulIteration;
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: recordRuntimePhase(string phase, double durationSeconds, string detail) {
+    runtimeProfiler.recordPhase(step, runtimeProfileIteration, runtimeProfileCumulIteration, runtimeProfileSystemKind, phase, detail, durationSeconds);
+}
+
+//////////////////////////////////////////////////////////
 void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc, ExporterContainer *exp) {
     elems = e;
     nodes = n;
@@ -152,6 +170,8 @@ void Solver :: runBeforeEachStep() {
 
 //////////////////////////////////////////////////////////
 void Solver :: runAfterEachStep() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     for ( vector< Pertrubation * > :: iterator p = pertrubations.begin(); p != pertrubations.end(); ++p ) {
         if ( ( * p )->shouldBeApplied(time) ) {
             nodes->giveFullDoFArray( ( * p )->pertrube(freeDoFnum), full_ddr);
@@ -159,12 +179,29 @@ void Solver :: runAfterEachStep() {
             cout << "applying pertrubation" << endl;
         }
     }
+    if ( profile ) {
+        recordRuntimePhase("step_finalize.perturbations", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+
+    phaseStart = std :: chrono :: steady_clock :: now();
     computeTotalInternalAndExternalAndKineticEnergy();
+    if ( profile ) {
+        recordRuntimePhase("step_finalize.energy", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+
+    phaseStart = std :: chrono :: steady_clock :: now();
     r = trial_r;
     f_int_old = f_int;
     f_ext_old = f_ext;
+    if ( profile ) {
+        recordRuntimePhase("step_finalize.state_copy", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     elems->updateMaterialStatuses();
+    if ( profile ) {
+        recordRuntimePhase("step_finalize.material_status_update", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
     if ( time + dt > termination_time ) {
         dt = termination_time - time;
@@ -235,9 +272,22 @@ void Solver :: init(string init_r_file, string init_v_file, const bool initial) 
 
 //////////////////////////////////////////////////////////
 void Solver :: updateFieldVariables() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     nodes->giveFullDoFArray(ddr, full_ddr);
+    if ( profile ) {
+        recordRuntimePhase("field_update.expand_reduced_dofs", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext);
+    if ( profile ) {
+        recordRuntimePhase("field_update.dependency_update", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     trial_r += full_ddr;
+    if ( profile ) {
+        recordRuntimePhase("field_update.apply_increment", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -270,10 +320,30 @@ void Solver :: giveValues(string code, Vector &result) const {
 
 //////////////////////////////////////////////////////////
 void Solver :: computeInternalExternalForces(const Vector &rr, Vector &ll, const bool frozen, double t, double timeStep) {
+    const bool profile = runtimeProfiler.isEnabled();
+    const string detail = frozen ? "frozen" : "active";
+    auto totalStart = std :: chrono :: steady_clock :: now();
+    auto phaseStart = totalStart;
     nodes->updateSimplexVolumetricStrains(rr); //this line computes volumetric strain in simplices
+    if ( profile ) {
+        recordRuntimePhase("forces.simplex_volumetric_strains", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     elems->integrateInternalForces(rr, f_int, frozen, t, timeStep);
+    if ( profile ) {
+        recordRuntimePhase("forces.integrate_internal_forces", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     nodes->updateExternalForcesByReactions(f_int, ll, f_dam, f_acc, f_ext, rr);     //give prescribed DoFs
+    if ( profile ) {
+        recordRuntimePhase("forces.external_reactions", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     residuals = f_ext - f_int;
+    if ( profile ) {
+        recordRuntimePhase("forces.residual_vector", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
+        recordRuntimePhase("forces.total", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - totalStart).count(), detail);
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -286,17 +356,30 @@ void Solver :: rebuild() {
 
 //////////////////////////////////////////////////////////
 void Solver :: computeTotalInternalAndExternalAndKineticEnergy() {
+    const bool profile = runtimeProfiler.isEnabled();
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     W_int = W_int_old;
     W_ext = W_ext_old;
 
     unsigned pff;
     vector< unsigned >pf  = nodes->givePhysicalFieldsOfDoFs();
+    if ( profile ) {
+        recordRuntimePhase("energy.physical_field_lookup", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     for ( unsigned i = 0; i < totalDoFnum; i++ ) {
         pff = pf [ i ];
         W_int [ pff ] += 0.5 * ( f_int [ i ] + f_int_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
         W_ext [ pff ] += 0.5 * ( f_ext [ i ] + f_ext_old [ i ] ) * ( trial_r [ i ] - r [ i ] );
     }
+    if ( profile ) {
+        recordRuntimePhase("energy.accumulate_internal_external", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     computeTotalKineticEnergy();
+    if ( profile ) {
+        recordRuntimePhase("energy.kinetic", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 }
 
 //////////////////////////////////////////////////////////

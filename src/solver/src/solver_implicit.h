@@ -10,6 +10,9 @@ class SteadyStateLinearSolver : public Solver
 protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
+    AmgclSolverOptions amgclOptions;
+    DeflatedFGMRESOptions dfgmresOptions;
+    HypreBoomerAMGOptions hypreOptions;
     CoordinateIndexedSparseMatrix Keff, K;
     std :: unique_ptr< LinAlgSolver >linalgsolver;
     std :: string symsolver_type = "EigenConj";
@@ -17,6 +20,10 @@ protected:
     bool linearProfileEnabled = false;
     bool linearProfileMatrixDelta = false;
     std :: string linearProfileFileBase = "linear_profile";
+    bool linearReplayDumpEnabled = false;
+    unsigned linearReplayDumpLimit = 5;
+    unsigned linearReplayDumpCount = 0;
+    std :: string linearReplayDumpDir = "linear_replay";
     int linearProfileIteration = -1;
     unsigned linearProfileCumulIteration = 0;
     std :: string linearProfileSystemKind = "steady_state_linear";
@@ -37,6 +44,9 @@ protected:
     bool profiledAnalyzePattern();
     bool profiledFactorize();
     bool profiledLinearSolve(Vector &x, const Vector &b, const std :: string &rhsKind);
+    void collectLinearDeflationVector(const Vector &x, const std :: string &rhsKind, bool success);
+    ElasticDofMap buildElasticDofMap() const;
+    void dumpLinearReplayCase(const Vector &rhs, const Vector &solution, const std :: string &rhsKind, bool success);
 private:
 public:
     SteadyStateLinearSolver();

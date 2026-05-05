@@ -35,6 +35,12 @@ make dogbone
 make dogbone-solver SOLVER=EigenLDLT
 make dogbone-solver SOLVER=PardisoLDLT
 make dogbone-profile USE_VTK=OFF THREADS=4 SOLVER=EigenLDLT
+make build USE_VTK=OFF USE_HYPRE=ON THREADS=8
+make dogbone-amgcl-prefix USE_VTK=OFF THREADS=8 AMGCL_TOL=1e-6 AMGCL_MAXIT=500
+make dogbone-hypre-prefix USE_VTK=OFF USE_HYPRE=ON THREADS=8 HYPRE_TOL=1e-6 HYPRE_MAXIT=500
+make dogbone-amgcl-profile USE_VTK=OFF THREADS=8 AMGCL_TOL=1e-6 AMGCL_MAXIT=500
+make tsn65-amgcl-prefix USE_VTK=OFF THREADS=8 AMGCL_TOL=1e-6 AMGCL_MAXIT=500
+make tsn65-hypre-prefix USE_VTK=OFF USE_HYPRE=ON THREADS=8 HYPRE_TOL=1e-6 HYPRE_MAXIT=500
 ```
 
 Default build directory:
@@ -53,6 +59,7 @@ Linear profiling:
 
 ```sh
 make linear-profile-report PROFILE_DIR=data/cases/Dogbone/results OUT_DIR=results/dogbone-eigenldlt-manual SOLVER=EigenLDLT
+scripts/sweep-amgcl.py --mode dogbone-prefix --threads 8 --tolerances 1e-6 --max-iterations 500 --eps-strong 0 --npre 1 --npost 1
 ```
 
 Raw profile TSVs live in `data/cases/Dogbone/results/`. Markdown/PNG exchange reports live in ignored `results/`.
@@ -67,6 +74,8 @@ cat > "$ctx/repo_map.md" <<'EOF'
 - `docs/deflation/`: human-facing deflation project documentation.
 - `scripts/analyze-linear-profile.py`: converts profiler TSV files and `solver.out` into Markdown/PNG reports.
 - `scripts/run-dogbone-profile.sh`: local Dogbone profiling run wrapper that temporarily edits ignored `solver.inp`.
+- `scripts/run-oas-profile.sh`: generic local profiling wrapper for Dogbone and TS-N_65; temporarily edits ignored `solver.inp`, restores it, and copies raw/profile artifacts to ignored `results/`.
+- `scripts/sweep-amgcl.py`: local AMGCL parameter/tolerance sweep driver with Markdown and TSV summaries.
 - `scripts/update-agent-context.sh`: regenerates ignored agent context.
 - `data/`: ignored benchmark archives, extracted cases, and run outputs.
 - `results/`: ignored local experiment exchange reports; check the newest `results/*/linear-profile.md`.
@@ -105,6 +114,25 @@ EOF
   else
     printf -- '- No local `results/` directory found.\n'
   fi
+  printf '\n## Latest Summary Reports\n\n'
+  if [[ -d "$root/results" ]]; then
+    mapfile -t summaries < <(find "$root/results" -mindepth 2 -maxdepth 2 -name 'summary.md' -printf '%T@ %p\n' | sort -nr | head -5 | cut -d' ' -f2-)
+    if (( ${#summaries[@]} )); then
+      for summary in "${summaries[@]}"; do
+        rel="${summary#"$root"/}"
+        title="$(sed -n '1s/^# //p' "$summary" 2>/dev/null || true)"
+        printf -- '- `%s`' "$rel"
+        if [[ -n "$title" ]]; then
+          printf ' - %s' "$title"
+        fi
+        printf '\n'
+      done
+    else
+      printf -- '- No `results/*/summary.md` reports found.\n'
+    fi
+  else
+    printf -- '- No local `results/` directory found.\n'
+  fi
 } > "$ctx/benchmark_state.md"
 
 cat > "$ctx/decision_log.md" <<'EOF'
@@ -115,6 +143,10 @@ cat > "$ctx/decision_log.md" <<'EOF'
 - Build policy: use out-of-source CMake through the root Makefile; default generator is Unix Makefiles.
 - Solver policy: first implementation work adds optional instrumentation, then PCG/IC, then AMG, then deflation/recycling.
 - Profiling policy: `linear_solver_profile 1` writes raw TSVs into the OAS case `results/` directory; generated Markdown/PNG reports stay local-only under ignored `results/`.
+- AMG preconditioner policy: Dogbone first-5 is the gate before full Dogbone/TS-N_65. Current passing gate report: `results/amgcl-hypre-dogbone-gate-20260503-054622/summary.md` with AMGCL elastic block CG at 6-7 iterations and hypre BoomerAMG-CG at 12-15 iterations for `1e-6` true relative residual.
+- Dogbone full policy: current full Dogbone comparison is `results/amgcl-hypre-dogbone-full-20260503-055920/summary.md`; both AMGCL elastic block CG and hypre BoomerAMG-CG preserve the Pardiso accepted-step shape at `1e-6`.
+- TS-N_65 policy: current first-step gate report is `results/tsn65-amg-firststep-gate-20260503-062440/summary.md`. hypre passes with iterations 56,117,92,68,68; AMGCL remains blocked because block ILU0 gives NaNs and scalar/block-SPAI variants hit 500 iterations.
+- hypre policy: use nodal BoomerAMG with the lifted node-major elastic space. Keep explicit `dof_func` and interpolation-vector calls disabled until an ownership-safe wrapper is implemented.
 - Agent policy: keep `agents.md` and `.agent_context/` ignored; refresh `.agent_context/` after meaningful build, run, or code changes.
 EOF
 
@@ -142,6 +174,14 @@ ls -td results/* 2>/dev/null | head
 ```
 
 Then read `results/<latest>/linear-profile.md` if it exists.
+
+For AMGCL/hypre work, also check the newest local summary matching:
+
+```sh
+ls -td results/*amg* results/*hypre* 2>/dev/null | head
+```
+
+Read `summary.md` first when present, then drill into the linked `linear-profile.md` reports and raw TSVs.
 
 After meaningful changes to source, build configuration, benchmark state, or test results, run:
 

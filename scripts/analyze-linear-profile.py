@@ -225,7 +225,16 @@ def main() -> int:
     events_path = profile_dir / "linear_profile_events.tsv"
     iterations_path = profile_dir / "linear_profile_iterations.tsv"
     solver_out_path = profile_dir / "solver.out"
-    solver_inp = read_solver_inp(profile_dir.parent / "solver.inp")
+    runtime_summary_path = profile_dir / "runtime_profile_summary.tsv"
+    solver_inp = {}
+    for solver_inp_path in [
+        profile_dir / "solver.inp.effective",
+        profile_dir / "solver.inp",
+        profile_dir.parent / "solver.inp",
+    ]:
+        solver_inp = read_solver_inp(solver_inp_path)
+        if solver_inp:
+            break
     if not events_path.exists():
         raise SystemExit(f"Missing profile events file: {events_path}")
 
@@ -255,10 +264,35 @@ def main() -> int:
         ],
         columns=["bucket", "count", "seconds", "share_of_wall"],
     )
+    runtime_phase_hotspots = pd.DataFrame()
+    if runtime_summary_path.exists():
+        runtime_phase_hotspots = pd.read_csv(runtime_summary_path, sep="\t")
+        if not runtime_phase_hotspots.empty and "total_seconds" in runtime_phase_hotspots:
+            runtime_phase_hotspots = runtime_phase_hotspots.sort_values("total_seconds", ascending=False).head(20)
+
+    internal_timing = pd.DataFrame()
+    timing_columns = [
+        ("preconditioner_apply_seconds", "preconditioner apply"),
+        ("orthogonalization_seconds", "orthogonalization"),
+        ("least_squares_seconds", "least squares"),
+        ("matvec_seconds", "matrix-vector"),
+        ("deflation_seconds", "deflation projection"),
+    ]
+    available_timing = [(col, label) for col, label in timing_columns if col in solve.columns]
+    if available_timing:
+        rows = []
+        for col, label in available_timing:
+            seconds = float(solve[col].sum())
+            rows.append([label, seconds, seconds / solve_seconds if solve_seconds > 0 else math.nan, seconds / total_wall if total_wall > 0 else math.nan])
+        accounted = sum(row[1] for row in rows)
+        rows.append(["unclassified solve time", max(solve_seconds - accounted, 0.0), max(solve_seconds - accounted, 0.0) / solve_seconds if solve_seconds > 0 else math.nan, max(solve_seconds - accounted, 0.0) / total_wall if total_wall > 0 else math.nan])
+        internal_timing = pd.DataFrame(rows, columns=["bucket", "seconds", "share_of_solve_time", "share_of_wall"])
 
     system_rows = []
     for (system_kind, rhs_kind, solver_type, solver_name), group in solve.groupby(["system_kind", "rhs_kind", "solver_type", "solver_name"], dropna=False):
         matching_factorize = factorize[factorize["system_kind"] == system_kind]
+        solver_iterations = group[group["solver_iterations"] >= 0]["solver_iterations"]
+        solver_error = group[group["solver_error"] >= 0]["solver_error"]
         system_rows.append(
             {
                 "system_kind": system_kind,
@@ -269,11 +303,31 @@ def main() -> int:
                 "nnz": int(group["nnz"].max()),
                 "solve_count": len(group),
                 "factorize_count": len(matching_factorize),
+                "success_count": int(group["success"].sum()) if "success" in group else "",
+                "iter_median": solver_iterations.median() if not solver_iterations.empty else math.nan,
+                "iter_max": solver_iterations.max() if not solver_iterations.empty else math.nan,
+                "relres_median": solver_error.median() if not solver_error.empty else math.nan,
+                "relres_max": solver_error.max() if not solver_error.empty else math.nan,
                 "solve_seconds": group["duration_seconds"].sum(),
                 "factorize_seconds": matching_factorize["duration_seconds"].sum(),
             }
         )
     systems = pd.DataFrame(system_rows)
+
+    solver_stats = pd.DataFrame()
+    if not solve.empty and "solver_iterations" in solve:
+        iterative = solve[solve["solver_iterations"] >= 0].copy()
+        if not iterative.empty:
+            solver_stats = iterative.groupby(["system_kind", "rhs_kind", "solver_type"], dropna=False).agg(
+                solves=("event_index", "count"),
+                success=("success", "sum"),
+                iter_min=("solver_iterations", "min"),
+                iter_median=("solver_iterations", "median"),
+                iter_max=("solver_iterations", "max"),
+                relres_min=("solver_error", "min"),
+                relres_median=("solver_error", "median"),
+                relres_max=("solver_error", "max"),
+            ).reset_index()
 
     delta = factorize[factorize["matrix_relative_delta"] >= 0]["matrix_relative_delta"]
     matrix_evolution = pd.DataFrame(
@@ -333,8 +387,17 @@ def main() -> int:
         handle.write(md_table(metadata) + "\n\n")
         handle.write("## Runtime Share\n\n")
         handle.write(md_table(runtime_share) + "\n\n")
+        if not runtime_phase_hotspots.empty:
+            handle.write("## Runtime Phase Hotspots\n\n")
+            handle.write(md_table(runtime_phase_hotspots) + "\n\n")
+        if not internal_timing.empty and internal_timing["seconds"].sum() > 0:
+            handle.write("## DFGMRES Internal Timings\n\n")
+            handle.write(md_table(internal_timing) + "\n\n")
         handle.write("## Linear System Types\n\n")
         handle.write(md_table(systems) + "\n\n")
+        if not solver_stats.empty:
+            handle.write("## Iterative Solver Stats\n\n")
+            handle.write(md_table(solver_stats) + "\n\n")
         handle.write("## Matrix Evolution\n\n")
         handle.write(md_table(matrix_evolution) + "\n\n")
         handle.write("## Highest Linear-Time Steps\n\n")

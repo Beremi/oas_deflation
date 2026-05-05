@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>      // std::setw
 #include "linalg.h"
+#include "linalg_profile.h"
 #include "element_container.h"
 #include "node_container.h"
 #include "indirect_control.h"
@@ -41,8 +42,17 @@ protected:
 
     bool showTime;
     bool silent;
+    RuntimePhaseProfiler runtimeProfiler;
+    bool runtimeProfileEnabled = false;
+    std :: string runtimeProfileFileBase = "runtime_profile";
+    int runtimeProfileIteration = -1;
+    unsigned runtimeProfileCumulIteration = 0;
+    std :: string runtimeProfileSystemKind = "solver";
 
     virtual void updateFieldVariables();
+    void initializeRuntimeProfiler();
+    void setRuntimeProfileContext(std :: string systemKind, int iteration, unsigned cumulIteration);
+    void recordRuntimePhase(std :: string phase, double durationSeconds, std :: string detail = "");
     
     std :: vector< Pertrubation * >pertrubations;
 

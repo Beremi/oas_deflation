@@ -39,6 +39,13 @@ struct LinearProfileIterationStats
     std :: set< std :: string >rhsKinds;
 };
 
+struct RuntimePhaseSummary
+{
+    long long count = 0;
+    double seconds = 0.;
+    double maxSeconds = 0.;
+};
+
 class LinearSolverProfiler
 {
 protected:
@@ -75,6 +82,21 @@ protected:
         double solutionNorm,
         long long solverIterations,
         double solverError,
+        unsigned deflationBasisSize,
+        unsigned deflationDiscardedCount,
+        unsigned deflationRawCandidateCount,
+        unsigned deflationCapacityEvictionCount,
+        unsigned deflationLowANormDiscardCount,
+        double deflationLastInitialANorm,
+        double deflationLastFinalANorm,
+        double deflationOrthogonalityMaxOffdiag,
+        double deflationOrthogonalityMaxDiagError,
+        const std :: string &deflationLastDiscardReason,
+        double preconditionerApplySeconds,
+        double orthogonalizationSeconds,
+        double leastSquaresSeconds,
+        double matvecSeconds,
+        double deflationSeconds,
         bool success,
         double durationSeconds
     );
@@ -120,10 +142,55 @@ public:
         const Vector &solution,
         long long solverIterations,
         double solverError,
+        unsigned deflationBasisSize,
+        unsigned deflationDiscardedCount,
+        unsigned deflationRawCandidateCount,
+        unsigned deflationCapacityEvictionCount,
+        unsigned deflationLowANormDiscardCount,
+        double deflationLastInitialANorm,
+        double deflationLastFinalANorm,
+        double deflationOrthogonalityMaxOffdiag,
+        double deflationOrthogonalityMaxDiagError,
+        const std :: string &deflationLastDiscardReason,
+        double preconditionerApplySeconds,
+        double orthogonalizationSeconds,
+        double leastSquaresSeconds,
+        double matvecSeconds,
+        double deflationSeconds,
         double durationSeconds,
         bool success
     );
     void flushIterationSummary();
+};
+
+class RuntimePhaseProfiler
+{
+protected:
+    bool enabled = false;
+    bool headerWritten = false;
+    long long eventIndex = 0;
+    fs :: path eventsPath;
+    fs :: path summaryPath;
+    std :: ofstream eventsFile;
+    std :: map< std :: string, RuntimePhaseSummary >summary;
+
+    static std :: string makeSummaryKey(const std :: string &phase, const std :: string &detail);
+    void writeEventHeader();
+public:
+    RuntimePhaseProfiler() {};
+    ~RuntimePhaseProfiler();
+    void configure(bool enabled, fs :: path resultDir, const std :: string &fileBase);
+    bool isEnabled() const { return enabled; };
+    void recordPhase(
+        int step,
+        int iteration,
+        unsigned cumulativeIteration,
+        const std :: string &systemKind,
+        const std :: string &phase,
+        const std :: string &detail,
+        double durationSeconds
+    );
+    void flushSummary();
 };
 
 #endif /* _LINALG_PROFILE_H */

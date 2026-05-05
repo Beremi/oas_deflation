@@ -62,6 +62,8 @@ option (USE_SOLVER "Enable solver" ON)
 option (USE_SUPERLU "Enable SuperLU solver" OFF)
 option (USE_PARDISO "Enable Intel MKL Pardiso solver" OFF)
 option (USE_CHOLMOD "Enable SuiteSparse CHOLMOD solver" OFF)
+option (USE_AMGCL "Enable AMGCL iterative solver" ON)
+option (USE_HYPRE "Enable hypre BoomerAMG iterative solver" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
@@ -147,6 +149,35 @@ FetchContent_Declare(
 FetchContent_Populate(spectra)
 # Don't call FetchContent_MakeAvailable to avoid processing Spectra's CMakeLists.txt
 # which tries to create install/export targets
+
+if (USE_AMGCL)
+    FetchContent_Declare(
+        amgcl
+        GIT_REPOSITORY https://github.com/ddemidov/amgcl.git
+        GIT_TAG 0fa6c30cf16399a63efa0c4501be9a6e8f764f69
+    )
+    FetchContent_MakeAvailable(amgcl)
+endif()
+
+if (USE_HYPRE)
+    find_package(MPI REQUIRED)
+    find_package(HYPRE CONFIG QUIET)
+    if (NOT TARGET HYPRE::HYPRE)
+        set(HYPRE_ENABLE_MPI ON CACHE BOOL "Build hypre with MPI" FORCE)
+        set(HYPRE_ENABLE_OPENMP ON CACHE BOOL "Build hypre with OpenMP" FORCE)
+        set(HYPRE_ENABLE_HOST_MEMORY ON CACHE BOOL "Use host memory" FORCE)
+        set(HYPRE_BUILD_EXAMPLES OFF CACHE BOOL "Do not build hypre examples" FORCE)
+        set(HYPRE_BUILD_TESTS OFF CACHE BOOL "Do not build hypre tests" FORCE)
+        set(HYPRE_ENABLE_FEI OFF CACHE BOOL "Do not build hypre FEI" FORCE)
+        FetchContent_Declare(
+            hypre
+            GIT_REPOSITORY https://github.com/hypre-space/hypre.git
+            GIT_TAG v2.33.0
+            SOURCE_SUBDIR src
+        )
+        FetchContent_MakeAvailable(hypre)
+    endif()
+endif()
 
 # detect
 #find_package (Python3 COMPONENTS Interpreter)
@@ -386,8 +417,19 @@ add_executable(${TARGETNAME}
 #target_link_libraries (lib${TARGETNAME} ${EXT_LIBS})
 
 if (USE_VTK)
-    
-    find_package (VTK REQUIRED NO_MODULE)
+    if (NOT TARGET FastFloat::fast_float)
+        add_library(FastFloat::fast_float INTERFACE IMPORTED)
+    endif()
+    if (NOT TARGET nlohmann_json::nlohmann_json)
+        add_library(nlohmann_json::nlohmann_json INTERFACE IMPORTED)
+    endif()
+    find_package(VTK REQUIRED COMPONENTS
+        CommonCore
+        CommonDataModel
+        FiltersCore
+        FiltersGeometry
+        IOXML
+    )
 
     if (NOT VTK_FOUND)
         message("-- Skipping WriteVTU: ${VTK_NOT_FOUND_MESSAGE}")
@@ -532,6 +574,16 @@ if(USE_CHOLMOD AND CHOLMOD_FOUND)
   endif()
 endif()
 
+if(USE_AMGCL)
+  target_compile_definitions(solver PUBLIC AMGCL_FOUND)
+  target_link_libraries(solver PUBLIC amgcl::amgcl)
+endif()
+
+if(USE_HYPRE)
+  target_compile_definitions(solver PUBLIC HYPRE_FOUND)
+  target_link_libraries(solver PUBLIC HYPRE::HYPRE MPI::MPI_CXX)
+endif()
+
 # Add Spectra include directory to solver and main target
 target_include_directories(solver 
                            SYSTEM PUBLIC 
@@ -634,6 +686,10 @@ endif ()
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(solver PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+if(USE_HYPRE)
+    target_link_libraries(${TARGETNAME} PRIVATE HYPRE::HYPRE MPI::MPI_CXX)
 endif()
 target_compile_options(${TARGETNAME}
   PRIVATE

@@ -92,7 +92,14 @@ void LinearSolverProfiler :: writeEventHeader() {
         << "event_index\tphase\tstep\titeration\tcumulative_iteration\tsystem_kind\trhs_kind"
         << "\tsolver_type\tsolver_name\trows\tcols\tnnz\tpattern_hash\tvalue_hash"
         << "\tmatrix_norm\tmatrix_relative_delta\trhs_norm\trhs_relative_delta"
-        << "\tsolution_norm\tsolver_iterations\tsolver_error\tsuccess\tduration_seconds\n";
+        << "\tsolution_norm\tsolver_iterations\tsolver_error\tdeflation_basis_size"
+        << "\tdeflation_discarded_count\tdeflation_raw_candidate_count"
+        << "\tdeflation_capacity_eviction_count\tdeflation_low_anorm_discard_count"
+        << "\tdeflation_last_initial_anorm\tdeflation_last_final_anorm"
+        << "\tdeflation_orthogonality_max_offdiag\tdeflation_orthogonality_max_diag_error"
+        << "\tdeflation_last_discard_reason\tpreconditioner_apply_seconds"
+        << "\torthogonalization_seconds\tleast_squares_seconds\tmatvec_seconds"
+        << "\tdeflation_seconds\tsuccess\tduration_seconds\n";
     headerWritten = true;
 }
 
@@ -164,6 +171,21 @@ void LinearSolverProfiler :: recordEvent(
     double solutionNorm,
     long long solverIterations,
     double solverError,
+    unsigned deflationBasisSize,
+    unsigned deflationDiscardedCount,
+    unsigned deflationRawCandidateCount,
+    unsigned deflationCapacityEvictionCount,
+    unsigned deflationLowANormDiscardCount,
+    double deflationLastInitialANorm,
+    double deflationLastFinalANorm,
+    double deflationOrthogonalityMaxOffdiag,
+    double deflationOrthogonalityMaxDiagError,
+    const string &deflationLastDiscardReason,
+    double preconditionerApplySeconds,
+    double orthogonalizationSeconds,
+    double leastSquaresSeconds,
+    double matvecSeconds,
+    double deflationSeconds,
     bool success,
     double durationSeconds
 ) {
@@ -195,6 +217,21 @@ void LinearSolverProfiler :: recordEvent(
         << solutionNorm << '\t'
         << solverIterations << '\t'
         << solverError << '\t'
+        << deflationBasisSize << '\t'
+        << deflationDiscardedCount << '\t'
+        << deflationRawCandidateCount << '\t'
+        << deflationCapacityEvictionCount << '\t'
+        << deflationLowANormDiscardCount << '\t'
+        << deflationLastInitialANorm << '\t'
+        << deflationLastFinalANorm << '\t'
+        << deflationOrthogonalityMaxOffdiag << '\t'
+        << deflationOrthogonalityMaxDiagError << '\t'
+        << ( deflationLastDiscardReason.empty() ? "-" : deflationLastDiscardReason ) << '\t'
+        << preconditionerApplySeconds << '\t'
+        << orthogonalizationSeconds << '\t'
+        << leastSquaresSeconds << '\t'
+        << matvecSeconds << '\t'
+        << deflationSeconds << '\t'
         << ( success ? 1 : 0 ) << '\t'
         << durationSeconds << '\n';
     eventsFile.flush();
@@ -289,6 +326,21 @@ void LinearSolverProfiler :: recordMatrixEvent(
         -1.,
         -1,
         -1.,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.,
+        0.,
+        0.,
+        0.,
+        "-",
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
         success,
         durationSeconds
     );
@@ -307,6 +359,21 @@ void LinearSolverProfiler :: recordSolveEvent(
     const Vector &solution,
     long long solverIterations,
     double solverError,
+    unsigned deflationBasisSize,
+    unsigned deflationDiscardedCount,
+    unsigned deflationRawCandidateCount,
+    unsigned deflationCapacityEvictionCount,
+    unsigned deflationLowANormDiscardCount,
+    double deflationLastInitialANorm,
+    double deflationLastFinalANorm,
+    double deflationOrthogonalityMaxOffdiag,
+    double deflationOrthogonalityMaxDiagError,
+    const string &deflationLastDiscardReason,
+    double preconditionerApplySeconds,
+    double orthogonalizationSeconds,
+    double leastSquaresSeconds,
+    double matvecSeconds,
+    double deflationSeconds,
     double durationSeconds,
     bool success
 ) {
@@ -336,6 +403,21 @@ void LinearSolverProfiler :: recordSolveEvent(
         vectorNorm(solution),
         solverIterations,
         solverError,
+        deflationBasisSize,
+        deflationDiscardedCount,
+        deflationRawCandidateCount,
+        deflationCapacityEvictionCount,
+        deflationLowANormDiscardCount,
+        deflationLastInitialANorm,
+        deflationLastFinalANorm,
+        deflationOrthogonalityMaxOffdiag,
+        deflationOrthogonalityMaxDiagError,
+        deflationLastDiscardReason,
+        preconditionerApplySeconds,
+        orthogonalizationSeconds,
+        leastSquaresSeconds,
+        matvecSeconds,
+        deflationSeconds,
         success,
         durationSeconds
     );
@@ -377,5 +459,111 @@ void LinearSolverProfiler :: flushIterationSummary() {
             << stats.factorizeSeconds << '\t'
             << stats.solveSeconds << '\t'
             << stats.analyzeSeconds + stats.factorizeSeconds + stats.solveSeconds << '\n';
+    }
+}
+
+//////////////////////////////////////////////////////////
+RuntimePhaseProfiler :: ~RuntimePhaseProfiler() {
+    flushSummary();
+    if ( eventsFile.is_open() ) {
+        eventsFile.close();
+    }
+}
+
+//////////////////////////////////////////////////////////
+string RuntimePhaseProfiler :: makeSummaryKey(const string &phase, const string &detail) {
+    return phase + "\t" + detail;
+}
+
+//////////////////////////////////////////////////////////
+void RuntimePhaseProfiler :: configure(bool enableProfile, fs :: path resultDir, const string &fileBase) {
+    enabled = enableProfile;
+    if ( !enabled ) {
+        return;
+    }
+
+    fs :: create_directories(resultDir);
+    string base = fileBase.empty() ? "runtime_profile" : fileBase;
+    eventsPath = resultDir / ( base + "_events.tsv" );
+    summaryPath = resultDir / ( base + "_summary.tsv" );
+    eventsFile.open(eventsPath.string(), ios :: out);
+    headerWritten = false;
+    eventIndex = 0;
+    summary.clear();
+    writeEventHeader();
+}
+
+//////////////////////////////////////////////////////////
+void RuntimePhaseProfiler :: writeEventHeader() {
+    if ( !enabled || headerWritten || !eventsFile.good() ) {
+        return;
+    }
+    eventsFile
+        << "event_index\tstep\titeration\tcumulative_iteration\tsystem_kind"
+        << "\tphase\tdetail\tduration_seconds\n";
+    headerWritten = true;
+}
+
+//////////////////////////////////////////////////////////
+void RuntimePhaseProfiler :: recordPhase(
+    int step,
+    int iteration,
+    unsigned cumulativeIteration,
+    const string &systemKind,
+    const string &phase,
+    const string &detail,
+    double durationSeconds
+) {
+    if ( !enabled ) {
+        return;
+    }
+    writeEventHeader();
+    const string normalizedDetail = detail.empty() ? "-" : detail;
+    if ( eventsFile.good() ) {
+        eventsFile << scientific;
+        eventsFile.precision(16);
+        eventsFile
+            << eventIndex++ << '\t'
+            << step << '\t'
+            << iteration << '\t'
+            << cumulativeIteration << '\t'
+            << systemKind << '\t'
+            << phase << '\t'
+            << normalizedDetail << '\t'
+            << durationSeconds << '\n';
+        eventsFile.flush();
+    }
+
+    RuntimePhaseSummary &stats = summary [ makeSummaryKey(phase, normalizedDetail) ];
+    stats.count++;
+    stats.seconds += durationSeconds;
+    stats.maxSeconds = max(stats.maxSeconds, durationSeconds);
+}
+
+//////////////////////////////////////////////////////////
+void RuntimePhaseProfiler :: flushSummary() {
+    if ( !enabled || summaryPath.empty() ) {
+        return;
+    }
+    ofstream output(summaryPath.string(), ios :: out);
+    if ( !output.good() ) {
+        return;
+    }
+    output << "phase\tdetail\tcount\ttotal_seconds\tmean_seconds\tmax_seconds\n";
+    output << scientific;
+    output.precision(16);
+    for ( const auto &item : summary ) {
+        const string &key = item.first;
+        const RuntimePhaseSummary &stats = item.second;
+        const size_t sep = key.find('\t');
+        const string phase = ( sep == string :: npos ) ? key : key.substr(0, sep);
+        const string detail = ( sep == string :: npos ) ? "-" : key.substr(sep + 1);
+        output
+            << phase << '\t'
+            << detail << '\t'
+            << stats.count << '\t'
+            << stats.seconds << '\t'
+            << ( stats.count > 0 ? stats.seconds / stats.count : 0. ) << '\t'
+            << stats.maxSeconds << '\n';
     }
 }
