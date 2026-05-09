@@ -1,5 +1,8 @@
 #include "node_container.h"
 #include "solver.h"
+#include "openmp_utils.h"
+#include <algorithm>
+#include <unordered_set>
 
 using namespace std;
 
@@ -19,6 +22,7 @@ void NodeContainer :: clear() {
             delete * n;
         }
     }
+    uniqueSimplexes.clear();
     totalDoFs = 0;
 }
 
@@ -135,9 +139,24 @@ void NodeContainer :: init() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: initSimplices() {
+    uniqueSimplexes.clear();
     for ( auto &n:nodes ) {
         n->initSimplex();
+        if ( n->hasSimplex() ) {
+            uniqueSimplexes.push_back( n->giveSimplex() );
+        }
     }
+    std :: unordered_set< Simplex * >seen;
+    uniqueSimplexes.erase(
+        std :: remove_if(
+            uniqueSimplexes.begin(),
+            uniqueSimplexes.end(),
+            [&](Simplex *simplex) {
+                return !seen.insert(simplex).second;
+            }
+        ),
+        uniqueSimplexes.end()
+    );
     Simplex *s;
     for ( auto &n:nodes ) {
         s = n->giveSimplex();
@@ -149,6 +168,27 @@ void NodeContainer :: initSimplices() {
 
 //////////////////////////////////////////////////////////
 void NodeContainer :: updateSimplexVolumetricStrains(const Vector &fullDoFs) {
+    if ( !uniqueSimplexes.empty() ) {
+        if ( OmpUtils :: shouldParallelize(uniqueSimplexes.size() ) ) {
+#pragma omp parallel for schedule(static)
+            for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( uniqueSimplexes.size() ); i++ ) {
+                uniqueSimplexes [ i ]->computeVolumetricStrain(fullDoFs);
+            }
+#pragma omp parallel for schedule(static)
+            for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( uniqueSimplexes.size() ); i++ ) {
+                uniqueSimplexes [ i ]->stealVolumetricStrain();
+            }
+        } else {
+            for ( auto &s:uniqueSimplexes ) {
+                s->computeVolumetricStrain(fullDoFs);
+            }
+            for ( auto &s:uniqueSimplexes ) {
+                s->stealVolumetricStrain();
+            }
+        }
+        return;
+    }
+
     //update valid simplices
     for ( auto &n:nodes ) {
         if ( n->hasSimplex() ) {

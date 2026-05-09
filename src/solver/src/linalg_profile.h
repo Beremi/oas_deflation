@@ -192,6 +192,16 @@ public:
         const std :: string &detail,
         double durationSeconds
     );
+    void recordPhaseSamples(
+        int step,
+        int iteration,
+        unsigned cumulativeIteration,
+        const std :: string &systemKind,
+        const std :: string &phase,
+        const std :: string &detail,
+        double durationSeconds,
+        long long sampleCount
+    );
     void flushSummary();
 };
 

@@ -142,9 +142,12 @@ int main(int argc, char **argv) {
         std :: cout << "######### start of calculation on: " << nowstring.substr(0, nowstring.length() - 1) << " #########" << endl;
     }
 
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     masterModel->readFromFile( input.string() );
+    double readDuration = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
 
     // check if exists or create directory for results
+    phaseStart = std :: chrono :: steady_clock :: now();
     if ( !fs :: exists(masterModel->resultDir) ) {
         fs :: create_directories(masterModel->resultDir);
     }
@@ -156,10 +159,24 @@ int main(int argc, char **argv) {
         outputfile << endl;
     }
     outputfile.close();
+    double resultSetupDuration = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
 
+    if ( masterModel->giveSolver() ) {
+        masterModel->giveSolver()->initializeRuntimeProfilerForExternalTiming();
+        masterModel->giveSolver()->recordExternalRuntimePhase("model.read_input", readDuration);
+        masterModel->giveSolver()->recordExternalRuntimePhase("model.result_setup", resultSetupDuration);
+    }
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     masterModel->init();
+    if ( masterModel->giveSolver() ) {
+        masterModel->giveSolver()->recordExternalRuntimePhase("model.init_total", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
+    phaseStart = std :: chrono :: steady_clock :: now();
     masterModel->solve();
+    if ( masterModel->giveSolver() ) {
+        masterModel->giveSolver()->recordExternalRuntimePhase("model.solve_total", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
 
 
     if ( PRINT_TIME ) {

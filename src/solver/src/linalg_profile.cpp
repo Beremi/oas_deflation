@@ -482,15 +482,26 @@ string RuntimePhaseProfiler :: makeSummaryKey(const string &phase, const string 
 
 //////////////////////////////////////////////////////////
 void RuntimePhaseProfiler :: configure(bool enableProfile, fs :: path resultDir, const string &fileBase) {
-    enabled = enableProfile;
-    if ( !enabled ) {
+    const bool requestedEnabled = enableProfile;
+    if ( !requestedEnabled ) {
+        enabled = false;
         return;
     }
 
     fs :: create_directories(resultDir);
     string base = fileBase.empty() ? "runtime_profile" : fileBase;
-    eventsPath = resultDir / ( base + "_events.tsv" );
-    summaryPath = resultDir / ( base + "_summary.tsv" );
+    fs :: path newEventsPath = resultDir / ( base + "_events.tsv" );
+    fs :: path newSummaryPath = resultDir / ( base + "_summary.tsv" );
+    if ( enabled && eventsFile.is_open() && eventsPath == newEventsPath && summaryPath == newSummaryPath ) {
+        return;
+    }
+
+    enabled = true;
+    if ( eventsFile.is_open() ) {
+        eventsFile.close();
+    }
+    eventsPath = newEventsPath;
+    summaryPath = newSummaryPath;
     eventsFile.open(eventsPath.string(), ios :: out);
     headerWritten = false;
     eventIndex = 0;
@@ -505,7 +516,7 @@ void RuntimePhaseProfiler :: writeEventHeader() {
     }
     eventsFile
         << "event_index\tstep\titeration\tcumulative_iteration\tsystem_kind"
-        << "\tphase\tdetail\tduration_seconds\n";
+        << "\tphase\tdetail\tduration_seconds\tsample_count\n";
     headerWritten = true;
 }
 
@@ -519,9 +530,27 @@ void RuntimePhaseProfiler :: recordPhase(
     const string &detail,
     double durationSeconds
 ) {
+    recordPhaseSamples(step, iteration, cumulativeIteration, systemKind, phase, detail, durationSeconds, 1);
+}
+
+//////////////////////////////////////////////////////////
+void RuntimePhaseProfiler :: recordPhaseSamples(
+    int step,
+    int iteration,
+    unsigned cumulativeIteration,
+    const string &systemKind,
+    const string &phase,
+    const string &detail,
+    double durationSeconds,
+    long long sampleCount
+) {
     if ( !enabled ) {
         return;
     }
+    if ( sampleCount <= 0 && durationSeconds <= 0. ) {
+        return;
+    }
+    sampleCount = max(1ll, sampleCount);
     writeEventHeader();
     const string normalizedDetail = detail.empty() ? "-" : detail;
     if ( eventsFile.good() ) {
@@ -535,14 +564,15 @@ void RuntimePhaseProfiler :: recordPhase(
             << systemKind << '\t'
             << phase << '\t'
             << normalizedDetail << '\t'
-            << durationSeconds << '\n';
+            << durationSeconds << '\t'
+            << sampleCount << '\n';
         eventsFile.flush();
     }
 
     RuntimePhaseSummary &stats = summary [ makeSummaryKey(phase, normalizedDetail) ];
-    stats.count++;
+    stats.count += sampleCount;
     stats.seconds += durationSeconds;
-    stats.maxSeconds = max(stats.maxSeconds, durationSeconds);
+    stats.maxSeconds = max(stats.maxSeconds, durationSeconds / sampleCount);
 }
 
 //////////////////////////////////////////////////////////

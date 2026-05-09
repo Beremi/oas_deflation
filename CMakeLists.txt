@@ -64,6 +64,7 @@ option (USE_PARDISO "Enable Intel MKL Pardiso solver" OFF)
 option (USE_CHOLMOD "Enable SuiteSparse CHOLMOD solver" OFF)
 option (USE_AMGCL "Enable AMGCL iterative solver" ON)
 option (USE_HYPRE "Enable hypre BoomerAMG iterative solver" OFF)
+option (USE_LIBRSB "Enable librsb SpMV backend for DeflatedFGMRES" OFF)
 option (USE_ML_TORCH "Enable ML Torch" OFF)
 option (USE_PYBIND "Enable Python pybind11 bindings (OAS callable from Python and vice versa)." OFF)
 option (ARCHIVE_BINARIES "Archive binary files" OFF)
@@ -182,6 +183,11 @@ endif()
 # detect
 #find_package (Python3 COMPONENTS Interpreter)
 find_package(OpenMP REQUIRED)
+
+if (USE_LIBRSB)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBRSB REQUIRED IMPORTED_TARGET librsb)
+endif()
 
 if (USE_MPI)
     if (MPI_DIR)
@@ -584,6 +590,11 @@ if(USE_HYPRE)
   target_link_libraries(solver PUBLIC HYPRE::HYPRE MPI::MPI_CXX)
 endif()
 
+if(USE_LIBRSB)
+  target_compile_definitions(solver PUBLIC LIBRSB_FOUND)
+  target_link_libraries(solver PUBLIC PkgConfig::LIBRSB)
+endif()
+
 # Add Spectra include directory to solver and main target
 target_include_directories(solver 
                            SYSTEM PUBLIC 
@@ -691,6 +702,46 @@ endif()
 if(USE_HYPRE)
     target_link_libraries(${TARGETNAME} PRIVATE HYPRE::HYPRE MPI::MPI_CXX)
 endif()
+
+if(USE_LIBRSB)
+    target_link_libraries(${TARGETNAME} PRIVATE PkgConfig::LIBRSB)
+endif()
+
+if(USE_HYPRE)
+  add_executable(benchmark_hypre_replay
+    ${OAS_SOURCE_DIR}/scripts/benchmark-hypre-replay.cpp
+  )
+  target_compile_options(benchmark_hypre_replay
+    PRIVATE
+      ${_CXX_FLAGS}
+  )
+  target_link_libraries(benchmark_hypre_replay
+    PRIVATE
+      Eigen3::Eigen
+      HYPRE::HYPRE
+      MPI::MPI_CXX
+      OpenMP::OpenMP_CXX
+  )
+endif()
+
+if(USE_AMGCL)
+  add_executable(benchmark_amgcl_replay
+    ${OAS_SOURCE_DIR}/scripts/benchmark-amgcl-replay.cpp
+  )
+  target_compile_options(benchmark_amgcl_replay
+    PRIVATE
+      ${_CXX_FLAGS}
+  )
+  target_link_libraries(benchmark_amgcl_replay
+    PRIVATE
+      Eigen3::Eigen
+      amgcl::amgcl
+      HYPRE::HYPRE
+      MPI::MPI_CXX
+      OpenMP::OpenMP_CXX
+  )
+endif()
+
 target_compile_options(${TARGETNAME}
   PRIVATE
     ${_CXX_FLAGS}

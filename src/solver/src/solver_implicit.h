@@ -23,7 +23,10 @@ protected:
     bool linearReplayDumpEnabled = false;
     unsigned linearReplayDumpLimit = 5;
     unsigned linearReplayDumpCount = 0;
+    unsigned linearReplayDumpStart = 1;
+    unsigned linearReplaySeenCount = 0;
     std :: string linearReplayDumpDir = "linear_replay";
+    double elasticNearNullspaceCoordinateScale = -1.;
     int linearProfileIteration = -1;
     unsigned linearProfileCumulIteration = 0;
     std :: string linearProfileSystemKind = "steady_state_linear";

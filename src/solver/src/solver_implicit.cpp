@@ -113,6 +113,21 @@ bool SteadyStateLinearSolver :: profiledFactorize() {
     auto start = std :: chrono :: steady_clock :: now();
     bool result = linalgsolver->factorize(Keff);
     auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+    if ( runtimeProfiler.isEnabled() ) {
+        const double preconditionerSetupSeconds = linalgsolver->giveLastPreconditionerSetupSeconds();
+        if ( preconditionerSetupSeconds > 0. ) {
+            recordRuntimePhase("linear.preconditioner_setup", preconditionerSetupSeconds, linalgsolver->giveName() );
+        }
+        const double reorthogonalizationSeconds = linalgsolver->giveLastDeflationReorthogonalizationSeconds();
+        const long long reorthogonalizationCount = linalgsolver->giveLastDeflationReorthogonalizationCount();
+        if ( reorthogonalizationSeconds > 0. || reorthogonalizationCount > 0 ) {
+            recordRuntimePhaseSamples("linear.deflation_basis_reorthogonalization", reorthogonalizationSeconds, reorthogonalizationCount, linalgsolver->giveName() );
+        }
+        const double otherSeconds = elapsed - preconditionerSetupSeconds - reorthogonalizationSeconds;
+        if ( otherSeconds > 0. ) {
+            recordRuntimePhase("linear.factorize_other", otherSeconds, linalgsolver->giveName() );
+        }
+    }
     linearProfiler.recordMatrixEvent("factorize", step, linearProfileIteration, linearProfileCumulIteration, linearProfileSystemKind, symsolver_type, linalgsolver->giveName(), Keff, elapsed, result);
     return result;
 }
@@ -122,6 +137,23 @@ bool SteadyStateLinearSolver :: profiledLinearSolve(Vector &x, const Vector &b, 
     auto start = std :: chrono :: steady_clock :: now();
     bool result = linalgsolver->solve(x, b);
     auto elapsed = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+    if ( runtimeProfiler.isEnabled() ) {
+        recordRuntimePhase("linear.solve_total", elapsed, rhsKind);
+        const double preconditionerApplySeconds = linalgsolver->giveLastPreconditionerApplySeconds();
+        const double orthogonalizationSeconds = linalgsolver->giveLastOrthogonalizationSeconds();
+        const double leastSquaresSeconds = linalgsolver->giveLastLeastSquaresSeconds();
+        const double matvecSeconds = linalgsolver->giveLastMatvecSeconds();
+        const double deflationSeconds = linalgsolver->giveLastDeflationSeconds();
+        recordRuntimePhaseSamples("linear.dfgmres.preconditioner_apply", preconditionerApplySeconds, linalgsolver->giveLastPreconditionerApplyCount(), rhsKind);
+        recordRuntimePhaseSamples("linear.dfgmres.krylov_orthogonalization", orthogonalizationSeconds, linalgsolver->giveLastOrthogonalizationCount(), rhsKind);
+        recordRuntimePhaseSamples("linear.dfgmres.least_squares", leastSquaresSeconds, linalgsolver->giveLastLeastSquaresCount(), rhsKind);
+        recordRuntimePhaseSamples("linear.dfgmres.matvec", matvecSeconds, linalgsolver->giveLastMatvecCount(), rhsKind);
+        recordRuntimePhaseSamples("linear.dfgmres.deflation_projection", deflationSeconds, linalgsolver->giveLastDeflationProjectionCount(), rhsKind);
+        const double otherSeconds = elapsed - preconditionerApplySeconds - orthogonalizationSeconds - leastSquaresSeconds - matvecSeconds - deflationSeconds;
+        if ( otherSeconds > 0. ) {
+            recordRuntimePhase("linear.dfgmres.solve_other", otherSeconds, rhsKind);
+        }
+    }
     linearProfiler.recordSolveEvent(
         step,
         linearProfileIteration,
@@ -162,17 +194,23 @@ void SteadyStateLinearSolver :: collectLinearDeflationVector(const Vector &x, co
     if ( !success || !linalgsolver || rhsKind != "direct_residual" ) {
         return;
     }
+    auto start = std :: chrono :: steady_clock :: now();
     linalgsolver->collectDeflationVector(x);
+    if ( runtimeProfiler.isEnabled() ) {
+        recordRuntimePhase("linear.deflation_basis_orthogonalization", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count(), rhsKind);
+    }
 }
 
 //////////////////////////////////////////////////////////
 void SteadyStateLinearSolver :: dumpLinearReplayCase(const Vector &rhs, const Vector &solution, const string &rhsKind, bool success) {
-    if ( !linearReplayDumpEnabled || linearReplayDumpCount >= linearReplayDumpLimit ) {
+    linearReplaySeenCount++;
+    const unsigned solveIndex = linearReplaySeenCount;
+    if ( !linearReplayDumpEnabled || solveIndex < linearReplayDumpStart || linearReplayDumpCount >= linearReplayDumpLimit ) {
         return;
     }
 
     fs :: path resultDir = masterModel ? masterModel->giveResultDirectory() : fs :: path(".");
-    fs :: path dumpDir = resultDir / linearReplayDumpDir / ( "solve_" + std :: to_string(linearReplayDumpCount + 1) );
+    fs :: path dumpDir = resultDir / linearReplayDumpDir / ( "solve_" + std :: to_string(solveIndex) );
     fs :: create_directories(dumpDir);
 
     ElasticDofMap elasticMap = buildElasticDofMap();
@@ -219,6 +257,7 @@ void SteadyStateLinearSolver :: dumpLinearReplayCase(const Vector &rhs, const Ve
         out << "elastic_block_size\t" << elasticMap.blockSize << "\n";
         out << "elastic_dimension\t" << elasticMap.dimension << "\n";
         out << "near_nullspace_columns\t" << elasticMap.nearNullspaceColumns << "\n";
+        out << "linear_replay_solve_index\t" << solveIndex << "\n";
     }
 
     {
@@ -370,9 +409,13 @@ ElasticDofMap SteadyStateLinearSolver :: buildElasticDofMap() const {
         }
     }
     const double scale = sqrt(radius2 / std :: max<size_t>(mechanicalNodes.size(), 1) );
-    if ( scale > 0. ) {
+    const bool hasRotationalDoFs = blockSize > dim;
+    const double nearNullspaceScale = elasticNearNullspaceCoordinateScale > 0. ? elasticNearNullspaceCoordinateScale : scale;
+    // With rotational DoFs, omega x r and the rotational rows must stay in the
+    // same physical units; normalizing coordinates would change the mode shape.
+    if ( nearNullspaceScale > 0. && ( !hasRotationalDoFs || elasticNearNullspaceCoordinateScale > 0. ) ) {
         for ( double &value : map.coordinates ) {
-            value /= scale;
+            value /= nearNullspaceScale;
         }
     }
 
@@ -466,7 +509,9 @@ ElasticDofMap SteadyStateLinearSolver :: buildElasticDofMap() const {
                 << ", lifted_identity_rows=" << ( map.fullRows - mappedRows )
                 << ", block_size=" << map.blockSize
                 << ", dimension=" << map.dimension
-                << ", centered_coordinate_scale=" << scale << std :: endl;
+                << ", centered_coordinate_scale=" << scale
+                << ", near_nullspace_coordinate_scale="
+                << ( elasticNearNullspaceCoordinateScale > 0. ? std :: to_string(elasticNearNullspaceCoordinateScale) : ( hasRotationalDoFs ? "physical" : "normalized" ) ) << std :: endl;
     std :: cout << "AMG elasticity map: prepared " << columns << " near-nullspace modes from "
                 << translationalMechanicalRows << " translational and " << rotationalMechanicalRows
                 << " rotational mechanical free DOF rows out of " << freeDoFnum << " free DOFs" << std :: endl;
@@ -579,8 +624,15 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 linearReplayDumpEnabled = ( value != 0 );
             } else if ( param.compare("linear_solver_replay_limit") == 0 ) {
                 iss >> linearReplayDumpLimit;
+            } else if ( param.compare("linear_solver_replay_start") == 0 ) {
+                iss >> linearReplayDumpStart;
+                linearReplayDumpStart = std :: max(1u, linearReplayDumpStart);
             } else if ( param.compare("linear_solver_replay_dir") == 0 ) {
                 iss >> linearReplayDumpDir;
+            } else if ( param.compare("elastic_near_nullspace_coordinate_scale") == 0
+                        || param.compare("amg_near_nullspace_coordinate_scale") == 0
+                        || param.compare("amgcl_near_nullspace_coordinate_scale") == 0 ) {
+                iss >> elasticNearNullspaceCoordinateScale;
             } else if ( param.compare("amgcl_tolerance") == 0 ) {
                 iss >> amgclOptions.tolerance;
             } else if ( param.compare("amgcl_true_tolerance") == 0 ) {
@@ -671,6 +723,8 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 int value = 0;
                 iss >> value;
                 dfgmresOptions.reorthogonalizeKrylov = ( value != 0 );
+            } else if ( param.compare("dfgmres_elastic_reorder") == 0 ) {
+                iss >> dfgmresOptions.elasticReorder;
             } else if ( param.compare("dfgmres_verbose") == 0 ) {
                 int value = 0;
                 iss >> value;
@@ -687,18 +741,28 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> hypreOptions.strongThreshold;
             } else if ( param.compare("hypre_nodal") == 0 ) {
                 iss >> hypreOptions.nodal;
+            } else if ( param.compare("hypre_nodal_diag") == 0 ) {
+                iss >> hypreOptions.nodalDiag;
             } else if ( param.compare("hypre_num_functions") == 0 ) {
                 iss >> hypreOptions.numFunctions;
             } else if ( param.compare("hypre_relax_type") == 0 ) {
                 iss >> hypreOptions.relaxType;
             } else if ( param.compare("hypre_relax_order") == 0 ) {
                 iss >> hypreOptions.relaxOrder;
+            } else if ( param.compare("hypre_num_sweeps") == 0 || param.compare("hypre_sweeps") == 0 ) {
+                iss >> hypreOptions.numSweeps;
             } else if ( param.compare("hypre_p_max") == 0 || param.compare("hypre_pmax") == 0 ) {
                 iss >> hypreOptions.pMaxElmts;
             } else if ( param.compare("hypre_agg_levels") == 0 || param.compare("hypre_agg_num_levels") == 0 ) {
                 iss >> hypreOptions.aggNumLevels;
             } else if ( param.compare("hypre_boomer_max_iterations") == 0 ) {
                 iss >> hypreOptions.boomerMaxIterations;
+            } else if ( param.compare("hypre_cheby_order") == 0 ) {
+                iss >> hypreOptions.chebyOrder;
+            } else if ( param.compare("hypre_cheby_fraction") == 0 ) {
+                iss >> hypreOptions.chebyFraction;
+            } else if ( param.compare("hypre_elastic_reorder") == 0 ) {
+                iss >> hypreOptions.elasticReorder;
             } else if ( param.compare("hypre_print_level") == 0 ) {
                 iss >> hypreOptions.printLevel;
             } else if ( param.compare("hypre_skip_break") == 0 ) {
@@ -729,6 +793,8 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 int value = 0;
                 iss >> value;
                 hypreOptions.checkMatrix = ( value != 0 );
+            } else if ( param.compare("hypre_threads") == 0 || param.compare("hypre_thread_count") == 0 ) {
+                iss >> hypreOptions.threads;
             } else if ( param.compare("silent") == 0 ) {
                 silent = true;
             } else if ( param.compare("pertrubation") == 0 ) {

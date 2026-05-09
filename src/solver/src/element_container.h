@@ -14,6 +14,13 @@ class CrossSectionContainer; //forward declaration
 class ElementContainer
 {
 private:
+    struct StructuralMatrixEntry
+    {
+        unsigned localRow;
+        unsigned localCol;
+        ptrdiff_t valueIndex;
+    };
+
     std :: vector< Element * >elems;
     NodeContainer *nodes = nullptr;
     ;
@@ -27,8 +34,19 @@ private:
     unsigned max_sol_order = 0; //maximum number of successive rounds of internal force evaluations
     void prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied = true) const;
     void updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType, bool lumped, bool BC_applied = true, bool solver_numbering = true) const;
+    void updateStructuralMatrixSerial(CoordinateIndexedSparseMatrix &K, unsigned diffType, std :: string matrixType, bool lumped, bool BC_applied = true, bool solver_numbering = true) const;
+    bool updateStiffnessMatrixParallel(CoordinateIndexedSparseMatrix &K, std :: string matrixType, bool BC_applied, bool solver_numbering) const;
+    bool prepareStiffnessEntryMap(const CoordinateIndexedSparseMatrix &K, bool BC_applied, bool solver_numbering) const;
+    ptrdiff_t findSparseValueIndex(const CoordinateIndexedSparseMatrix &K, unsigned row, unsigned col) const;
+    bool addLagrangeMultiplierEntries(CoordinateIndexedSparseMatrix &K, unsigned nfreeDoFs) const;
+    void clearStiffnessEntryMap() const;
     void integrateDampingOrInertiaForces(const Vector &full_v, Vector &full_f, unsigned diffType) const;
     std :: vector< std :: string >file_to_load_from;
+    mutable const CoordinateIndexedSparseMatrix *stiffnessEntryMapMatrix = nullptr;
+    mutable Eigen :: Index stiffnessEntryMapRows = 0;
+    mutable Eigen :: Index stiffnessEntryMapCols = 0;
+    mutable Eigen :: Index stiffnessEntryMapNonzeros = 0;
+    mutable std :: vector< std :: vector< StructuralMatrixEntry > > stiffnessEntryMap;
 
 public:
     ElementContainer() { model = nullptr; };

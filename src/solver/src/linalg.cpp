@@ -36,6 +36,14 @@
  #include <mpi.h>
 #endif
 
+#ifdef LIBRSB_FOUND
+ #include <rsb.h>
+#endif
+
+#ifdef _OPENMP
+ #include <omp.h>
+#endif
+
 using namespace std;
 
 namespace {
@@ -62,6 +70,397 @@ void makeRowMajorCrs(
     col.assign(rowMajor.innerIndexPtr(), rowMajor.innerIndexPtr() + rowMajor.nonZeros());
     val.assign(rowMajor.valuePtr(), rowMajor.valuePtr() + rowMajor.nonZeros());
 }
+
+Vector rowMajorCrsMatvec(
+    ptrdiff_t rows,
+    const std :: vector< ptrdiff_t > &ptr,
+    const std :: vector< ptrdiff_t > &col,
+    const std :: vector< double > &val,
+    const Vector &x
+) {
+    if ( rows <= 0 || x.size() != rows || ptr.size() != size_t( rows + 1 ) || col.size() != val.size() ) {
+        return Vector();
+    }
+
+    Vector y(rows);
+    const double *xData = x.data();
+    double *yData = y.data();
+#ifdef _OPENMP
+    if ( rows > 20000 && omp_get_max_threads() > 1 ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t row = 0; row < rows; row++ ) {
+            double sum = 0.;
+            for ( ptrdiff_t k = ptr [ row ]; k < ptr [ row + 1 ]; k++ ) {
+                sum += val [ k ] * xData [ col [ k ] ];
+            }
+            yData [ row ] = sum;
+        }
+        return y;
+    }
+#endif
+    for ( ptrdiff_t row = 0; row < rows; row++ ) {
+        double sum = 0.;
+        for ( ptrdiff_t k = ptr [ row ]; k < ptr [ row + 1 ]; k++ ) {
+            sum += val [ k ] * xData [ col [ k ] ];
+        }
+        yData [ row ] = sum;
+    }
+    return y;
+}
+
+constexpr Eigen :: Index DFGMRES_PARALLEL_VECTOR_THRESHOLD = 20000;
+
+bool shouldParallelizeDfgmresVector(Eigen :: Index size) {
+#ifdef _OPENMP
+    return size > DFGMRES_PARALLEL_VECTOR_THRESHOLD && omp_get_max_threads() > 1;
+#else
+    ( void ) size;
+    return false;
+#endif
+}
+
+double dfgmresDot(const Eigen :: Ref< const Vector > &a, const Eigen :: Ref< const Vector > &b) {
+    if ( a.size() != b.size() ) {
+        return a.dot(b);
+    }
+
+#ifdef _OPENMP
+    if ( shouldParallelizeDfgmresVector(a.size() ) ) {
+        std :: vector< double > partials(omp_get_max_threads(), 0.);
+        const double *aData = a.data();
+        const double *bData = b.data();
+        const Eigen :: Index size = a.size();
+#pragma omp parallel
+        {
+            double local = 0.;
+            const int thread = omp_get_thread_num();
+#pragma omp for schedule(static) nowait
+            for ( Eigen :: Index i = 0; i < size; i++ ) {
+                local += aData [ i ] * bData [ i ];
+            }
+            partials [ thread ] = local;
+        }
+        double total = 0.;
+        for ( double partial : partials ) {
+            total += partial;
+        }
+        return total;
+    }
+#endif
+    return a.dot(b);
+}
+
+double dfgmresSquaredNorm(const Eigen :: Ref< const Vector > &v) {
+    return dfgmresDot(v, v);
+}
+
+double dfgmresNorm(const Eigen :: Ref< const Vector > &v) {
+    return sqrt(std :: max(dfgmresSquaredNorm(v), 0.) );
+}
+
+void dfgmresAxpy(Eigen :: Ref< Vector > y, double alpha, const Eigen :: Ref< const Vector > &x) {
+    if ( y.size() != x.size() ) {
+        return;
+    }
+
+#ifdef _OPENMP
+    if ( shouldParallelizeDfgmresVector(y.size() ) ) {
+        double *yData = y.data();
+        const double *xData = x.data();
+        const Eigen :: Index size = y.size();
+#pragma omp parallel for schedule(static)
+        for ( Eigen :: Index i = 0; i < size; i++ ) {
+            yData [ i ] += alpha * xData [ i ];
+        }
+        return;
+    }
+#endif
+    y.noalias() += alpha * x;
+}
+
+void dfgmresScaleInPlace(Eigen :: Ref< Vector > y, double alpha) {
+#ifdef _OPENMP
+    if ( shouldParallelizeDfgmresVector(y.size() ) ) {
+        double *yData = y.data();
+        const Eigen :: Index size = y.size();
+#pragma omp parallel for schedule(static)
+        for ( Eigen :: Index i = 0; i < size; i++ ) {
+            yData [ i ] *= alpha;
+        }
+        return;
+    }
+#endif
+    y *= alpha;
+}
+
+void dfgmresAssignScaled(Eigen :: Ref< Vector > y, const Eigen :: Ref< const Vector > &x, double alpha) {
+    if ( y.size() != x.size() ) {
+        return;
+    }
+
+#ifdef _OPENMP
+    if ( shouldParallelizeDfgmresVector(y.size() ) ) {
+        double *yData = y.data();
+        const double *xData = x.data();
+        const Eigen :: Index size = y.size();
+#pragma omp parallel for schedule(static)
+        for ( Eigen :: Index i = 0; i < size; i++ ) {
+            yData [ i ] = alpha * xData [ i ];
+        }
+        return;
+    }
+#endif
+    y.noalias() = alpha * x;
+}
+
+void dfgmresAssignDiff(Eigen :: Ref< Vector > y, const Eigen :: Ref< const Vector > &a, const Eigen :: Ref< const Vector > &b) {
+    if ( y.size() != a.size() || a.size() != b.size() ) {
+        return;
+    }
+
+#ifdef _OPENMP
+    if ( shouldParallelizeDfgmresVector(y.size() ) ) {
+        double *yData = y.data();
+        const double *aData = a.data();
+        const double *bData = b.data();
+        const Eigen :: Index size = y.size();
+#pragma omp parallel for schedule(static)
+        for ( Eigen :: Index i = 0; i < size; i++ ) {
+            yData [ i ] = aData [ i ] - bData [ i ];
+        }
+        return;
+    }
+#endif
+    y.noalias() = a - b;
+}
+
+void dfgmresAddLinearCombination(Vector &target, const Matrix &basis, const Vector &coefficients, unsigned columns) {
+    const unsigned count = std :: min< unsigned >(columns, static_cast< unsigned >(coefficients.size() ) );
+    for ( unsigned i = 0; i < count; i++ ) {
+        if ( coefficients [ i ] != 0. ) {
+            dfgmresAxpy(target, coefficients [ i ], basis.col(i) );
+        }
+    }
+}
+
+#ifdef LIBRSB_FOUND
+struct RsbMatrixDeleter
+{
+    void operator()(rsb_mtx_t *matrix) const {
+        if ( matrix ) {
+            rsb_mtx_free(matrix);
+        }
+    }
+};
+
+using RsbMatrixPtr = std :: unique_ptr< rsb_mtx_t, RsbMatrixDeleter >;
+
+bool ensureLibrsbRuntimeInitialized() {
+    static const bool initialized = []() {
+        return rsb_lib_init(RSB_NULL_INIT_OPTIONS) == RSB_ERR_NO_ERROR;
+    }();
+    return initialized;
+}
+
+int desiredLibrsbThreadCount() {
+#ifdef _OPENMP
+    return std :: max(1, std :: min(8, omp_get_max_threads() ) );
+#else
+    return 1;
+#endif
+}
+
+bool setLibrsbThreadCount(int threads) {
+    rsb_int_t rsbThreads = static_cast< rsb_int_t >( std :: max(1, threads) );
+    return rsb_lib_set_opt(RSB_IO_WANT_EXECUTING_THREADS, &rsbThreads) == RSB_ERR_NO_ERROR;
+}
+
+RsbMatrixPtr makeLibrsbMatrixFromCrs(
+    ptrdiff_t rows,
+    const std :: vector< ptrdiff_t > &ptr,
+    const std :: vector< ptrdiff_t > &col,
+    const std :: vector< double > &val
+) {
+    if ( rows <= 0 || ptr.size() != size_t( rows + 1 ) || col.size() != val.size() ) {
+        return nullptr;
+    }
+    if ( !ensureLibrsbRuntimeInitialized() || !setLibrsbThreadCount(desiredLibrsbThreadCount() ) ) {
+        return nullptr;
+    }
+    if ( rows > static_cast< ptrdiff_t >( std :: numeric_limits< rsb_coo_idx_t > :: max() )
+            || val.size() > static_cast< size_t >( std :: numeric_limits< rsb_nnz_idx_t > :: max() ) ) {
+        return nullptr;
+    }
+
+    std :: vector< rsb_coo_idx_t >rowPtr(ptr.size() );
+    std :: vector< rsb_coo_idx_t >colInd(col.size() );
+    for ( size_t i = 0; i < ptr.size(); i++ ) {
+        if ( ptr [ i ] > static_cast< ptrdiff_t >( std :: numeric_limits< rsb_coo_idx_t > :: max() ) ) {
+            return nullptr;
+        }
+        rowPtr [ i ] = static_cast< rsb_coo_idx_t >( ptr [ i ] );
+    }
+    for ( size_t i = 0; i < col.size(); i++ ) {
+        if ( col [ i ] > static_cast< ptrdiff_t >( std :: numeric_limits< rsb_coo_idx_t > :: max() ) ) {
+            return nullptr;
+        }
+        colInd [ i ] = static_cast< rsb_coo_idx_t >( col [ i ] );
+    }
+
+    rsb_err_t error = RSB_ERR_NO_ERROR;
+    rsb_mtx_t *matrix = rsb_mtx_alloc_from_csr_const(
+        val.data(),
+        rowPtr.data(),
+        colInd.data(),
+        static_cast< rsb_nnz_idx_t >( val.size() ),
+        RSB_NUMERICAL_TYPE_DOUBLE,
+        static_cast< rsb_coo_idx_t >( rows ),
+        static_cast< rsb_coo_idx_t >( rows ),
+        1,
+        1,
+        RSB_FLAG_NOFLAGS,
+        &error
+    );
+    if ( !matrix || error != RSB_ERR_NO_ERROR ) {
+        return nullptr;
+    }
+    return RsbMatrixPtr(matrix);
+}
+
+Vector librsbMatvec(const rsb_mtx_t *matrix, Eigen :: Index rows, const Vector &x) {
+    if ( !matrix || rows <= 0 || x.size() != rows ) {
+        return Vector();
+    }
+
+    Vector y(rows);
+    const double alpha = 1.;
+    const double beta = 0.;
+    if ( rsb_spmv(RSB_TRANSPOSITION_N, &alpha, matrix, x.data(), 1, &beta, y.data(), 1) != RSB_ERR_NO_ERROR ) {
+        return Vector();
+    }
+    return y;
+}
+#endif
+
+#ifdef HYPRE_FOUND
+bool hypreCheck(HYPRE_Int error, const char *operation);
+
+int maxOpenMPThreadCount() {
+#ifdef _OPENMP
+    return std :: max(1, omp_get_max_threads() );
+#else
+    return 1;
+#endif
+}
+
+bool hypreRelaxTypeUsesThreadStableSmoother(int relaxType) {
+    switch ( relaxType ) {
+    case 0:  // weighted Jacobi
+    case 7:  // Jacobi
+    case 16: // Chebyshev
+    case 18: // l1-Jacobi
+        return true;
+    default:
+        return false;
+    }
+}
+
+int desiredHypreThreadCount(const HypreBoomerAMGOptions &options) {
+    const int maxThreads = maxOpenMPThreadCount();
+    if ( options.threads > 0 ) {
+        return std :: max(1, std :: min(options.threads, maxThreads) );
+    }
+    if ( !hypreRelaxTypeUsesThreadStableSmoother(options.relaxType) ) {
+        return 1;
+    }
+    return maxThreads;
+}
+
+bool setHypreMatrixValuesFromCrs(
+    HYPRE_IJMatrix matrix,
+    ptrdiff_t rows,
+    const std :: vector< ptrdiff_t > &ptr,
+    const std :: vector< ptrdiff_t > &col,
+    const std :: vector< double > &val
+) {
+    if ( rows <= 0 || ptr.size() != size_t(rows + 1) || col.size() != val.size() ) {
+        return false;
+    }
+    if ( rows > static_cast< ptrdiff_t >( std :: numeric_limits< HYPRE_Int > :: max() ) ) {
+        return false;
+    }
+
+    std :: vector< HYPRE_Int > rowSizes(rows, 0);
+    std :: vector< HYPRE_BigInt > rowIds(rows, 0);
+    std :: vector< HYPRE_BigInt > rowColumns(col.size(), 0);
+
+#ifdef _OPENMP
+    if ( rows > 20000 && omp_get_max_threads() > 1 ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t row = 0; row < rows; row++ ) {
+            rowSizes [ row ] = static_cast< HYPRE_Int >( ptr [ row + 1 ] - ptr [ row ] );
+            rowIds [ row ] = static_cast< HYPRE_BigInt >( row );
+        }
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( col.size() ); i++ ) {
+            rowColumns [ i ] = static_cast< HYPRE_BigInt >( col [ i ] );
+        }
+    } else
+#endif
+    {
+        for ( ptrdiff_t row = 0; row < rows; row++ ) {
+            rowSizes [ row ] = static_cast< HYPRE_Int >( ptr [ row + 1 ] - ptr [ row ] );
+            rowIds [ row ] = static_cast< HYPRE_BigInt >( row );
+        }
+        for ( size_t i = 0; i < col.size(); i++ ) {
+            rowColumns [ i ] = static_cast< HYPRE_BigInt >( col [ i ] );
+        }
+    }
+
+    if ( val.empty() ) {
+        return true;
+    }
+    return hypreCheck(
+        HYPRE_IJMatrixSetValues(
+            matrix,
+            static_cast< HYPRE_Int >( rows ),
+            rowSizes.data(),
+            rowIds.data(),
+            rowColumns.data(),
+            val.data()
+        ),
+        "HYPRE_IJMatrixSetValues"
+    );
+}
+#endif
+
+class ScopedOpenMPThreadLimit
+{
+public:
+    explicit ScopedOpenMPThreadLimit(int threads) {
+#ifdef _OPENMP
+        previousThreads = omp_get_max_threads();
+        if ( threads > 0 && previousThreads != threads ) {
+            omp_set_num_threads(threads);
+            changed = true;
+        }
+#else
+        ( void ) threads;
+#endif
+    }
+
+    ~ScopedOpenMPThreadLimit() {
+#ifdef _OPENMP
+        if ( changed ) {
+            omp_set_num_threads(previousThreads);
+        }
+#endif
+    }
+
+private:
+    int previousThreads = 1;
+    bool changed = false;
+};
 
 CoordinateIndexedSparseMatrix liftMatrixToElasticSpace(const CoordinateIndexedSparseMatrix &A, const ElasticDofMap &map) {
     if ( !map.isValid() ) {
@@ -136,12 +535,235 @@ std :: string lowerCopy(std :: string value) {
     return value;
 }
 
+std :: vector< unsigned > makeElasticOldToNewPermutation(const ElasticDofMap &map, int reorderMode) {
+    if ( reorderMode <= 0 || !map.isValid() || map.blockSize == 0 || map.fullRows == 0 || map.fullRows % map.blockSize != 0 ) {
+        return {};
+    }
+    const unsigned nodeCount = map.fullRows / map.blockSize;
+    std :: vector< unsigned >nodeOrder(nodeCount);
+    std :: iota(nodeOrder.begin(), nodeOrder.end(), 0u);
+
+    if ( reorderMode >= 2 && map.dimension > 0 && map.coordinates.size() >= size_t(nodeCount) * map.dimension ) {
+        const unsigned dim = map.dimension;
+        std :: stable_sort(nodeOrder.begin(), nodeOrder.end(), [&](unsigned a, unsigned b) {
+            for ( unsigned d = 0; d < dim; d++ ) {
+                const double av = map.coordinates [ size_t(a) * dim + d ];
+                const double bv = map.coordinates [ size_t(b) * dim + d ];
+                if ( av < bv ) {
+                    return true;
+                }
+                if ( av > bv ) {
+                    return false;
+                }
+            }
+            return a < b;
+        });
+    }
+
+    std :: vector< unsigned >oldToNew(map.fullRows);
+    for ( unsigned newNode = 0; newNode < nodeCount; newNode++ ) {
+        const unsigned oldNode = nodeOrder [ newNode ];
+        for ( unsigned dof = 0; dof < map.blockSize; dof++ ) {
+            oldToNew [ oldNode * map.blockSize + dof ] = newNode * map.blockSize + dof;
+        }
+    }
+    return oldToNew;
+}
+
+std :: vector< unsigned > makeElasticRcmOldToNewPermutation(const ElasticDofMap &map, const CoordinateIndexedSparseMatrix &A) {
+    if ( !map.isValid() || map.blockSize == 0 || map.fullRows == 0 || map.fullRows % map.blockSize != 0
+        || A.rows() != Eigen :: Index(map.fullRows) || A.cols() != Eigen :: Index(map.fullRows) ) {
+        return {};
+    }
+
+    const unsigned nodeCount = map.fullRows / map.blockSize;
+    std :: vector< std :: vector< unsigned > > adjacency(nodeCount);
+    for ( int outer = 0; outer < A.outerSize(); outer++ ) {
+        for ( CoordinateIndexedSparseMatrix :: InnerIterator it(A, outer); it; ++it ) {
+            const unsigned rowNode = unsigned( it.row() ) / map.blockSize;
+            const unsigned colNode = unsigned( it.col() ) / map.blockSize;
+            if ( rowNode == colNode || rowNode >= nodeCount || colNode >= nodeCount ) {
+                continue;
+            }
+            adjacency [ rowNode ].push_back(colNode);
+            adjacency [ colNode ].push_back(rowNode);
+        }
+    }
+
+    std :: vector< unsigned >degree(nodeCount, 0);
+    for ( unsigned node = 0; node < nodeCount; node++ ) {
+        std :: vector< unsigned > &neighbors = adjacency [ node ];
+        std :: sort(neighbors.begin(), neighbors.end() );
+        neighbors.erase(std :: unique(neighbors.begin(), neighbors.end() ), neighbors.end() );
+        degree [ node ] = unsigned( neighbors.size() );
+    }
+
+    std :: vector< unsigned >candidates(nodeCount);
+    std :: iota(candidates.begin(), candidates.end(), 0u);
+    std :: stable_sort(candidates.begin(), candidates.end(), [&](unsigned a, unsigned b) {
+        if ( degree [ a ] != degree [ b ] ) {
+            return degree [ a ] < degree [ b ];
+        }
+        return a < b;
+    });
+
+    std :: vector< unsigned char >visited(nodeCount, 0);
+    std :: vector< unsigned >cmOrder;
+    cmOrder.reserve(nodeCount);
+    std :: deque< unsigned >queue;
+    std :: vector< unsigned >next;
+
+    for ( unsigned start : candidates ) {
+        if ( visited [ start ] ) {
+            continue;
+        }
+        visited [ start ] = 1;
+        queue.push_back(start);
+        while ( !queue.empty() ) {
+            const unsigned node = queue.front();
+            queue.pop_front();
+            cmOrder.push_back(node);
+
+            next.clear();
+            for ( unsigned neighbor : adjacency [ node ] ) {
+                if ( !visited [ neighbor ] ) {
+                    next.push_back(neighbor);
+                }
+            }
+            std :: stable_sort(next.begin(), next.end(), [&](unsigned a, unsigned b) {
+                if ( degree [ a ] != degree [ b ] ) {
+                    return degree [ a ] < degree [ b ];
+                }
+                return a < b;
+            });
+            for ( unsigned neighbor : next ) {
+                if ( !visited [ neighbor ] ) {
+                    visited [ neighbor ] = 1;
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+    }
+
+    std :: reverse(cmOrder.begin(), cmOrder.end() );
+    std :: vector< unsigned >oldToNew(map.fullRows);
+    for ( unsigned newNode = 0; newNode < nodeCount; newNode++ ) {
+        const unsigned oldNode = cmOrder [ newNode ];
+        for ( unsigned dof = 0; dof < map.blockSize; dof++ ) {
+            oldToNew [ oldNode * map.blockSize + dof ] = newNode * map.blockSize + dof;
+        }
+    }
+    return oldToNew;
+}
+
+std :: vector< unsigned > invertPermutation(const std :: vector< unsigned > &oldToNew) {
+    std :: vector< unsigned >newToOld(oldToNew.size() );
+    for ( unsigned oldIndex = 0; oldIndex < oldToNew.size(); oldIndex++ ) {
+        newToOld [ oldToNew [ oldIndex ] ] = oldIndex;
+    }
+    return newToOld;
+}
+
+bool permutationIsIdentity(const std :: vector< unsigned > &oldToNew) {
+    for ( unsigned i = 0; i < oldToNew.size(); i++ ) {
+        if ( oldToNew [ i ] != i ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+CoordinateIndexedSparseMatrix symmetricallyPermuteMatrix(const CoordinateIndexedSparseMatrix &A, const std :: vector< unsigned > &oldToNew) {
+    if ( oldToNew.empty() || A.rows() != Eigen :: Index(oldToNew.size() ) || A.cols() != Eigen :: Index(oldToNew.size() ) ) {
+        return A;
+    }
+    std :: vector< Ttripletd >triplets;
+    triplets.reserve(A.nonZeros() );
+    for ( int outer = 0; outer < A.outerSize(); outer++ ) {
+        for ( CoordinateIndexedSparseMatrix :: InnerIterator it(A, outer); it; ++it ) {
+            triplets.emplace_back(oldToNew [ it.row() ], oldToNew [ it.col() ], it.value() );
+        }
+    }
+    CoordinateIndexedSparseMatrix permuted(A.rows(), A.cols() );
+    permuted.setFromTriplets(triplets.begin(), triplets.end());
+    permuted.makeCompressed();
+    return permuted;
+}
+
+Vector permuteVectorToNewOrdering(const Vector &oldVector, const std :: vector< unsigned > &oldToNew) {
+    if ( oldToNew.empty() || oldVector.size() != Eigen :: Index(oldToNew.size() ) ) {
+        return oldVector;
+    }
+    Vector newVector(oldVector.size() );
+    for ( Eigen :: Index oldIndex = 0; oldIndex < oldVector.size(); oldIndex++ ) {
+        newVector [ oldToNew [ oldIndex ] ] = oldVector [ oldIndex ];
+    }
+    return newVector;
+}
+
+Vector permuteVectorToOldOrdering(const Vector &newVector, const std :: vector< unsigned > &newToOld) {
+    if ( newToOld.empty() || newVector.size() != Eigen :: Index(newToOld.size() ) ) {
+        return newVector;
+    }
+    Vector oldVector(newVector.size() );
+    for ( Eigen :: Index newIndex = 0; newIndex < newVector.size(); newIndex++ ) {
+        oldVector [ newToOld [ newIndex ] ] = newVector [ newIndex ];
+    }
+    return oldVector;
+}
+
+std :: vector< double > permuteRowMajorTableToNewOrdering(
+    const std :: vector< double > &oldValues,
+    size_t columns,
+    const std :: vector< unsigned > &oldToNew
+) {
+    if ( oldToNew.empty() || columns == 0 || oldValues.size() != oldToNew.size() * columns ) {
+        return oldValues;
+    }
+    std :: vector< double >newValues(oldValues.size(), 0.);
+    for ( size_t oldRow = 0; oldRow < oldToNew.size(); oldRow++ ) {
+        const size_t newRow = oldToNew [ oldRow ];
+        for ( size_t column = 0; column < columns; column++ ) {
+            newValues [ newRow * columns + column ] = oldValues [ oldRow * columns + column ];
+        }
+    }
+    return newValues;
+}
+
+const char *elasticReorderName(int mode) {
+    if ( mode <= 0 ) {
+        return "none";
+    }
+    if ( mode == 1 ) {
+        return "node_major";
+    }
+    if ( mode == 2 ) {
+        return "coordinate_node_major";
+    }
+    if ( mode == 3 ) {
+        return "rcm_node_major";
+    }
+    return "unknown";
+}
+
 }
 
 #ifdef HYPRE_FOUND
 namespace {
 void ensureHypreRuntimeInitialized();
 bool hypreCheck(HYPRE_Int error, const char *operation);
+int maxOpenMPThreadCount();
+bool hypreRelaxTypeUsesThreadStableSmoother(int relaxType);
+int desiredHypreThreadCount(const HypreBoomerAMGOptions &options);
+bool hypreIndicesAreContiguous(const std :: vector< HYPRE_BigInt > &indices);
+const HYPRE_BigInt *hypreIndexPointer(const std :: vector< HYPRE_BigInt > &indices);
+bool setHypreMatrixValuesFromCrs(
+    HYPRE_IJMatrix matrix,
+    ptrdiff_t rows,
+    const std :: vector< ptrdiff_t > &ptr,
+    const std :: vector< ptrdiff_t > &col,
+    const std :: vector< double > &val
+);
 bool makeHypreVector(
     const std :: vector< HYPRE_BigInt > &indices,
     const std :: vector< double > &values,
@@ -787,8 +1409,14 @@ struct DeflatedFGMRESSolver :: Impl
     std :: vector< ptrdiff_t >ptr;
     std :: vector< ptrdiff_t >col;
     std :: vector< double >val;
+#ifdef LIBRSB_FOUND
+    RsbMatrixPtr rsbMatrix;
+    int rsbThreads = 0;
+#endif
     CoordinateIndexedSparseMatrix reducedMatrix;
     CoordinateIndexedSparseMatrix activeMatrix;
+    std :: vector< unsigned >activeOldToNew;
+    std :: vector< unsigned >activeNewToOld;
     std :: vector< double >scale;
     std :: unique_ptr< ScalarPrecond >scalarPrecond;
     std :: unique_ptr< Hybrid3Precond >hybrid3Precond;
@@ -802,6 +1430,10 @@ struct DeflatedFGMRESSolver :: Impl
     HYPRE_IJVector hypreSetupIjX = nullptr;
     HYPRE_ParVector hypreSetupParB = nullptr;
     HYPRE_ParVector hypreSetupParX = nullptr;
+    HYPRE_IJVector hypreApplyIjB = nullptr;
+    HYPRE_IJVector hypreApplyIjX = nullptr;
+    HYPRE_ParVector hypreApplyParB = nullptr;
+    HYPRE_ParVector hypreApplyParX = nullptr;
     std :: vector< HYPRE_BigInt >hypreIndices;
 #endif
     std :: vector< Vector >reducedBasis;
@@ -841,6 +1473,16 @@ struct DeflatedFGMRESSolver :: Impl
             hypreSetupIjX = nullptr;
             hypreSetupParX = nullptr;
         }
+        if ( hypreApplyIjB ) {
+            HYPRE_IJVectorDestroy(hypreApplyIjB);
+            hypreApplyIjB = nullptr;
+            hypreApplyParB = nullptr;
+        }
+        if ( hypreApplyIjX ) {
+            HYPRE_IJVectorDestroy(hypreApplyIjX);
+            hypreApplyIjX = nullptr;
+            hypreApplyParX = nullptr;
+        }
         if ( hypreIjMatrix ) {
             HYPRE_IJMatrixDestroy(hypreIjMatrix);
             hypreIjMatrix = nullptr;
@@ -855,9 +1497,15 @@ struct DeflatedFGMRESSolver :: Impl
         hybrid3Precond.reset();
         hybrid6Precond.reset();
         innerCgSolver.reset();
+#ifdef LIBRSB_FOUND
+        rsbMatrix.reset();
+        rsbThreads = 0;
+#endif
 #ifdef HYPRE_FOUND
         clearHyprePreconditioner();
 #endif
+        activeOldToNew.clear();
+        activeNewToOld.clear();
         activePreconditioner = "none";
         matrixReady = false;
     }
@@ -879,6 +1527,14 @@ DeflatedFGMRESSolver :: DeflatedFGMRESSolver() {
     lastLeastSquaresSeconds = 0.;
     lastMatvecSeconds = 0.;
     lastDeflationSeconds = 0.;
+    lastPreconditionerSetupSeconds = 0.;
+    lastDeflationReorthogonalizationSeconds = 0.;
+    lastPreconditionerApplyCount = 0;
+    lastOrthogonalizationCount = 0;
+    lastLeastSquaresCount = 0;
+    lastMatvecCount = 0;
+    lastDeflationProjectionCount = 0;
+    lastDeflationReorthogonalizationCount = 0;
 }
 
 //////////////////////////////////////////////////////////
@@ -926,6 +1582,9 @@ bool DeflatedFGMRESSolver :: analyzePattern(const CoordinateIndexedSparseMatrix 
 Vector DeflatedFGMRESSolver :: reducedVectorToActiveUnknown(const Vector &v) const {
     const bool useElasticLift = amgclOptions.elasticFullLift && elasticMap.isValid();
     Vector active = useElasticLift ? liftVectorToElasticSpace(v, elasticMap) : v;
+    if ( !impl->activeOldToNew.empty() ) {
+        active = permuteVectorToNewOrdering(active, impl->activeOldToNew);
+    }
     if ( amgclOptions.diagonalScale && impl->scale.size() == size_t( active.size() ) ) {
         for ( Eigen :: Index i = 0; i < active.size(); ++i ) {
             if ( std :: abs(impl->scale [ i ]) > 0. ) {
@@ -947,7 +1606,7 @@ bool DeflatedFGMRESSolver :: appendRawDeflationVector(const Vector &v) {
         impl->lastDiscardReason = "nonfinite_or_size";
         return false;
     }
-    if ( v.norm() <= 1e-300 ) {
+    if ( dfgmresNorm(v) <= 1e-300 ) {
         impl->discardedBasisVectors++;
         impl->lowNormDiscardCount++;
         impl->lastDiscardReason = "low_vector_norm";
@@ -973,15 +1632,15 @@ bool DeflatedFGMRESSolver :: appendRawDeflationVector(const Vector &v) {
 //////////////////////////////////////////////////////////
 bool DeflatedFGMRESSolver :: appendActiveDeflationVector(const Vector &rawReducedVector, bool storeRawVector) {
     Vector u = reducedVectorToActiveUnknown(rawReducedVector);
-    if ( !u.allFinite() || u.norm() <= 1e-300 ) {
+    if ( !u.allFinite() || dfgmresNorm(u) <= 1e-300 ) {
         impl->discardedBasisVectors++;
         impl->lowNormDiscardCount++;
         impl->lastDiscardReason = "low_vector_norm";
         return false;
     }
 
-    Vector au = impl->activeMatrix * u;
-    const double initialANorm = u.dot(au);
+    Vector au = activeMatvec(u);
+    const double initialANorm = dfgmresDot(u, au);
     impl->lastCandidateInitialANorm = initialANorm;
     if ( !std :: isfinite(initialANorm) ) {
         impl->discardedBasisVectors++;
@@ -994,13 +1653,13 @@ bool DeflatedFGMRESSolver :: appendActiveDeflationVector(const Vector &rawReduce
     // and basisU^T*basisC is kept close to identity, no coarse Gram inverse is needed.
     for ( int pass = 0; pass < 2; ++pass ) {
         for ( size_t basisIndex = 0; basisIndex < impl->basisU.size(); ++basisIndex ) {
-            const double coefficient = impl->basisU [ basisIndex ].dot(au);
-            u.noalias() -= coefficient * impl->basisU [ basisIndex ];
-            au.noalias() -= coefficient * impl->basisC [ basisIndex ];
+            const double coefficient = dfgmresDot(impl->basisU [ basisIndex ], au);
+            dfgmresAxpy(u, -coefficient, impl->basisU [ basisIndex ]);
+            dfgmresAxpy(au, -coefficient, impl->basisC [ basisIndex ]);
         }
     }
 
-    const double finalANorm = u.dot(au);
+    const double finalANorm = dfgmresDot(u, au);
     impl->lastCandidateFinalANorm = finalANorm;
     if ( !std :: isfinite(finalANorm) || std :: abs(finalANorm) <= options.deflationEps ) {
         impl->discardedBasisVectors++;
@@ -1010,8 +1669,8 @@ bool DeflatedFGMRESSolver :: appendActiveDeflationVector(const Vector &rawReduce
     }
 
     const double invANorm = 1. / sqrt(std :: abs(finalANorm) );
-    u *= invANorm;
-    au *= invANorm;
+    dfgmresScaleInPlace(u, invANorm);
+    dfgmresScaleInPlace(au, invANorm);
     if ( !u.allFinite() || !au.allFinite() ) {
         impl->discardedBasisVectors++;
         impl->nonfiniteDiscardCount++;
@@ -1035,7 +1694,7 @@ void DeflatedFGMRESSolver :: updateDeflationOrthogonalityDiagnostics() {
 
     for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
         for ( size_t j = 0; j < impl->basisU.size(); ++j ) {
-            const double value = impl->basisU [ i ].dot(impl->basisC [ j ]);
+            const double value = dfgmresDot(impl->basisU [ i ], impl->basisC [ j ]);
             if ( i == j ) {
                 impl->basisOrthogonalityMaxDiagError = std :: max(impl->basisOrthogonalityMaxDiagError, std :: abs(value - 1.) );
             } else {
@@ -1059,6 +1718,7 @@ void DeflatedFGMRESSolver :: rebuildDeflationBasis() {
         return;
     }
 
+    const auto start = std :: chrono :: steady_clock :: now();
     for ( const Vector &rawVector : rawBasis ) {
         if ( impl->reducedBasis.size() >= options.deflationVectors ) {
             impl->reducedBasis.erase(impl->reducedBasis.begin() );
@@ -1074,6 +1734,8 @@ void DeflatedFGMRESSolver :: rebuildDeflationBasis() {
     }
     updateDeflationOrthogonalityDiagnostics();
     impl->reorthogonalizationCount++;
+    lastDeflationReorthogonalizationCount++;
+    lastDeflationReorthogonalizationSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
 }
 
 //////////////////////////////////////////////////////////
@@ -1083,10 +1745,27 @@ Vector DeflatedFGMRESSolver :: projectDeflation(const Vector &v) const {
     }
     Vector projected = v;
     for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
-        const double coefficient = impl->basisC [ i ].dot(projected);
-        projected.noalias() -= coefficient * impl->basisU [ i ];
+        const double coefficient = dfgmresDot(impl->basisC [ i ], projected);
+        dfgmresAxpy(projected, -coefficient, impl->basisU [ i ]);
     }
     return projected;
+}
+
+//////////////////////////////////////////////////////////
+Vector DeflatedFGMRESSolver :: activeMatvec(const Vector &v) const {
+#ifdef LIBRSB_FOUND
+    if ( impl->rsbMatrix && v.size() == impl->rows ) {
+        Vector result = librsbMatvec(impl->rsbMatrix.get(), impl->rows, v);
+        if ( result.size() == v.size() ) {
+            return result;
+        }
+    }
+#endif
+    Vector result = rowMajorCrsMatvec(impl->rows, impl->ptr, impl->col, impl->val, v);
+    if ( result.size() == v.size() ) {
+        return result;
+    }
+    return impl->activeMatrix * v;
 }
 
 //////////////////////////////////////////////////////////
@@ -1094,6 +1773,7 @@ Vector DeflatedFGMRESSolver :: applyPreconditioner(const Vector &v) {
     const auto start = std :: chrono :: steady_clock :: now();
     auto finish = [&](const Vector &result) {
         lastPreconditionerApplySeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count();
+        lastPreconditionerApplyCount++;
         return result;
     };
 
@@ -1117,46 +1797,39 @@ Vector DeflatedFGMRESSolver :: applyPreconditioner(const Vector &v) {
             return finish(v);
         }
 
-        std :: vector< double >rhs(v.data(), v.data() + v.size() );
-        std :: vector< double >guess(v.size(), 0.);
-        std :: vector< double >answer(v.size(), 0.);
-        HYPRE_IJVector ijB = nullptr;
-        HYPRE_IJVector ijX = nullptr;
-        HYPRE_ParVector parB = nullptr;
-        HYPRE_ParVector parX = nullptr;
-
-        auto cleanup = [&]() {
-            if ( ijB ) {
-                HYPRE_IJVectorDestroy(ijB);
-            }
-            if ( ijX ) {
-                HYPRE_IJVectorDestroy(ijX);
-            }
-        };
-
-        if ( !makeHypreVector(impl->hypreIndices, rhs, ijB, parB) || !makeHypreVector(impl->hypreIndices, guess, ijX, parX) ) {
-            cleanup();
+        if ( !impl->hypreApplyIjB || !impl->hypreApplyIjX || !impl->hypreApplyParB || !impl->hypreApplyParX ) {
             if ( options.verbose ) {
-                std :: cerr << "DeflatedFGMRES hypre vector setup failed; using identity fallback" << std :: endl;
+                std :: cerr << "DeflatedFGMRES hypre reusable vectors are missing; using identity fallback" << std :: endl;
             }
             return finish(v);
         }
 
-        const HYPRE_Int solveError = HYPRE_BoomerAMGSolve(impl->hyprePrecond, impl->hypreParMatrix, parB, parX);
+        const HYPRE_BigInt *indexPointer = hypreIndexPointer(impl->hypreIndices);
+        const HYPRE_Int vectorSize = static_cast< HYPRE_Int >( impl->hypreIndices.size() );
+        if ( !hypreCheck(HYPRE_IJVectorSetValues(impl->hypreApplyIjB, vectorSize, indexPointer, v.data() ), "HYPRE_IJVectorSetValues") ) {
+            return finish(v);
+        }
+        if ( !hypreCheck(HYPRE_IJVectorSetConstantValues(impl->hypreApplyIjX, 0.), "HYPRE_IJVectorSetConstantValues") ) {
+            return finish(v);
+        }
+
+        HYPRE_Int solveError = 0;
+        {
+            ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(hypreOptions) );
+            solveError = HYPRE_BoomerAMGSolve(impl->hyprePrecond, impl->hypreParMatrix, impl->hypreApplyParB, impl->hypreApplyParX);
+        }
         if ( solveError != 0 ) {
             HYPRE_ClearAllErrors();
-            cleanup();
             if ( options.verbose ) {
                 std :: cerr << "DeflatedFGMRES hypre preconditioner apply failed with error " << solveError << "; using identity fallback" << std :: endl;
             }
             return finish(v);
         }
-        if ( !hypreCheck(HYPRE_IJVectorGetValues(ijX, static_cast< HYPRE_Int >( impl->hypreIndices.size() ), impl->hypreIndices.data(), answer.data() ), "HYPRE_IJVectorGetValues") ) {
-            cleanup();
+        Vector answer(v.size() );
+        if ( !hypreCheck(HYPRE_IJVectorGetValues(impl->hypreApplyIjX, vectorSize, indexPointer, answer.data() ), "HYPRE_IJVectorGetValues") ) {
             return finish(v);
         }
-        cleanup();
-        return finish(Eigen :: Map< Vector >(answer.data(), answer.size() ) );
+        return finish(answer);
     }
 #endif
     if ( !impl->scalarPrecond && !impl->hybrid3Precond && !impl->hybrid6Precond ) {
@@ -1177,14 +1850,39 @@ Vector DeflatedFGMRESSolver :: applyPreconditioner(const Vector &v) {
 
 //////////////////////////////////////////////////////////
 bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+    lastPreconditionerSetupSeconds = 0.;
+    lastDeflationReorthogonalizationSeconds = 0.;
+    lastDeflationReorthogonalizationCount = 0;
     if ( A.rows() <= 0 ) {
         return true;
     }
 
     impl->clearPreconditioner();
     const bool useElasticLift = amgclOptions.elasticFullLift && elasticMap.isValid();
+    const std :: string preconditionerMode = lowerCopy(options.preconditioner);
+    const std :: string backendMode = lowerCopy(amgclOptions.backend);
+    const bool useInnerCg = preconditionerMode == "amgcl_cg" || preconditionerMode == "amgclcg"
+        || preconditionerMode == "amgcl_solver" || preconditionerMode == "amgcl-solver";
+    const bool useHypreApply = preconditionerMode == "hypre" || preconditionerMode == "boomeramg"
+        || preconditionerMode == "hypre_boomeramg" || preconditionerMode == "hypre-boomeramg";
+    const int activeElasticReorderMode = options.elasticReorder > 0 ? options.elasticReorder : hypreOptions.elasticReorder;
+
     impl->reducedMatrix = A;
     impl->activeMatrix = useElasticLift ? liftMatrixToElasticSpace(A, elasticMap) : A;
+    if ( activeElasticReorderMode > 0 && useElasticLift && elasticMap.blockSize > 1 ) {
+        if ( activeElasticReorderMode == 3 ) {
+            impl->activeOldToNew = makeElasticRcmOldToNewPermutation(elasticMap, impl->activeMatrix);
+        } else {
+            impl->activeOldToNew = makeElasticOldToNewPermutation(elasticMap, activeElasticReorderMode);
+        }
+        if ( impl->activeOldToNew.size() == size_t( impl->activeMatrix.rows() ) && !permutationIsIdentity(impl->activeOldToNew) ) {
+            impl->activeNewToOld = invertPermutation(impl->activeOldToNew);
+            impl->activeMatrix = symmetricallyPermuteMatrix(impl->activeMatrix, impl->activeOldToNew);
+        } else {
+            impl->activeOldToNew.clear();
+            impl->activeNewToOld.clear();
+        }
+    }
     impl->scale.assign(impl->activeMatrix.rows(), 1.);
 
     if ( amgclOptions.diagonalScale ) {
@@ -1208,7 +1906,78 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
     }
 
     makeRowMajorCrs(impl->activeMatrix, impl->rows, impl->ptr, impl->col, impl->val);
+#ifdef LIBRSB_FOUND
+    impl->rsbThreads = desiredLibrsbThreadCount();
+    impl->rsbMatrix = makeLibrsbMatrixFromCrs(impl->rows, impl->ptr, impl->col, impl->val);
+    if ( !impl->rsbMatrix ) {
+        impl->rsbThreads = 0;
+        std :: cerr << "DeflatedFGMRES warning: librsb matrix setup failed; falling back to row-major CRS matvec" << std :: endl;
+    }
+#endif
     auto matrix = impl->matrixTuple();
+
+    double matrixActionPerUnitNorm = 0.;
+    if ( amgclOptions.checkMatrix ) {
+        Vector probe(impl->activeMatrix.cols() );
+        for ( Eigen :: Index i = 0; i < probe.size(); i++ ) {
+            probe [ i ] = sin(0.001 * static_cast< double >( i + 1 ) );
+        }
+        const Vector eigenProduct = impl->activeMatrix * probe;
+        matrixActionPerUnitNorm = eigenProduct.norm() / std :: max(probe.norm(), 1e-300);
+        const Vector crsProduct = activeMatvec(probe);
+        const double denominator = std :: max(eigenProduct.norm(), 1e-300);
+        const double relativeDifference = ( crsProduct - eigenProduct ).norm() / denominator;
+        std :: cout << "DeflatedFGMRES: CRS matvec check relative_difference="
+                    << relativeDifference
+                    << ", matrix_action_per_unit_norm=" << matrixActionPerUnitNorm
+                    << std :: endl;
+        if ( !std :: isfinite(relativeDifference) || relativeDifference > 1e-10 ) {
+            std :: cerr << "DeflatedFGMRES Error: CRS matvec does not match Eigen sparse matvec; relative difference "
+                      << relativeDifference << std :: endl;
+            impl->clearPreconditioner();
+            return false;
+        }
+    }
+
+    std :: vector< double >activeNearNullspace;
+    const bool hasCompatibleNearNullspace =
+        elasticMap.nearNullspaceColumns > 0
+        && elasticMap.nearNullspace.size() == size_t( impl->rows * elasticMap.nearNullspaceColumns );
+    if ( amgclOptions.nearNullspace && hasCompatibleNearNullspace ) {
+        activeNearNullspace = permuteRowMajorTableToNewOrdering(
+            elasticMap.nearNullspace,
+            elasticMap.nearNullspaceColumns,
+            impl->activeOldToNew
+        );
+        if ( amgclOptions.checkMatrix ) {
+            std :: cout << "DeflatedFGMRES: near-nullspace check columns="
+                        << elasticMap.nearNullspaceColumns
+                        << ", rows=" << impl->rows
+                        << ", permutation=" << ( impl->activeOldToNew.empty() ? "identity" : "active" )
+                        << std :: endl;
+            for ( int column = 0; column < elasticMap.nearNullspaceColumns; column++ ) {
+                Vector mode(impl->rows);
+                for ( ptrdiff_t row = 0; row < impl->rows; row++ ) {
+                    mode [ row ] = activeNearNullspace [ size_t( row ) * elasticMap.nearNullspaceColumns + column ];
+                }
+                const Vector product = impl->activeMatrix * mode;
+                const double modeNorm = std :: max(mode.norm(), 1e-300);
+                std :: cout << "DeflatedFGMRES: near-nullspace mode " << column
+                            << " norm=" << modeNorm
+                            << ", matrix_product_norm=" << product.norm()
+                            << ", product_to_mode_norm=" << product.norm() / modeNorm
+                            << ", product_to_reference_action="
+                            << ( matrixActionPerUnitNorm > 0. ? product.norm() / ( modeNorm * matrixActionPerUnitNorm ) : 0. )
+                            << std :: endl;
+            }
+        }
+    } else if ( amgclOptions.nearNullspace && amgclOptions.checkMatrix ) {
+        std :: cout << "DeflatedFGMRES: near-nullspace disabled for AMGCL setup because dimensions are incompatible, columns="
+                    << elasticMap.nearNullspaceColumns
+                    << ", values=" << elasticMap.nearNullspace.size()
+                    << ", expected=" << size_t( impl->rows * std :: max(elasticMap.nearNullspaceColumns, 0) )
+                    << std :: endl;
+    }
 
     auto fillPrecondParams = [&](auto &params) {
         params.coarsening.aggr.eps_strong = amgclOptions.epsStrong;
@@ -1222,23 +1991,17 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
         params.npre = amgclOptions.npre;
         params.npost = amgclOptions.npost;
         params.ncycle = amgclOptions.ncycle;
-        if ( amgclOptions.nearNullspace && elasticMap.nearNullspaceColumns > 0 && elasticMap.nearNullspace.size() == size_t( impl->rows * elasticMap.nearNullspaceColumns ) ) {
+        if ( amgclOptions.nearNullspace && !activeNearNullspace.empty() ) {
             params.coarsening.nullspace.cols = elasticMap.nearNullspaceColumns;
-            params.coarsening.nullspace.B = elasticMap.nearNullspace;
+            params.coarsening.nullspace.B = activeNearNullspace;
         }
     };
 
-    const std :: string preconditionerMode = lowerCopy(options.preconditioner);
-    const std :: string backendMode = lowerCopy(amgclOptions.backend);
     const bool preferHybrid = preconditionerMode != "none" && preconditionerMode != "identity"
         && ( backendMode == "auto" || backendMode == "hybrid" )
         && amgclOptions.useBlockBackend;
 
-    const bool useInnerCg = preconditionerMode == "amgcl_cg" || preconditionerMode == "amgclcg"
-        || preconditionerMode == "amgcl_solver" || preconditionerMode == "amgcl-solver";
-    const bool useHypreApply = preconditionerMode == "hypre" || preconditionerMode == "boomeramg"
-        || preconditionerMode == "hypre_boomeramg" || preconditionerMode == "hypre-boomeramg";
-
+    const auto preconditionerSetupStart = std :: chrono :: steady_clock :: now();
     try {
         if ( preconditionerMode == "none" || preconditionerMode == "identity" ) {
             impl->activePreconditioner = "identity";
@@ -1277,21 +2040,9 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
                 return false;
             }
 
-            std :: vector< HYPRE_BigInt >rowColumns;
-            for ( ptrdiff_t row = 0; row < impl->rows; row++ ) {
-                HYPRE_Int rowNnz = static_cast< HYPRE_Int >( impl->ptr [ row + 1 ] - impl->ptr [ row ] );
-                if ( rowNnz == 0 ) {
-                    continue;
-                }
-                rowColumns.resize(rowNnz);
-                for ( HYPRE_Int j = 0; j < rowNnz; j++ ) {
-                    rowColumns [ j ] = impl->col [ impl->ptr [ row ] + j ];
-                }
-                const HYPRE_BigInt rowId = row;
-                if ( !hypreCheck(HYPRE_IJMatrixSetValues(impl->hypreIjMatrix, 1, &rowNnz, &rowId, rowColumns.data(), impl->val.data() + impl->ptr [ row ] ), "HYPRE_IJMatrixSetValues") ) {
-                    impl->clearPreconditioner();
-                    return false;
-                }
+            if ( !setHypreMatrixValuesFromCrs(impl->hypreIjMatrix, impl->rows, impl->ptr, impl->col, impl->val) ) {
+                impl->clearPreconditioner();
+                return false;
             }
             if ( !hypreCheck(HYPRE_IJMatrixAssemble(impl->hypreIjMatrix), "HYPRE_IJMatrixAssemble") ) {
                 impl->clearPreconditioner();
@@ -1312,8 +2063,20 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
             HYPRE_BoomerAMGSetStrongThreshold(impl->hyprePrecond, hypreOptions.strongThreshold);
             HYPRE_BoomerAMGSetRelaxType(impl->hyprePrecond, hypreOptions.relaxType);
             HYPRE_BoomerAMGSetRelaxOrder(impl->hyprePrecond, hypreOptions.relaxOrder);
+            if ( hypreOptions.numSweeps > 0 ) {
+                HYPRE_BoomerAMGSetNumSweeps(impl->hyprePrecond, hypreOptions.numSweeps);
+            }
             HYPRE_BoomerAMGSetPMaxElmts(impl->hyprePrecond, hypreOptions.pMaxElmts);
             HYPRE_BoomerAMGSetAggNumLevels(impl->hyprePrecond, hypreOptions.aggNumLevels);
+            if ( hypreOptions.nodalDiag != 0 ) {
+                HYPRE_BoomerAMGSetNodalDiag(impl->hyprePrecond, hypreOptions.nodalDiag);
+            }
+            if ( hypreOptions.chebyOrder > 0 ) {
+                HYPRE_BoomerAMGSetChebyOrder(impl->hyprePrecond, hypreOptions.chebyOrder);
+            }
+            if ( hypreOptions.chebyFraction > 0. ) {
+                HYPRE_BoomerAMGSetChebyFraction(impl->hyprePrecond, hypreOptions.chebyFraction);
+            }
             HYPRE_BoomerAMGSetPrintLevel(impl->hyprePrecond, hypreOptions.printLevel);
             if ( hypreOptions.nonGalerkinTol >= 0. ) {
                 HYPRE_Real tolerances [ 3 ] = { 0., static_cast< HYPRE_Real >( hypreOptions.nonGalerkinTol ), static_cast< HYPRE_Real >( hypreOptions.nonGalerkinTol ) };
@@ -1343,9 +2106,20 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
                 impl->clearPreconditioner();
                 return false;
             }
-            if ( !hypreCheck(HYPRE_BoomerAMGSetup(impl->hyprePrecond, impl->hypreParMatrix, impl->hypreSetupParB, impl->hypreSetupParX), "HYPRE_BoomerAMGSetup") ) {
+            if ( !makeHypreVector(impl->hypreIndices, setupGuess, impl->hypreApplyIjB, impl->hypreApplyParB) ) {
                 impl->clearPreconditioner();
                 return false;
+            }
+            if ( !makeHypreVector(impl->hypreIndices, setupGuess, impl->hypreApplyIjX, impl->hypreApplyParX) ) {
+                impl->clearPreconditioner();
+                return false;
+            }
+            {
+                ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(hypreOptions) );
+                if ( !hypreCheck(HYPRE_BoomerAMGSetup(impl->hyprePrecond, impl->hypreParMatrix, impl->hypreSetupParB, impl->hypreSetupParX), "HYPRE_BoomerAMGSetup") ) {
+                    impl->clearPreconditioner();
+                    return false;
+                }
             }
             impl->activePreconditioner = "hypre_boomeramg_apply";
 #else
@@ -1363,7 +2137,11 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
                 innerMap.reducedToFull.resize(innerMap.fullRows);
                 std :: iota(innerMap.reducedToFull.begin(), innerMap.reducedToFull.end(), 0u);
                 innerMap.coordinates = elasticMap.coordinates;
-                innerMap.nearNullspace = elasticMap.nearNullspace;
+                innerMap.nearNullspace = permuteRowMajorTableToNewOrdering(
+                    elasticMap.nearNullspace,
+                    elasticMap.nearNullspaceColumns,
+                    impl->activeOldToNew
+                );
                 innerMap.nearNullspaceColumns = elasticMap.nearNullspaceColumns;
                 innerOptions.elasticFullLift = true;
             } else {
@@ -1402,6 +2180,28 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
         impl->clearPreconditioner();
         return false;
     }
+    lastPreconditionerSetupSeconds = std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - preconditionerSetupStart).count();
+
+    if ( amgclOptions.checkMatrix ) {
+        Vector probe(impl->rows);
+        for ( Eigen :: Index i = 0; i < probe.size(); i++ ) {
+            probe [ i ] = sin(0.003 * static_cast< double >( i + 1 ) )
+                + 0.25 * cos(0.0007 * static_cast< double >( i + 1 ) );
+        }
+        const double savedPreconditionerApplySeconds = lastPreconditionerApplySeconds;
+        const long long savedPreconditionerApplyCount = lastPreconditionerApplyCount;
+        const Vector correction = applyPreconditioner(probe);
+        const Vector residual = impl->activeMatrix * correction - probe;
+        const double probeNorm = std :: max(probe.norm(), 1e-300);
+        const double correctionNorm = correction.norm();
+        std :: cout << "DeflatedFGMRES: preconditioner probe relative_residual="
+                    << residual.norm() / probeNorm
+                    << ", correction_norm_ratio=" << correctionNorm / probeNorm
+                    << ", active_preconditioner=" << impl->activePreconditioner
+                    << std :: endl;
+        lastPreconditionerApplySeconds = savedPreconditionerApplySeconds;
+        lastPreconditionerApplyCount = savedPreconditionerApplyCount;
+    }
 
     impl->matrixReady = true;
     if ( options.reorthogonalizeOnMatrixChange ) {
@@ -1420,6 +2220,24 @@ bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
                 << ", deflation_eps=" << options.deflationEps
                 << ", preconditioner=" << impl->activePreconditioner
                 << ", lifted_rows=" << impl->rows
+                << ", active_elastic_reorder=" << elasticReorderName(activeElasticReorderMode)
+                << ", active_permutation=" << ( impl->activeOldToNew.empty() ? "identity" : "active" )
+#ifdef HYPRE_FOUND
+                << ", hypre_threads=" << desiredHypreThreadCount(hypreOptions)
+                << ", hypre_matrix_threads=" << maxOpenMPThreadCount()
+                << ", hypre_relax_type=" << hypreOptions.relaxType
+                << ", hypre_num_sweeps=" << hypreOptions.numSweeps
+                << ", hypre_nodal_diag=" << hypreOptions.nodalDiag
+                << ", hypre_boomer_max_iterations=" << hypreOptions.boomerMaxIterations
+                << ", hypre_cheby_order=" << hypreOptions.chebyOrder
+                << ", hypre_cheby_fraction=" << hypreOptions.chebyFraction
+#endif
+#ifdef LIBRSB_FOUND
+                << ", matvec_backend=" << ( impl->rsbMatrix ? "librsb" : "row_major_crs" )
+                << ", librsb_threads=" << impl->rsbThreads
+#else
+                << ", matvec_backend=row_major_crs"
+#endif
                 << ", npre=" << amgclOptions.npre
                 << ", npost=" << amgclOptions.npost
                 << ", ncycle=" << amgclOptions.ncycle << std :: endl;
@@ -1433,6 +2251,11 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
     lastLeastSquaresSeconds = 0.;
     lastMatvecSeconds = 0.;
     lastDeflationSeconds = 0.;
+    lastPreconditionerApplyCount = 0;
+    lastOrthogonalizationCount = 0;
+    lastLeastSquaresCount = 0;
+    lastMatvecCount = 0;
+    lastDeflationProjectionCount = 0;
 
     if ( b.size() == 0 ) {
         lastIterations = 0;
@@ -1447,6 +2270,9 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
 
     const bool useElasticLift = amgclOptions.elasticFullLift && elasticMap.isValid();
     Vector activeB = useElasticLift ? liftVectorToElasticSpace(b, elasticMap) : b;
+    if ( !impl->activeOldToNew.empty() ) {
+        activeB = permuteVectorToNewOrdering(activeB, impl->activeOldToNew);
+    }
     if ( amgclOptions.diagonalScale ) {
         for ( Eigen :: Index i = 0; i < activeB.size(); ++i ) {
             activeB [ i ] *= impl->scale [ i ];
@@ -1456,21 +2282,24 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
     const Eigen :: Index n = activeB.size();
     const unsigned restart = std :: max(1u, std :: min(options.restart, options.maxIterations) );
     Vector activeX = Vector :: Zero(n);
-    const double bNorm = std :: max(activeB.norm(), 1e-300);
+    const double bNorm = std :: max(dfgmresNorm(activeB), 1e-300);
 
     if ( !impl->basisU.empty() ) {
         const auto deflationStart = std :: chrono :: steady_clock :: now();
         for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
-            const double coefficient = impl->basisU [ i ].dot(activeB);
-            activeX.noalias() += coefficient * impl->basisU [ i ];
+            const double coefficient = dfgmresDot(impl->basisU [ i ], activeB);
+            dfgmresAxpy(activeX, coefficient, impl->basisU [ i ]);
         }
         lastDeflationSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - deflationStart).count();
+        lastDeflationProjectionCount++;
     }
 
     auto matvecStart = std :: chrono :: steady_clock :: now();
-    Vector residual = activeB - impl->activeMatrix * activeX;
+    Vector residual(n);
+    dfgmresAssignDiff(residual, activeB, activeMatvec(activeX));
     lastMatvecSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - matvecStart).count();
-    double trueResidual = residual.norm() / bNorm;
+    lastMatvecCount++;
+    double trueResidual = dfgmresNorm(residual) / bNorm;
     if ( trueResidual <= options.trueTolerance ) {
         lastIterations = 0;
         lastError = trueResidual;
@@ -1479,7 +2308,7 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
         unsigned totalIterations = 0;
         double gmresResidual = trueResidual;
         while ( totalIterations < options.maxIterations && trueResidual > options.trueTolerance ) {
-            const double beta = residual.norm();
+            const double beta = dfgmresNorm(residual);
             if ( beta / bNorm <= options.tolerance ) {
                 break;
             }
@@ -1489,7 +2318,7 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
             Eigen :: MatrixXd Z = Eigen :: MatrixXd :: Zero(n, innerLimit);
             Eigen :: MatrixXd H = Eigen :: MatrixXd :: Zero(innerLimit + 1, innerLimit);
             Eigen :: VectorXd g = Eigen :: VectorXd :: Zero(innerLimit + 1);
-            V.col(0) = residual / beta;
+            dfgmresAssignScaled(V.col(0), residual, 1. / beta);
             g [ 0 ] = beta;
 
             Eigen :: VectorXd y;
@@ -1501,29 +2330,32 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
                 const auto deflationStart = std :: chrono :: steady_clock :: now();
                 z = projectDeflation(z);
                 lastDeflationSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - deflationStart).count();
+                lastDeflationProjectionCount++;
                 matvecStart = std :: chrono :: steady_clock :: now();
-                Vector w = impl->activeMatrix * z;
+                Vector w = activeMatvec(z);
                 lastMatvecSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - matvecStart).count();
+                lastMatvecCount++;
 
                 const auto orthogonalizationStart = std :: chrono :: steady_clock :: now();
                 for ( unsigned i = 0; i <= j; ++i ) {
-                    H(i, j) = V.col(i).dot(w);
-                    w.noalias() -= H(i, j) * V.col(i);
+                    H(i, j) = dfgmresDot(V.col(i), w);
+                    dfgmresAxpy(w, -H(i, j), V.col(i));
                 }
                 if ( options.reorthogonalizeKrylov ) {
                     for ( unsigned i = 0; i <= j; ++i ) {
-                        const double correction = V.col(i).dot(w);
+                        const double correction = dfgmresDot(V.col(i), w);
                         H(i, j) += correction;
-                        w.noalias() -= correction * V.col(i);
+                        dfgmresAxpy(w, -correction, V.col(i));
                     }
                 }
                 lastOrthogonalizationSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - orthogonalizationStart).count();
+                lastOrthogonalizationCount++;
 
-                H(j + 1, j) = w.norm();
+                H(j + 1, j) = dfgmresNorm(w);
                 Z.col(j) = z;
                 usedInner = j + 1;
                 if ( H(j + 1, j) > 1e-14 ) {
-                    V.col(j + 1) = w / H(j + 1, j);
+                    dfgmresAssignScaled(V.col(j + 1), w, 1. / H(j + 1, j));
                 }
 
                 Eigen :: MatrixXd subH = H.block(0, 0, j + 2, j + 1);
@@ -1531,6 +2363,7 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
                 const auto leastSquaresStart = std :: chrono :: steady_clock :: now();
                 y = subH.colPivHouseholderQr().solve(subg);
                 lastLeastSquaresSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - leastSquaresStart).count();
+                lastLeastSquaresCount++;
                 gmresResidual = ( subg - subH * y ).norm() / bNorm;
                 totalIterations++;
 
@@ -1555,14 +2388,16 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
                     const auto leastSquaresStart = std :: chrono :: steady_clock :: now();
                     y = subH.colPivHouseholderQr().solve(subg);
                     lastLeastSquaresSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - leastSquaresStart).count();
+                    lastLeastSquaresCount++;
                 }
-                activeX.noalias() += Z.leftCols(usedInner) * y;
+                dfgmresAddLinearCombination(activeX, Z, y, usedInner);
             }
 
             matvecStart = std :: chrono :: steady_clock :: now();
-            residual = activeB - impl->activeMatrix * activeX;
+            dfgmresAssignDiff(residual, activeB, activeMatvec(activeX));
             lastMatvecSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - matvecStart).count();
-            trueResidual = residual.norm() / bNorm;
+            lastMatvecCount++;
+            trueResidual = dfgmresNorm(residual) / bNorm;
             if ( trueResidual <= options.trueTolerance || happyBreakdown || usedInner == 0 || totalIterations >= options.maxIterations ) {
                 break;
             }
@@ -1576,6 +2411,9 @@ bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
         for ( Eigen :: Index i = 0; i < activeX.size(); ++i ) {
             activeX [ i ] *= impl->scale [ i ];
         }
+    }
+    if ( !impl->activeNewToOld.empty() ) {
+        activeX = permuteVectorToOldOrdering(activeX, impl->activeNewToOld);
     }
     x = useElasticLift ? restrictVectorFromElasticSpace(activeX, elasticMap) : activeX;
 
@@ -1753,13 +2591,30 @@ HYPRE_Int hyprePreconditionerAlreadySetup(HYPRE_Solver, HYPRE_ParCSRMatrix, HYPR
     return 0;
 }
 
+bool hypreIndicesAreContiguous(const std :: vector< HYPRE_BigInt > &indices) {
+    if ( indices.empty() ) {
+        return false;
+    }
+    const HYPRE_BigInt first = indices.front();
+    for ( size_t i = 0; i < indices.size(); i++ ) {
+        if ( indices [ i ] != first + static_cast< HYPRE_BigInt >( i ) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const HYPRE_BigInt *hypreIndexPointer(const std :: vector< HYPRE_BigInt > &indices) {
+    return hypreIndicesAreContiguous(indices) ? nullptr : indices.data();
+}
+
 bool makeHypreVector(
     const std :: vector< HYPRE_BigInt > &indices,
     const std :: vector< double > &values,
     HYPRE_IJVector &ijVector,
     HYPRE_ParVector &parVector
 ) {
-    if ( indices.empty() ) {
+    if ( indices.empty() || indices.size() != values.size() ) {
         return false;
     }
     const HYPRE_BigInt first = indices.front();
@@ -1773,7 +2628,7 @@ bool makeHypreVector(
     if ( !hypreCheck(HYPRE_IJVectorInitialize(ijVector), "HYPRE_IJVectorInitialize") ) {
         return false;
     }
-    if ( !hypreCheck(HYPRE_IJVectorSetValues(ijVector, static_cast< HYPRE_Int >( indices.size() ), indices.data(), values.data() ), "HYPRE_IJVectorSetValues") ) {
+    if ( !hypreCheck(HYPRE_IJVectorSetValues(ijVector, static_cast< HYPRE_Int >( indices.size() ), hypreIndexPointer(indices), values.data() ), "HYPRE_IJVectorSetValues") ) {
         return false;
     }
     if ( !hypreCheck(HYPRE_IJVectorAssemble(ijVector), "HYPRE_IJVectorAssemble") ) {
@@ -1894,20 +2749,8 @@ bool HypreBoomerAMGCGSolver :: factorize(const CoordinateIndexedSparseMatrix &A)
         return false;
     }
 
-    std :: vector< HYPRE_BigInt >rowColumns;
-    for ( ptrdiff_t row = 0; row < rows; row++ ) {
-        HYPRE_Int rowNnz = static_cast< HYPRE_Int >( ptr [ row + 1 ] - ptr [ row ] );
-        if ( rowNnz == 0 ) {
-            continue;
-        }
-        rowColumns.resize(rowNnz);
-        for ( HYPRE_Int j = 0; j < rowNnz; j++ ) {
-            rowColumns [ j ] = col [ ptr [ row ] + j ];
-        }
-        const HYPRE_BigInt rowId = row;
-        if ( !hypreCheck(HYPRE_IJMatrixSetValues(impl->ijMatrix, 1, &rowNnz, &rowId, rowColumns.data(), val.data() + ptr [ row ] ), "HYPRE_IJMatrixSetValues") ) {
-            return false;
-        }
+    if ( !setHypreMatrixValuesFromCrs(impl->ijMatrix, rows, ptr, col, val) ) {
+        return false;
     }
 
     if ( !hypreCheck(HYPRE_IJMatrixAssemble(impl->ijMatrix), "HYPRE_IJMatrixAssemble") ) {
@@ -1953,8 +2796,20 @@ bool HypreBoomerAMGCGSolver :: factorize(const CoordinateIndexedSparseMatrix &A)
     HYPRE_BoomerAMGSetStrongThreshold(impl->precond, options.strongThreshold);
     HYPRE_BoomerAMGSetRelaxType(impl->precond, options.relaxType);
     HYPRE_BoomerAMGSetRelaxOrder(impl->precond, options.relaxOrder);
+    if ( options.numSweeps > 0 ) {
+        HYPRE_BoomerAMGSetNumSweeps(impl->precond, options.numSweeps);
+    }
     HYPRE_BoomerAMGSetPMaxElmts(impl->precond, options.pMaxElmts);
     HYPRE_BoomerAMGSetAggNumLevels(impl->precond, options.aggNumLevels);
+    if ( options.nodalDiag != 0 ) {
+        HYPRE_BoomerAMGSetNodalDiag(impl->precond, options.nodalDiag);
+    }
+    if ( options.chebyOrder > 0 ) {
+        HYPRE_BoomerAMGSetChebyOrder(impl->precond, options.chebyOrder);
+    }
+    if ( options.chebyFraction > 0. ) {
+        HYPRE_BoomerAMGSetChebyFraction(impl->precond, options.chebyFraction);
+    }
     HYPRE_BoomerAMGSetPrintLevel(impl->precond, options.printLevel);
     if ( options.nonGalerkinTol >= 0. ) {
         HYPRE_Real tolerances [ 3 ] = { 0., static_cast< HYPRE_Real >( options.nonGalerkinTol ), static_cast< HYPRE_Real >( options.nonGalerkinTol ) };
@@ -1986,13 +2841,16 @@ bool HypreBoomerAMGCGSolver :: factorize(const CoordinateIndexedSparseMatrix &A)
         impl->clearSolverSetup();
         return false;
     }
-    if ( !hypreCheck(HYPRE_BoomerAMGSetup(impl->precond, impl->parMatrix, impl->setupParB, impl->setupParX), "HYPRE_BoomerAMGSetup") ) {
-        impl->clearSolverSetup();
-        return false;
-    }
-    if ( !hypreCheck(HYPRE_ParCSRPCGSetup(impl->solver, impl->parMatrix, impl->setupParB, impl->setupParX), "HYPRE_ParCSRPCGSetup") ) {
-        impl->clearSolverSetup();
-        return false;
+    {
+        ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(options) );
+        if ( !hypreCheck(HYPRE_BoomerAMGSetup(impl->precond, impl->parMatrix, impl->setupParB, impl->setupParX), "HYPRE_BoomerAMGSetup") ) {
+            impl->clearSolverSetup();
+            return false;
+        }
+        if ( !hypreCheck(HYPRE_ParCSRPCGSetup(impl->solver, impl->parMatrix, impl->setupParB, impl->setupParX), "HYPRE_ParCSRPCGSetup") ) {
+            impl->clearSolverSetup();
+            return false;
+        }
     }
 
     impl->matrixReady = true;
@@ -2007,6 +2865,14 @@ bool HypreBoomerAMGCGSolver :: factorize(const CoordinateIndexedSparseMatrix &A)
                 << ", nodal=" << options.nodal
                 << ", flex=" << ( options.flex ? 1 : 0 )
                 << ", skip_break=" << options.skipBreak
+                << ", hypre_threads=" << desiredHypreThreadCount(options)
+                << ", hypre_matrix_threads=" << maxOpenMPThreadCount()
+                << ", hypre_relax_type=" << options.relaxType
+                << ", hypre_num_sweeps=" << options.numSweeps
+                << ", hypre_nodal_diag=" << options.nodalDiag
+                << ", hypre_boomer_max_iterations=" << options.boomerMaxIterations
+                << ", hypre_cheby_order=" << options.chebyOrder
+                << ", hypre_cheby_fraction=" << options.chebyFraction
                 << ", block_size=" << ( useElasticLift ? elasticMap.blockSize : 1 ) << std :: endl;
     return true;
 }
@@ -2052,11 +2918,15 @@ bool HypreBoomerAMGCGSolver :: solve(Vector &x, const Vector &b) {
         return false;
     }
 
-    if ( !hypreCheck(HYPRE_ParCSRPCGSetup(impl->solver, impl->parMatrix, parB, parX), "HYPRE_ParCSRPCGSetup") ) {
-        cleanup();
-        return false;
+    HYPRE_Int solveError = 0;
+    {
+        ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(options) );
+        if ( !hypreCheck(HYPRE_ParCSRPCGSetup(impl->solver, impl->parMatrix, parB, parX), "HYPRE_ParCSRPCGSetup") ) {
+            cleanup();
+            return false;
+        }
+        solveError = HYPRE_ParCSRPCGSolve(impl->solver, impl->parMatrix, parB, parX);
     }
-    HYPRE_Int solveError = HYPRE_ParCSRPCGSolve(impl->solver, impl->parMatrix, parB, parX);
     if ( solveError != 0 ) {
         HYPRE_ClearAllErrors();
     }

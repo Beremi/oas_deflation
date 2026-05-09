@@ -85,6 +85,14 @@ public:
     virtual double giveLastLeastSquaresSeconds() const { return 0.; };
     virtual double giveLastMatvecSeconds() const { return 0.; };
     virtual double giveLastDeflationSeconds() const { return 0.; };
+    virtual double giveLastPreconditionerSetupSeconds() const { return 0.; };
+    virtual double giveLastDeflationReorthogonalizationSeconds() const { return 0.; };
+    virtual long long giveLastPreconditionerApplyCount() const { return 0; };
+    virtual long long giveLastOrthogonalizationCount() const { return 0; };
+    virtual long long giveLastLeastSquaresCount() const { return 0; };
+    virtual long long giveLastMatvecCount() const { return 0; };
+    virtual long long giveLastDeflationProjectionCount() const { return 0; };
+    virtual long long giveLastDeflationReorthogonalizationCount() const { return 0; };
 };
 
 //////////////////////////////////////////////////////////
@@ -152,6 +160,7 @@ struct DeflatedFGMRESOptions
     bool reorthogonalizeOnMatrixChange = true;
     bool reorthogonalizeKrylov = true;
     std :: string preconditioner = "amgcl";
+    int elasticReorder = 0;      // 0 = none, 1 = node-major, 2 = coordinate-sorted node-major, 3 = RCM node-major
     bool verbose = false;
 };
 
@@ -166,12 +175,17 @@ struct HypreBoomerAMGOptions
     int interpType = 6;        // extended+i
     double strongThreshold = 0.5;
     int nodal = 4;
+    int nodalDiag = 0;
     int numFunctions = 0;
     int relaxType = 6;         // symmetric hybrid Gauss-Seidel/Jacobi
     int relaxOrder = 0;
+    int numSweeps = 0;         // 0 = hypre default
     int pMaxElmts = 4;
     int aggNumLevels = 0;
     int boomerMaxIterations = 1;
+    int chebyOrder = 0;          // 0 = hypre default
+    double chebyFraction = -1.;  // negative = hypre default
+    int elasticReorder = 0;      // 0 = none, 1 = node-major, 2 = coordinate-sorted node-major, 3 = RCM node-major
     int printLevel = 0;
     int skipBreak = 0;
     bool flex = false;
@@ -182,6 +196,7 @@ struct HypreBoomerAMGOptions
     bool useInterpVectors = false;
     int interpVecVariant = 2;
     bool checkMatrix = false;
+    int threads = 0;              // 0 = automatic; positive values cap hypre's OpenMP threads
 };
 
 //////////////////////////////////////////////////////////
@@ -265,6 +280,14 @@ protected:
     double lastLeastSquaresSeconds;
     double lastMatvecSeconds;
     double lastDeflationSeconds;
+    double lastPreconditionerSetupSeconds;
+    double lastDeflationReorthogonalizationSeconds;
+    long long lastPreconditionerApplyCount;
+    long long lastOrthogonalizationCount;
+    long long lastLeastSquaresCount;
+    long long lastMatvecCount;
+    long long lastDeflationProjectionCount;
+    long long lastDeflationReorthogonalizationCount;
     Vector reducedVectorToActiveUnknown(const Vector &v) const;
     bool appendRawDeflationVector(const Vector &v);
     bool appendActiveDeflationVector(const Vector &rawReducedVector, bool storeRawVector);
@@ -272,6 +295,7 @@ protected:
     void rebuildDeflationBasis();
     Vector projectDeflation(const Vector &v) const;
     Vector applyPreconditioner(const Vector &v);
+    Vector activeMatvec(const Vector &v) const;
 public:
     DeflatedFGMRESSolver();
     virtual ~DeflatedFGMRESSolver();
@@ -304,6 +328,14 @@ public:
     virtual double giveLastLeastSquaresSeconds() const { return lastLeastSquaresSeconds; };
     virtual double giveLastMatvecSeconds() const { return lastMatvecSeconds; };
     virtual double giveLastDeflationSeconds() const { return lastDeflationSeconds; };
+    virtual double giveLastPreconditionerSetupSeconds() const { return lastPreconditionerSetupSeconds; };
+    virtual double giveLastDeflationReorthogonalizationSeconds() const { return lastDeflationReorthogonalizationSeconds; };
+    virtual long long giveLastPreconditionerApplyCount() const { return lastPreconditionerApplyCount; };
+    virtual long long giveLastOrthogonalizationCount() const { return lastOrthogonalizationCount; };
+    virtual long long giveLastLeastSquaresCount() const { return lastLeastSquaresCount; };
+    virtual long long giveLastMatvecCount() const { return lastMatvecCount; };
+    virtual long long giveLastDeflationProjectionCount() const { return lastDeflationProjectionCount; };
+    virtual long long giveLastDeflationReorthogonalizationCount() const { return lastDeflationReorthogonalizationCount; };
 };
 #endif
 

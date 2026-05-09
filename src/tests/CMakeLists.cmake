@@ -7,6 +7,11 @@
 
 #file(COPY ${CMAKE_SOURCE_DIR}/src/tests DESTINATION ${CMAKE_BINARY_DIR})
 
+if (NOT PYTHON_EXECUTABLE)
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+endif ()
+
 # add_test(
 #   NAME setup
 #   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/setup.py
@@ -56,6 +61,45 @@ set_tests_properties(
     TIMEOUT 10
     FIXTURES_REQUIRED my-fixture
   )
+
+add_test(
+  NAME SpringMechElastic_parallel_16
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check_parallel.py $<TARGET_FILE:OAS> ${CMAKE_BINARY_DIR}/tests/SpringMechElastic --threads 16
+  )
+
+add_test(
+  NAME SpringMechElastic_3D_parallel_16
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check_parallel.py $<TARGET_FILE:OAS> ${CMAKE_BINARY_DIR}/tests/SpringMechElastic_3D --threads 16
+  )
+
+if (USE_AMGCL)
+  add_test(
+    NAME 2DPatchTestMechanics_DFGMRES_parallel_16
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check_parallel.py $<TARGET_FILE:OAS> ${CMAKE_BINARY_DIR}/tests/2DPatchTestMechanics --threads 16 --dfgmres-none
+    )
+endif ()
+
+set_tests_properties(
+  SpringMechElastic_parallel_16
+  SpringMechElastic_3D_parallel_16
+  PROPERTIES
+    LABELS "tests;parallel"
+    TIMEOUT 30
+    FIXTURES_REQUIRED my-fixture
+  )
+
+if (USE_AMGCL)
+  set_tests_properties(
+    2DPatchTestMechanics_DFGMRES_parallel_16
+    PROPERTIES
+      LABELS "tests;parallel"
+      TIMEOUT 30
+      FIXTURES_REQUIRED my-fixture
+    )
+endif ()
 
 # add_test(
 #   NAME cleanup

@@ -8,13 +8,23 @@
  #include "element_superelem.h"
 #endif // TORCH_FOUND
 #include <algorithm>
+#include <chrono>
 #include "model.h"
 #include "pblock_periodic_bc.h"
 #include "constraint.h"
 #include "cross_section.h"
 #include "element_beam.h"
+#include "openmp_utils.h"
 
 using namespace std;
+
+namespace {
+void recordElementRuntimePhase(Model *model, const std :: string &phase, double durationSeconds, const std :: string &detail = "", long long sampleCount = 1) {
+    if ( model && model->giveSolver() ) {
+        model->giveSolver()->recordExternalRuntimePhaseSamples(phase, durationSeconds, sampleCount, detail, "ElementContainer");
+    }
+}
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -29,6 +39,7 @@ ElementContainer :: ~ElementContainer() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: clear() {
+    clearStiffnessEntryMap();
     for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
         if ( * e != nullptr ) {
             delete * e;
@@ -259,6 +270,7 @@ Element *ElementContainer :: giveElement(unsigned const num) const {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: addElement(Element *newelem) {
+    clearStiffnessEntryMap();
     newelem->init();
     newelem->setID(elems.size() );
     newelem->initMaterialStatuses();
@@ -413,8 +425,15 @@ void ElementContainer :: init() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateMaterialStatuses() {
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-        ( * e )->updateMaterialStatuses();
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( elems.size() ); i++ ) {
+            elems [ i ]->updateMaterialStatuses();
+        }
+    } else {
+        for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+            ( * e )->updateMaterialStatuses();
+        }
     }
 }
 
@@ -428,6 +447,10 @@ void ElementContainer :: resetMaterialStatuses() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied) const {
+    auto phaseStart = std :: chrono :: steady_clock :: now();
+    clearStiffnessEntryMap();
+    recordElementRuntimePhase(model, "matrix.prepare_pattern.clear_entry_map", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "all");
+
     std :: vector< Ttripletd >tripletList;
 
     ( void ) diffType; //not needed, matrix size is the same
@@ -443,6 +466,7 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
 
     unsigned DoFi, DoFj;
     if ( diffType == 0 ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
             LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);
             DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
@@ -454,9 +478,11 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
                 }
             }
         }
+        recordElementRuntimePhase(model, "matrix.prepare_pattern.lagrange_triplets", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "stiffness", constcont->giveLagrangeMultsSize() );
     }
 
     vector< unsigned >elDoFs;
+    phaseStart = std :: chrono :: steady_clock :: now();
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
         elDoFs = ( * e )->giveDoFs();
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -478,11 +504,14 @@ void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &
             }
         }
     }
+    recordElementRuntimePhase(model, "matrix.prepare_pattern.element_triplets", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "all", elems.size() );
 
     if ( nfreeDoFs > 0 ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         K.resize(nfreeDoFs, nfreeDoFs);
         K.setFromTriplets( tripletList.begin(), tripletList.end() );
         K.makeCompressed();
+        recordElementRuntimePhase(model, "matrix.prepare_pattern.compress", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), "all");
     }
 }
 
@@ -503,10 +532,20 @@ void ElementContainer :: prepareMassMatrix(CoordinateIndexedSparseMatrix &M, boo
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool BC_applied, bool solver_numbering) const { // last two parameters only for export
+    if ( diffType == 0 && !lumped && updateStiffnessMatrixParallel(K, matrixType, BC_applied, solver_numbering) ) {
+        return;
+    }
+    updateStructuralMatrixSerial(K, diffType, matrixType, lumped, BC_applied, solver_numbering);
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: updateStructuralMatrixSerial(CoordinateIndexedSparseMatrix &K, unsigned diffType, string matrixType, bool lumped, bool BC_applied, bool solver_numbering) const {
     if ( K.rows() == 0 ) {
         return;
     }
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     K = K * 0; //set everything to zero
+    recordElementRuntimePhase(model, "matrix.assembly.zero_values", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), matrixType);
 
     unsigned nfreeDoFs;
     if ( BC_applied ) {
@@ -525,6 +564,7 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
 
 
     if ( diffType == 0 ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
             LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);
             DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
@@ -536,10 +576,16 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
                 }
             }
         }
+        recordElementRuntimePhase(model, "matrix.assembly.lagrange_entries", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), matrixType, constcont->giveLagrangeMultsSize() );
     }
 
+    double localMatrixSeconds = 0.;
+    double scatterSeconds = 0.;
+    long long localMatrixCount = 0;
+    long long scatterCount = 0;
 
     for ( vector< Element * > :: const_iterator e = elems.begin(); e != elems.end(); ++e ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         if      ( diffType == 0 ) {
             k = ( * e )->giveStiffnessMatrix(matrixType);                    //stiffness or conductivity
         } else if ( diffType == 1 ) {
@@ -552,6 +598,10 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             cerr << "ElementContainer Error: time derivative matrix type " << matrixType << " unknown" << endl;
             exit(1);
         }
+        localMatrixSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
+        localMatrixCount++;
+
+        phaseStart = std :: chrono :: steady_clock :: now();
         elDoFs = ( * e )->giveDoFs();
         // cout << "\n  elDoFs: " ;
         for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
@@ -586,7 +636,11 @@ void ElementContainer :: updateStructuralMatrix(CoordinateIndexedSparseMatrix &K
             }
         }
         // cout << "\n ";
+        scatterSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
+        scatterCount++;
     }
+    recordElementRuntimePhase(model, "matrix.assembly.local_matrix", localMatrixSeconds, matrixType, localMatrixCount);
+    recordElementRuntimePhase(model, "matrix.assembly.scatter", scatterSeconds, matrixType, scatterCount);
     /*
      * for(size_t i=0; i<K.RowCount; i++){
      *  if (abs(K[i][i])<1E-30){         //JE:test matrix singularity
@@ -634,6 +688,167 @@ void ElementContainer :: updateMassMatrix(CoordinateIndexedSparseMatrix &M, bool
 }
 
 //////////////////////////////////////////////////////////
+ptrdiff_t ElementContainer :: findSparseValueIndex(const CoordinateIndexedSparseMatrix &K, unsigned row, unsigned col) const {
+    if ( row >= static_cast< unsigned >( K.rows() ) || col >= static_cast< unsigned >( K.cols() ) || !K.isCompressed() ) {
+        return -1;
+    }
+    const auto *outer = K.outerIndexPtr();
+    const auto *inner = K.innerIndexPtr();
+    for ( ptrdiff_t k = outer [ col ]; k < outer [ col + 1 ]; k++ ) {
+        if ( inner [ k ] == static_cast< CoordinateIndexedSparseMatrix :: StorageIndex >( row ) ) {
+            return k;
+        }
+    }
+    return -1;
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: clearStiffnessEntryMap() const {
+    stiffnessEntryMapMatrix = nullptr;
+    stiffnessEntryMapRows = 0;
+    stiffnessEntryMapCols = 0;
+    stiffnessEntryMapNonzeros = 0;
+    stiffnessEntryMap.clear();
+}
+
+//////////////////////////////////////////////////////////
+bool ElementContainer :: addLagrangeMultiplierEntries(CoordinateIndexedSparseMatrix &K, unsigned nfreeDoFs) const {
+    double *values = K.valuePtr();
+    for ( unsigned i = 0; i < constcont->giveLagrangeMultsSize(); i++ ) {
+        LagrangeMultiplier *lm = constcont->giveLagrangeMultiplier(i);
+        const unsigned DoFi = nodes->giveDoFid( lm->giveSlaveDoF() );
+        for ( unsigned j = 0; j < lm->giveNumOfDoFMasters(); j++ ) {
+            const unsigned DoFj = nodes->giveDoFid( lm->giveMasterDoF(j) );
+            if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                const ptrdiff_t ij = findSparseValueIndex(K, DoFi, DoFj);
+                const ptrdiff_t ji = findSparseValueIndex(K, DoFj, DoFi);
+                if ( ij < 0 || ji < 0 ) {
+                    return false;
+                }
+                values [ ij ] += lm->giveMasterMultiplier(j);
+                values [ ji ] += lm->giveMasterMultiplier(j);
+            }
+        }
+    }
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool ElementContainer :: prepareStiffnessEntryMap(const CoordinateIndexedSparseMatrix &K, bool BC_applied, bool solver_numbering) const {
+    if ( stiffnessEntryMapMatrix == &K
+         && stiffnessEntryMapRows == K.rows()
+         && stiffnessEntryMapCols == K.cols()
+         && stiffnessEntryMapNonzeros == K.nonZeros()
+         && stiffnessEntryMap.size() == elems.size() ) {
+        return true;
+    }
+    if ( !K.isCompressed() || K.rows() == 0 || K.cols() == 0 ) {
+        return false;
+    }
+
+    unsigned nfreeDoFs;
+    if ( BC_applied ) {
+        nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    } else {
+        nfreeDoFs = nodes->giveTotalNumDoFs();
+    }
+
+    std :: vector< std :: vector< StructuralMatrixEntry > >newMap(elems.size() );
+    for ( unsigned elemIndex = 0; elemIndex < elems.size(); elemIndex++ ) {
+        std :: vector< unsigned >elDoFs = elems [ elemIndex ]->giveDoFs();
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            const unsigned DoFi = solver_numbering ? nodes->giveDoFid(elDoFs [ i ]) : elDoFs [ i ];
+            for ( unsigned j = i; j < elDoFs.size(); j++ ) {
+                const unsigned DoFj = solver_numbering ? nodes->giveDoFid(elDoFs [ j ]) : elDoFs [ j ];
+                if ( DoFi == DoFj ) {
+                    if ( DoFi < nfreeDoFs ) {
+                        const ptrdiff_t index = findSparseValueIndex(K, DoFi, DoFi);
+                        if ( index < 0 ) {
+                            return false;
+                        }
+                        newMap [ elemIndex ].push_back( {i, j, index} );
+                    }
+                } else if ( DoFi < nfreeDoFs && DoFj < nfreeDoFs ) {
+                    const ptrdiff_t ij = findSparseValueIndex(K, DoFi, DoFj);
+                    const ptrdiff_t ji = findSparseValueIndex(K, DoFj, DoFi);
+                    if ( ij < 0 || ji < 0 ) {
+                        return false;
+                    }
+                    newMap [ elemIndex ].push_back( {i, j, ij} );
+                    newMap [ elemIndex ].push_back( {j, i, ji} );
+                }
+            }
+        }
+    }
+
+    stiffnessEntryMapMatrix = &K;
+    stiffnessEntryMapRows = K.rows();
+    stiffnessEntryMapCols = K.cols();
+    stiffnessEntryMapNonzeros = K.nonZeros();
+    stiffnessEntryMap.swap(newMap);
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool ElementContainer :: updateStiffnessMatrixParallel(CoordinateIndexedSparseMatrix &K, string matrixType, bool BC_applied, bool solver_numbering) const {
+    if ( !OmpUtils :: shouldParallelize(elems.size() ) || !BC_applied || !solver_numbering || K.rows() == 0 || !K.isCompressed() ) {
+        return false;
+    }
+    auto phaseStart = std :: chrono :: steady_clock :: now();
+    if ( !prepareStiffnessEntryMap(K, BC_applied, solver_numbering) ) {
+        return false;
+    }
+    recordElementRuntimePhase(model, "matrix.assembly.entry_map", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), matrixType, elems.size() );
+
+    phaseStart = std :: chrono :: steady_clock :: now();
+    std :: fill(K.valuePtr(), K.valuePtr() + K.nonZeros(), 0.);
+    recordElementRuntimePhase(model, "matrix.assembly.zero_values", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), matrixType);
+
+    unsigned nfreeDoFs = nodes->giveTotalNumDoFs() - bconds->giveNumBlockedDoFs();
+    phaseStart = std :: chrono :: steady_clock :: now();
+    if ( !addLagrangeMultiplierEntries(K, nfreeDoFs) ) {
+        return false;
+    }
+    recordElementRuntimePhase(model, "matrix.assembly.lagrange_entries", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), matrixType, constcont->giveLagrangeMultsSize() );
+
+    double *values = K.valuePtr();
+    const ptrdiff_t numElems = static_cast< ptrdiff_t >( elems.size() );
+    const ptrdiff_t blockSize = 2048;
+    double localMatrixSeconds = 0.;
+    double scatterSeconds = 0.;
+    for ( ptrdiff_t blockBegin = 0; blockBegin < numElems; blockBegin += blockSize ) {
+        const ptrdiff_t blockEnd = std :: min(blockBegin + blockSize, numElems);
+        std :: vector< std :: vector< double > > elementValues(blockEnd - blockBegin);
+
+        phaseStart = std :: chrono :: steady_clock :: now();
+#pragma omp parallel for schedule(dynamic)
+        for ( ptrdiff_t elemIndex = blockBegin; elemIndex < blockEnd; elemIndex++ ) {
+            Matrix k = elems [ elemIndex ]->giveStiffnessMatrix(matrixType);
+            const std :: vector< StructuralMatrixEntry > &entries = stiffnessEntryMap [ elemIndex ];
+            std :: vector< double > &localValues = elementValues [ elemIndex - blockBegin ];
+            localValues.resize(entries.size() );
+            for ( unsigned i = 0; i < entries.size(); i++ ) {
+                localValues [ i ] = k(entries [ i ].localRow, entries [ i ].localCol);
+            }
+        }
+        localMatrixSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
+
+        phaseStart = std :: chrono :: steady_clock :: now();
+        for ( ptrdiff_t elemIndex = blockBegin; elemIndex < blockEnd; elemIndex++ ) {
+            const std :: vector< StructuralMatrixEntry > &entries = stiffnessEntryMap [ elemIndex ];
+            const std :: vector< double > &localValues = elementValues [ elemIndex - blockBegin ];
+            for ( unsigned i = 0; i < entries.size(); i++ ) {
+                values [ entries [ i ].valueIndex ] += localValues [ i ];
+            }
+        }
+        scatterSeconds += std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count();
+    }
+    recordElementRuntimePhase(model, "matrix.assembly.local_matrix", localMatrixSeconds, matrixType, elems.size() );
+    recordElementRuntimePhase(model, "matrix.assembly.scatter", scatterSeconds, matrixType, elems.size() );
+    return true;
+}
+
+//////////////////////////////////////////////////////////
 CoordinateIndexedSparseMatrix ElementContainer :: prepareOutputStiffnessMatrix(bool BC_applied) const {
     CoordinateIndexedSparseMatrix K_out;
     prepareStructuralMatrix(K_out, 0, 0, BC_applied);
@@ -648,44 +863,113 @@ CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(Co
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: resetEigenStrain(double time) {
-    for ( auto &e : elems ) {
-        e->removeEigenStrain();
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t elemIndex = 0; elemIndex < static_cast< ptrdiff_t >( elems.size() ); elemIndex++ ) {
+            elems [ elemIndex ]->removeEigenStrain();
+        }
+    } else {
+        for ( auto &e : elems ) {
+            e->removeEigenStrain();
+        }
     }
     bconds->applyEigenStrainLoads(time);   
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double time, double timeStep) {
-    Vector elDoFvalues, elForces;
-    vector< unsigned >elDoFs;
+    const std :: string detail = frozen ? "frozen" : "active";
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     full_f.setZero();  // clear array
+    recordElementRuntimePhase(model, "forces.integrate.zero_output", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     resetEigenStrain(time);
+    recordElementRuntimePhase(model, "forces.integrate.reset_eigenstrain", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
 
+    phaseStart = std :: chrono :: steady_clock :: now();
     materials->runPreparationForStressEvaluation(this);
+    recordElementRuntimePhase(model, "forces.integrate.material_preparation", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail);
 
-    for ( unsigned so = 0; so <= max_sol_order; so++ ) {
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
+        for ( unsigned so = 0; so <= max_sol_order; so++ ) {
+#pragma omp parallel for schedule(dynamic)
+            for ( ptrdiff_t elemIndex = 0; elemIndex < static_cast< ptrdiff_t >( elems.size() ); elemIndex++ ) {
+                Element *e = elems [ elemIndex ];
+                if ( e->giveSolutionOrder() != so ) {
+                    continue;                                  //correct order must be used;
+                }
+                std :: vector< unsigned >elDoFs = e->giveDoFs();
+                Vector elDoFvalues = Vector :: Zero( elDoFs.size() );
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+                }
+                e->evaluateStrains(elDoFvalues);
+                e->evaluateStresses(frozen, timeStep);
+            }
+        }
+        recordElementRuntimePhase(model, "forces.integrate.strain_stress", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail, elems.size() );
+
+        const int threads = OmpUtils :: usableThreads(elems.size() );
+        std :: vector< Vector >threadForces;
+        threadForces.reserve(threads);
+        for ( int i = 0; i < threads; i++ ) {
+            threadForces.push_back( Vector :: Zero(full_f.size() ) );
+        }
+
+        phaseStart = std :: chrono :: steady_clock :: now();
+#pragma omp parallel num_threads(threads)
+        {
+            const int thread = OmpUtils :: threadNum();
+            Vector &localFullF = threadForces [ thread ];
+#pragma omp for schedule(static)
+            for ( ptrdiff_t elemIndex = 0; elemIndex < static_cast< ptrdiff_t >( elems.size() ); elemIndex++ ) {
+                Element *e = elems [ elemIndex ];
+                Vector elForces = e->giveInternalForces();
+                std :: vector< unsigned >elDoFs = e->giveDoFs();
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    localFullF [ elDoFs [ i ] ] += elForces [ i ];
+                }
+            }
+        }
+        recordElementRuntimePhase(model, "forces.integrate.element_force_scatter", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail, elems.size() );
+
+        phaseStart = std :: chrono :: steady_clock :: now();
+        for ( int i = 0; i < threads; i++ ) {
+            full_f += threadForces [ i ];
+        }
+        recordElementRuntimePhase(model, "forces.integrate.thread_force_reduce", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail, threads);
+    } else {
+        Vector elDoFvalues, elForces;
+        vector< unsigned >elDoFs;
+        phaseStart = std :: chrono :: steady_clock :: now();
+        for ( unsigned so = 0; so <= max_sol_order; so++ ) {
+            for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+                if ( ( * e )->giveSolutionOrder() != so ) {
+                    continue;                                  //correct order must be used;
+                }
+                elDoFs = ( * e )->giveDoFs();
+                elDoFvalues.resize( elDoFs.size() );
+                elDoFvalues.setZero();
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+                }
+                ( * e )->evaluateStrains(elDoFvalues);
+                ( * e )->evaluateStresses(frozen, timeStep);
+            }
+        }
+        recordElementRuntimePhase(model, "forces.integrate.strain_stress", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail, elems.size() );
+
+        phaseStart = std :: chrono :: steady_clock :: now();
         for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-            if ( ( * e )->giveSolutionOrder() != so ) {
-                continue;                                  //correct order must be used;
-            }
+            elForces = ( * e )->giveInternalForces();
             elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize( elDoFs.size() );
-            elDoFvalues.setZero();
             for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+                full_f [ elDoFs [ i ] ] += elForces [ i ];
             }
-            ( * e )->evaluateStrains(elDoFvalues);
-            ( * e )->evaluateStresses(frozen, timeStep);
         }
-    }
-
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-        elForces = ( * e )->giveInternalForces();
-        elDoFs = ( * e )->giveDoFs();
-        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            full_f [ elDoFs [ i ] ] += elForces [ i ];
-        }
+        recordElementRuntimePhase(model, "forces.integrate.element_force_scatter", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count(), detail, elems.size() );
     }
 }
 

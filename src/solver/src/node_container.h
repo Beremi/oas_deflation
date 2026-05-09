@@ -20,6 +20,7 @@ private:
     std :: vector< unsigned >loadedDoFs;
     std :: vector< unsigned >bodyForceDoFs;
     std :: vector< unsigned >blockedDoFid;
+    std :: vector< Simplex * > uniqueSimplexes;
     unsigned totalDoFs, freeDoFs, constrDoFs;
     BCContainer *BC = nullptr;
 

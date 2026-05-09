@@ -1,0 +1,1649 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\usepackage{microtype}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!55!black
+}
+
+\newcommand{\code}[1]{\ifmmode\text{\texttt{\detokenize{#1}}}\else\nolinkurl{#1}\fi}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\oas}{\textsc{OAS}}
+
+\title{Detailed Description of the \oas{} Nonlinear Solver}
+\author{Code inspection note}
+\date{May 8, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document describes the nonlinear solution algorithm implemented in the
+\oas{} solver, with emphasis on the steady-state nonlinear solver path used by
+\code{SteadyStateNonLinearSolver}.  It follows the code from the model-level
+time/load-step loop through the Newton-like nonlinear iterations, force
+assembly, constraint reduction, linear solves, convergence checks, adaptive time
+step control, restarts, and final state commit.  The goal is to make the
+implementation readable from the solver variables themselves, so most formulas
+are written next to the corresponding C++ member names.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Scope and Source Map}
+
+The nonlinear implementation is spread across the model, solver, node, element,
+and linear-algebra layers.  Table~\ref{tab:source-map} lists the files that are
+most relevant for understanding the control flow.
+
+\begin{longtable}{p{0.33\linewidth} p{0.60\linewidth}}
+\caption{Main source files for the nonlinear solver.}
+\label{tab:source-map}\\
+\toprule
+File & Role \\
+\midrule
+\endfirsthead
+\toprule
+File & Role \\
+\midrule
+\endhead
+\path{src/solver/src/model.cpp} &
+Owns the global analysis loop in \code{Model::solve()}.  It calls
+\code{solver->solveStep()}, exports each accepted step, and reports step wall
+time. \\
+
+\path{src/solver/src/solver.h} &
+Defines the base \code{Solver} state: time variables, displacement vectors,
+forces, residuals, stiffness matrices, tolerances, energies, and the common
+\code{solveStep()} wrapper. \\
+
+\path{src/solver/src/solver.cpp} &
+Implements base initialization, force computation, energy accumulation,
+step preparation, step commit, perturbations, and termination handling. \\
+
+\path{src/solver/src/solver_implicit.h} &
+Declares \code{SteadyStateLinearSolver} and
+\code{SteadyStateNonLinearSolver}.  This header also contains the nonlinear
+control parameters, default tolerances, matrix-update settings, adaptive
+linear-solve settings, and indirect displacement control state. \\
+
+\path{src/solver/src/solver_implicit.cpp} &
+Implements the nonlinear solve loop, convergence checks, restart logic,
+matrix-update policy, effective matrix construction, linear solver creation,
+profiling wrappers, reset path, and adaptive linear tolerance logic. \\
+
+\path{src/solver/src/node_container.cpp} &
+Implements full-to-reduced DoF mapping, prescribed boundary updates, constraint
+handling, reduced force extraction, external reaction update, and simplex
+volumetric strain update. \\
+
+\path{src/solver/src/element_container.cpp} &
+Implements internal force integration, element strain/stress evaluation,
+material status updates, structural matrix pattern preparation, and stiffness
+matrix assembly. \\
+
+\path{src/solver/src/element.cpp} and \path{src/solver/src/element.h} &
+Define element-level strain, stress, internal force, and stiffness
+contributions.  Specialized element types can override parts of this behavior. \\
+
+\path{src/solver/src/linalg.cpp} and
+\path{src/solver/src/linalg_profile.*} &
+Define the direct and iterative linear solver wrappers, including profiling
+events used by the nonlinear loop. \\
+\bottomrule
+\end{longtable}
+
+The discussion below focuses on \code{SteadyStateNonLinearSolver}.  Transient
+mechanical solvers inherit the same general structure but override parts of the
+force and energy evaluation to include damping, inertia, and kinetic energy.
+
+\section{High-Level Execution Model}
+
+At the top level, \oas{} advances through accepted load/time steps.  Each step
+is solved by a nonlinear iteration loop.  In the ordinary direct-control path,
+one linearized correction is computed per nonlinear iteration:
+\[
+  K_{\mathrm{eff}} \, \Delta r_f = R_f ,
+\]
+where \(R_f\) is the reduced residual on free degrees of freedom and
+\(\Delta r_f\) is the reduced correction.  The correction is expanded into the
+full degree-of-freedom space, constraints are applied, the trial unknown vector
+is updated, new internal and external forces are evaluated, and convergence
+errors are checked.
+
+The model-level loop is:
+
+\begin{Verbatim}[fontsize=\small, frame=single]
+export initial state
+while solver is not terminated:
+    solver.solveStep()
+    export accepted step
+    print step timing
+\end{Verbatim}
+
+The solver-level \code{solveStep()} wrapper is common to all solvers:
+
+\begin{Verbatim}[fontsize=\small, frame=single]
+runBeforeEachStep()
+solve()
+runAfterEachStep()
+\end{Verbatim}
+
+For the nonlinear solver, \code{solve()} may restart the same step with a
+smaller time increment if convergence fails.  Only after \code{solve()} returns
+does \code{runAfterEachStep()} commit the accepted state.
+
+\section{Notation and Solver Variables}
+
+\subsection{Global Time and Counters}
+
+\begin{longtable}{p{0.20\linewidth} p{0.24\linewidth} p{0.47\linewidth}}
+\caption{Time-step and iteration notation.}
+\label{tab:time-notation}\\
+\toprule
+Symbol & C++ member or local & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & C++ member or local & Meaning \\
+\midrule
+\endhead
+\(n\) & \code{step} &
+Accepted load/time-step index.  It is incremented in
+\code{Solver::runBeforeEachStep()}. \\
+
+\(t_n\) & \code{time} &
+Target time/load coordinate of the current step.  The solver may snap this to
+important boundary-condition or function extrema. \\
+
+\(\Delta t_n\) & \code{dt} &
+Current time/load increment.  It can be enlarged, reduced, or critically
+reduced after failed convergence. \\
+
+\(\Delta t_{\min}\), \(\Delta t_{\max}\) &
+\code{dtmin}, \code{dtmax} &
+Lower and upper bounds used by adaptive time stepping. \\
+
+\(i\) & \code{it} &
+Nonlinear iteration counter inside the current step.  It starts at zero after
+each restart. \\
+
+\(i_{\mathrm{cum}}\) & \code{cumul_it} &
+Cumulative nonlinear iteration counter within the current call to
+\code{solve()}.  It does not reset after a normal iteration, and it is used by
+the cumulative stiffness-update rule. \\
+
+\(N_{\max}\) & \code{maxIt} &
+Maximum allowed nonlinear iterations before restart or failure. \\
+
+\(N_{\min}\) & \code{minIt} &
+Minimum nonlinear iterations required before a converged step can be accepted. \\
+
+\(N_{\mathrm{enlarge}}\) & \code{enlargeIt} &
+If convergence is reached before this iteration count, the next step may be
+enlarged. \\
+
+\(N_{\mathrm{shorten}}\) & \code{shortenIt} &
+If convergence is reached after this iteration count, the next step may be
+shortened. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Unknowns, Corrections, and Forces}
+
+The code distinguishes full vectors, which contain all nodal degrees of freedom,
+from reduced vectors, which contain only free degrees of freedom.  Constrained
+or prescribed degrees of freedom are recovered through the node and constraint
+containers.
+
+\begin{longtable}{p{0.20\linewidth} p{0.24\linewidth} p{0.47\linewidth}}
+\caption{Primary nonlinear vectors.}
+\label{tab:vector-notation}\\
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endhead
+\(r_n\) & \code{r} &
+Committed full solution vector from the last accepted step.  It is updated only
+after the current step is accepted. \\
+
+\(r^{\mathrm{tr}}\) & \code{trial_r} &
+Current trial full solution vector inside the nonlinear loop. \\
+
+\(\Delta r_f\) & \code{ddr} &
+Reduced correction on free degrees of freedom, returned by the linear solver. \\
+
+\(\Delta r\) & \code{full_ddr} &
+Full-space correction obtained by expanding \code{ddr} and applying dependency
+relations. \\
+
+\(f_{\mathrm{int}}\) & \code{f_int} &
+Full internal force vector assembled from element stresses and internal
+sources. \\
+
+\(f_{\mathrm{ext}}\) & \code{f_ext} &
+Full external force vector after nodal loads, prescribed-reaction updates, and
+constraint reaction contributions are applied. \\
+
+\(f_{\mathrm{load}}\) & \code{load} &
+Full prescribed load vector assembled from nodal and body loads before reaction
+completion. \\
+
+\(f_{\mathrm{dam}}\) & \code{f_dam} &
+Damping force vector.  In the steady-state nonlinear path this remains zero;
+transient solvers can add damping contributions. \\
+
+\(f_{\mathrm{acc}}\) & \code{f_acc} &
+Inertial force vector.  In the steady-state nonlinear path this remains zero;
+transient solvers can add acceleration contributions. \\
+
+\(R\) & \code{residuals} &
+Full residual vector.  In the steady-state nonlinear path,
+\(R = f_{\mathrm{ext}} - f_{\mathrm{int}}\). \\
+
+\(R_f\) & \code{f} &
+Reduced right-hand side extracted from \code{residuals} for free degrees of
+freedom after constraint master-force transfer. \\
+
+\(f_{\mathrm{int},n}\), \(f_{\mathrm{ext},n}\) &
+\code{f_int_old}, \code{f_ext_old} &
+Committed force vectors from the last accepted step.  They are used for energy
+integration and restart restoration. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Matrices}
+
+\begin{longtable}{p{0.20\linewidth} p{0.24\linewidth} p{0.47\linewidth}}
+\caption{Matrix notation.}
+\label{tab:matrix-notation}\\
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endhead
+\(K\) & \code{K} &
+Structural tangent, secant, elastic, or consistent matrix assembled from
+elements before the final effective-system transformation. \\
+
+\(K_{\mathrm{eff}}\) & \code{Keff} &
+Effective matrix solved by the linear solver.  In the steady-state nonlinear
+path it starts as \(K\), then constraints are transformed into the active
+system space.  Transient solvers can add damping or mass terms. \\
+
+\(K_e\) & element local matrix &
+Element contribution returned by \code{Element::giveStiffnessMatrix()} or
+related damping/mass methods. \\
+
+\(P\) & implicit node/constraint map &
+The full-to-reduced and reduced-to-full mapping implemented by
+\code{NodeContainer} and \code{ConstraintContainer}.  The code does not store a
+single dense matrix \(P\); it applies the map procedurally. \\
+\bottomrule
+\end{longtable}
+
+\section{Initialization}
+
+\subsection{Model Initialization}
+
+\code{Model::init()} prepares the simulation in a fixed order:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Materials are initialized.
+  \item Elements are initialized and preprocessing blocks are run.
+  \item Boundary-condition objects are initialized.
+  \item Nodes are initialized.
+  \item Simplex connectivity is initialized when the material setup requires
+        simplex volumetric strain support.
+  \item Constraints and boundary conditions establish their active degree-of-
+        freedom relations.
+  \item Fiber/material auxiliary assignments are applied.
+  \item Element neighbor or friend relations are initialized.
+  \item The solver is initialized.
+  \item Exporters are initialized.
+\end{enumerate}
+
+This order matters because the solver initialization needs a finalized degree-
+of-freedom numbering, element list, material statuses, and boundary-condition
+state.
+
+\subsection{Base Solver Initialization}
+
+\code{Solver::init()} allocates all primary full and reduced vectors:
+\[
+  r, r^{\mathrm{tr}}, f_{\mathrm{int}}, f_{\mathrm{ext}}, f_{\mathrm{dam}},
+  f_{\mathrm{acc}}, R \in \R^{N_{\mathrm{dof}}},
+\]
+and
+\[
+  \Delta r_f, R_f \in \R^{N_{\mathrm{free}}}.
+\]
+Initial conditions are read if an initial-condition file is configured;
+otherwise the state is set to zero.  The trial vector is initialized from the
+committed vector:
+\[
+  r^{\mathrm{tr}} \leftarrow r.
+\]
+The solver then computes initial internal and external forces:
+\[
+  \code{computeInternalExternalForces}(r, f_{\mathrm{load}}, \texttt{frozen=false}, 0, -1).
+\]
+Finally, element material statuses are committed through
+\code{elems->updateMaterialStatuses()}.
+
+\subsection{Linear and Nonlinear Solver Initialization}
+
+\code{SteadyStateLinearSolver::init()} extends the base initialization by:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Initializing runtime and linear-solver profilers.
+  \item Preparing the sparsity pattern through
+        \code{elems->prepareStiffnessMatrix(K)}.
+  \item Calling \code{updateSystemMatrices(0, 0, true)} to assemble the first
+        structural matrix.
+  \item Calling \code{computeKeff()} to build, transform, and factorize the
+        first effective system matrix.
+\end{enumerate}
+
+\code{SteadyStateNonLinearSolver::init()} additionally:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Loads material-status restart data if requested.
+  \item Initializes nonlinear convergence state.
+  \item Initializes indirect displacement control if configured.
+  \item Evaluates forces at the initial integration time with frozen variables
+        to initialize field quantities consistently.
+\end{enumerate}
+
+\section{Step Preparation}
+
+Every accepted-step attempt starts with \code{runBeforeEachStep()}.  The base
+implementation performs the following operations:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Increment the step counter:
+        \[
+          n \leftarrow n + 1.
+        \]
+  \item Choose the next target time with \code{setNextStepTime()}.
+  \item Store the old load vector:
+        \[
+          f_{\mathrm{load},n} \leftarrow f_{\mathrm{load}}.
+        \]
+  \item Reset the current load vector and reduced correction:
+        \[
+          f_{\mathrm{load}} \leftarrow 0,\qquad
+          \Delta r_f \leftarrow 0.
+        \]
+\end{enumerate}
+
+\code{setNextStepTime()} normally advances \(t\) by \(\Delta t\), but it also
+looks ahead to the next important time from time-dependent functions and
+boundary conditions.  If such a point lies within \(t + 1.25 \Delta t\), the
+step target snaps to that exact point.  If the point is a boundary-condition
+stage transition, the model jumps to the next boundary-condition stage.
+
+\code{SteadyStateLinearSolver::runBeforeEachStep()} sets:
+\[
+  r^{\mathrm{tr}} \leftarrow r,
+\]
+and prints the step header.  \code{SteadyStateNonLinearSolver::runBeforeEachStep()}
+adds initialization for indirect displacement control and prints the nonlinear
+error tolerance header.
+
+\section{Nonlinear Solver Algorithm}
+
+\subsection{Direct-Control Path}
+
+The ordinary nonlinear path is used when no indirect displacement control object
+is configured.  The structure of \code{SteadyStateNonLinearSolver::solve()} is:
+
+\begin{Verbatim}[fontsize=\small, frame=single]
+converged = false
+restarted = false
+while not converged:
+    assemble load and boundary conditions for current time
+    compute frozen forces at integration time
+    it = 0
+    while not converged and it < maxIt:
+        maybe update stiffness matrix and factorize Keff
+        reduce full residual R to reduced RHS R_f
+        solve Keff * ddr = R_f
+        expand ddr to full_ddr and update trial_r
+        compute unfrozen forces at updated trial_r
+        evaluate residual, displacement, and energy errors
+        decide whether convergence is acceptable
+        export iteration data
+        it += 1
+    if converged:
+        compute step-end forces
+    else:
+        restart, relax tolerance, or terminate
+    adapt next dt if accepted
+\end{Verbatim}
+
+The nonlinear iteration is Newton-like: it repeatedly solves a linearized
+problem, updates the trial state, and checks whether residual, increment, and
+energy measures are small enough.  The exact meaning of the matrix depends on
+the configured stiffness matrix type and update frequency.  With a tangent
+matrix and frequent updates the method is closest to Newton's method.  With
+secant or less frequent updates it becomes a modified Newton or quasi-Newton
+procedure.
+
+\subsection{Iteration Start: Matrix Update}
+
+At the beginning of every nonlinear iteration, the solver may update the
+structural matrix:
+\[
+  K \leftarrow \sum_e K_e,
+\]
+then build and factorize
+\[
+  K_{\mathrm{eff}}.
+\]
+The update is controlled by \code{updateSystemMatrices(iteration, cumul_iteration, enforce)}.
+The matrix is updated if at least one of the following conditions is true:
+
+\begin{itemize}[leftmargin=2em]
+  \item \code{enforce} is true.
+  \item The current step/iteration satisfies the configured step-update rule.
+  \item \code{stiffnessMatrixIterUpdate == 0}, meaning every iteration.
+  \item A positive iteration-period rule matches the current iteration.
+  \item A positive cumulative-iteration-period rule matches the cumulative
+        counter.
+\end{itemize}
+
+When the matrix is updated, the first nonlinear iteration can use a special
+first-iteration matrix type if \code{stiffMatTypeFirstIT} is not \code{void}.
+Otherwise it uses \code{stiffMatType}.  Valid matrix types are shown in
+Table~\ref{tab:matrix-types}.
+
+\begin{longtable}{p{0.20\linewidth} p{0.72\linewidth}}
+\caption{Configured stiffness matrix types.}
+\label{tab:matrix-types}\\
+\toprule
+Type & Meaning in the code \\
+\midrule
+\endfirsthead
+\toprule
+Type & Meaning in the code \\
+\midrule
+\endhead
+\code{elastic} &
+Uses an elastic stiffness contribution from material statuses.  This is usually
+more robust but less nonlinear-state-specific. \\
+
+\code{secant} &
+Uses a secant material stiffness.  This is the default in the nonlinear solver. \\
+
+\code{tangent} &
+Uses a tangent stiffness, when supplied by the material model.  This is the
+closest option to a classical Newton tangent. \\
+
+\code{consistent} &
+Uses a consistent material stiffness contribution, when supplied. \\
+\bottomrule
+\end{longtable}
+
+After assembly, \code{computeKeff()} copies:
+\[
+  K_{\mathrm{eff}} \leftarrow K,
+\]
+then transforms the matrix into constraint space if constraints are active.
+Finally, \code{factorizeLinearSystem()} analyzes or factorizes the selected
+linear solver backend.
+
+\subsection{Residual Reduction}
+
+The force vector used by the linear solver is not the raw full residual.  The
+solver calls:
+\[
+  \code{nodes->giveReducedForceArray(residuals, f)}.
+\]
+This first transfers slave or constrained forces back to their master degrees of
+freedom:
+\[
+  R \leftarrow \text{constraint-master-force-transform}(R),
+\]
+then extracts only the free active degrees of freedom:
+\[
+  R_f = R|_{\mathrm{free}}.
+\]
+This reduced vector is the right-hand side of the linear solve.
+
+\subsection{Linear Correction}
+
+The direct-control correction is:
+\[
+  K_{\mathrm{eff}} \Delta r_f = R_f .
+\]
+In code this is:
+\[
+  \code{profiledLinearSolve(ddr, f, "direct_residual")}.
+\]
+The wrapper records timing and linear-solver metadata.  For iterative solvers it
+also records iteration counts, requested tolerance, achieved error, deflation
+statistics, and specialized sub-phase timings if available.
+
+If the solve fails, the nonlinear step is terminated immediately.  If the solve
+succeeds and the solver supports deflation vectors, the correction from a
+successful direct residual solve can be collected:
+\[
+  \code{collectLinearDeflationVector(ddr, "direct_residual", success)}.
+\]
+
+\subsection{Trial-State Update}
+
+The reduced correction is expanded into the full degree-of-freedom space:
+\[
+  \Delta r \leftarrow P \Delta r_f ,
+\]
+through:
+\[
+  \code{nodes->giveFullDoFArray(ddr, full_ddr)}.
+\]
+The node and constraint layer then accounts for dependency relations that depend
+on conjugate variables:
+\[
+  \code{nodes->updateFullDoFsByDependenciesOnConjugates(full_ddr, trial_r, f_ext)}.
+\]
+Finally:
+\[
+  r^{\mathrm{tr}} \leftarrow r^{\mathrm{tr}} + \Delta r.
+\]
+
+\subsection{Force Re-Evaluation}
+
+After the trial vector is updated, the solver recomputes forces at the new
+trial state:
+\[
+  \code{computeForcesAtIntegrationTime(false)}.
+\]
+For the steady-state nonlinear solver this calls:
+\[
+  \code{computeInternalExternalForces(trial_r, load, frozen=false, time, it)}.
+\]
+The resulting steady residual is:
+\[
+  R = f_{\mathrm{ext}} - f_{\mathrm{int}}.
+\]
+
+\section{Force Assembly and Residual Construction}
+
+\subsection{Internal and External Force Routine}
+
+\code{Solver::computeInternalExternalForces()} performs three main operations:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Update simplex volumetric strains:
+        \[
+          \code{nodes->updateSimplexVolumetricStrains(rr)}.
+        \]
+  \item Integrate element internal forces:
+        \[
+          \code{elems->integrateInternalForces(rr, f_int, frozen, t, timeStep)}.
+        \]
+  \item Complete external forces and reactions:
+        \[
+          \code{nodes->updateExternalForcesByReactions(...)}.
+        \]
+\end{enumerate}
+
+The steady residual is then formed explicitly:
+\[
+  R = f_{\mathrm{ext}} - f_{\mathrm{int}}.
+\]
+
+\subsection{Element Internal Force Integration}
+
+\code{ElementContainer::integrateInternalForces()} assembles the full internal
+force vector.  Its conceptual algorithm is:
+
+\begin{Verbatim}[fontsize=\small, frame=single]
+f_int = 0
+reset eigenstrain contributions
+run material preparation for stress evaluation
+for solution_order = 0 ... max_solution_order:
+    for each element with this solution_order:
+        gather element dof values from trial_r
+        evaluate element strains
+        evaluate element stresses
+for each element:
+    compute element internal force vector
+    scatter local force entries into global f_int
+\end{Verbatim}
+
+The \code{solution_order} loop is important for coupled or dependent element
+quantities.  It enforces a deterministic order between element groups whose
+stress/strain evaluation may depend on previously updated fields.
+
+The \code{frozen} argument controls material-state handling:
+
+\begin{itemize}[leftmargin=2em]
+  \item \code{frozen=true}: stresses are evaluated with frozen internal
+        variables.  This is used for predictor-style or initialization passes
+        where the code wants forces without advancing temporary material state.
+  \item \code{frozen=false}: stresses are evaluated normally for the current
+        trial state, updating temporary material-status quantities used by the
+        current nonlinear iteration.
+\end{itemize}
+
+\subsection{External Force and Reaction Completion}
+
+The initial \code{load} vector contains applied nodal and body-load terms.  It
+is not yet the final \code{f_ext}.  The node container completes the external
+force vector by:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Transforming internal, damping, acceleration, and load vectors through
+        constraint master-force relations.
+  \item Starting from:
+        \[
+          f_{\mathrm{ext}} \leftarrow f_{\mathrm{load}}.
+        \]
+  \item Adding Lagrange-multiplier reaction terms to master degrees of freedom.
+  \item For directly prescribed blocked degrees of freedom, setting the
+        external force equal to the force required for equilibrium:
+        \[
+          f_{\mathrm{ext},i}
+          =
+          f_{\mathrm{int},i}
+          +
+          f_{\mathrm{dam},i}
+          +
+          f_{\mathrm{acc},i}.
+        \]
+\end{enumerate}
+
+This is why the full residual should vanish on prescribed degrees of freedom:
+their reaction force is defined from the internal, damping, and inertial force
+balance.
+
+\section{Boundary Conditions, Constraints, and DoF Mapping}
+
+\subsection{Degree-of-Freedom Numbering}
+
+\code{NodeContainer::establishDoFArray()} builds the solver numbering.  The
+layout is:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Free degrees of freedom.
+  \item Slave constrained degrees of freedom.
+  \item Directly blocked or prescribed degrees of freedom.
+\end{enumerate}
+
+Only the first group is part of the reduced linear system.  The inverse map
+\code{invDoFid} maps reduced indices back to full degree-of-freedom indices.
+The physical field of every degree of freedom is stored in
+\code{physicalFieldsDoF}; this is later used by the convergence-error
+calculation.
+
+\subsection{Boundary Updates}
+
+For direct control, at the start of an attempted step:
+\[
+  \code{nodes->addRHS_nodalLoad(load, time)}
+\]
+adds active body and nodal loads at the current time.  Then:
+\[
+  \code{nodes->updateDirrichletBC(trial_r, time)}
+\]
+writes prescribed displacement or field values into the full trial vector and
+updates dependent constrained degrees of freedom.
+
+\subsection{Reduced and Full-Space Operations}
+
+The most important map operations are:
+
+\begin{longtable}{p{0.48\linewidth} p{0.44\linewidth}}
+\caption{Node and constraint mapping routines used by the nonlinear solver.}
+\label{tab:mapping-routines}\\
+\toprule
+Routine & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Routine & Meaning \\
+\midrule
+\endhead
+\code{giveReducedForceArray(fullf, f)} &
+Transfers constrained slave forces to masters, then extracts free rows into a
+reduced vector. \\
+
+\code{giveFullDoFArray(fDoFs, fullDoFs)} &
+Expands a reduced correction into the full vector and calculates dependent
+constrained degrees of freedom. \\
+
+\code{updateFullDoFsByDependenciesOnConjugates(...)} &
+Applies additional correction terms for constraints whose dependent values are
+functions of conjugate variables such as forces. \\
+
+\code{updateExternalForcesByReactions(...)} &
+Completes \code{f_ext} by adding reactions and making prescribed degrees of
+freedom force-balanced. \\
+\bottomrule
+\end{longtable}
+
+\section{Convergence Criteria}
+
+\subsection{Physical-Field Separation}
+
+The nonlinear solver computes convergence errors separately for each physical
+field, then combines them.  The current field indices are listed in
+Table~\ref{tab:physical-fields}.
+
+\begin{longtable}{p{0.16\linewidth} p{0.22\linewidth} p{0.46\linewidth}}
+\caption{Physical fields used by the error calculation.}
+\label{tab:physical-fields}\\
+\toprule
+Index & Field & Stabilizing floor \(\epsilon_p^2\) \\
+\midrule
+\endfirsthead
+\toprule
+Index & Field & Stabilizing floor \(\epsilon_p^2\) \\
+\midrule
+\endhead
+0 & Mechanics & \(10^{-20}\) \\
+1 & Transport & \(10^{-10}\) \\
+2 & Temperature & \(10^{-17}\) \\
+3 & Humidity & \(10^{-18}\) \\
+\bottomrule
+\end{longtable}
+
+Let \(I_p\) be the set of full degrees of freedom belonging to physical field
+\(p\).  The code accumulates squared norms:
+\[
+  S_R^p = \sum_{i\in I_p} R_i^2,
+  \qquad
+  S_{\Delta r}^p = \sum_{i\in I_p} (\Delta r_i)^2,
+  \qquad
+  S_r^p = \sum_{i\in I_p} (r_i^{\mathrm{tr}})^2.
+\]
+It also accumulates force scales:
+\[
+  S_{\mathrm{ext}}^p = \sum_{i\in I_p} f_{\mathrm{ext},i}^2,\quad
+  S_{\mathrm{int}}^p = \sum_{i\in I_p} f_{\mathrm{int},i}^2,\quad
+  S_{\mathrm{dam}}^p = \sum_{i\in I_p} f_{\mathrm{dam},i}^2,\quad
+  S_{\mathrm{acc}}^p = \sum_{i\in I_p} f_{\mathrm{acc},i}^2.
+\]
+For energy, it accumulates:
+\[
+  E_R^p = \sum_{i\in I_p} R_i \Delta r_i.
+\]
+
+Some elements or RVE/eigenstrain mechanisms can add external error
+contributions to the displacement, force, and external-work scales.  The code
+adds these before final normalization.
+
+\subsection{Residual Error}
+
+The residual error is:
+\[
+  e_R =
+  \sqrt{
+  \sum_p
+  \frac{S_R^p}
+       {\max\left(
+          S_{\mathrm{ext}}^p,
+          S_{\mathrm{int}}^p,
+          S_{\mathrm{dam}}^p,
+          S_{\mathrm{acc}}^p,
+          \epsilon_p^2
+       \right)}
+  }.
+\]
+In code this value is stored in \code{resErr}.  It measures force imbalance
+relative to the largest relevant force scale in each physical field.
+
+\subsection{Displacement or Increment Error}
+
+The displacement increment error is:
+\[
+  e_{\Delta r} =
+  \sqrt{
+  \sum_p
+  \frac{S_{\Delta r}^p}
+       {\max\left(S_r^p, \epsilon_p^2\right)}
+  }.
+\]
+In code this value is stored in \code{disErr}.  On the first nonlinear
+iteration of a step, the code sets the displayed and tested displacement error
+to zero after evaluation:
+\[
+  i = 0 \quad \Rightarrow \quad e_{\Delta r} \leftarrow 0.
+\]
+This avoids rejecting the first correction based only on an increment compared
+with a still-developing trial scale.
+
+\subsection{Energy Error}
+
+The energy error is:
+\[
+  e_E =
+  \sqrt{
+  \sum_p
+  \frac{\abs{E_R^p}}
+       {\max\left(
+          \abs{W_{\mathrm{ext}}^p},
+          \abs{W_{\mathrm{int}}^p},
+          \abs{W_{\mathrm{kin}}^p},
+          \epsilon_p^2
+       \right)}
+  }.
+\]
+In code this value is stored in \code{eneErr}.  It measures residual work during
+the latest correction relative to accumulated external, internal, or kinetic
+energy scales.
+
+\subsection{Convergence Decision}
+
+The basic convergence test is:
+\[
+  e_{\Delta r} \leq \tau_{\Delta r},
+  \qquad
+  e_R \leq \tau_R,
+  \qquad
+  e_E \leq \tau_E,
+  \qquad
+  i+1 \geq N_{\min}.
+\]
+The tolerances are:
+
+\begin{longtable}{p{0.22\linewidth} p{0.25\linewidth} p{0.44\linewidth}}
+\caption{Nonlinear tolerances.}
+\label{tab:tolerances}\\
+\toprule
+Quantity & C++ member & Default \\
+\midrule
+\endfirsthead
+\toprule
+Quantity & C++ member & Default \\
+\midrule
+\endhead
+\(\tau_{\Delta r}\) & \code{maxDisErr} & \(10^{-5}\) \\
+\(\tau_R\) & \code{maxResErr} & \(10^{-5}\) \\
+\(\tau_E\) & \code{maxEneErr} & \(10^{-5}\) \\
+\(\tau_{\Delta r}^{\mathrm{limit}}\) & \code{limitDisErr} & 0 unless configured \\
+\(\tau_R^{\mathrm{limit}}\) & \code{limitResErr} & 0 unless configured \\
+\(\tau_E^{\mathrm{limit}}\) & \code{limitEneErr} & 0 unless configured \\
+\bottomrule
+\end{longtable}
+
+If adaptive linear tolerance is active, the nonlinear solver can require one
+additional correction with a tighter linear tolerance before accepting a step
+that otherwise satisfies the nonlinear errors.  This prevents a loose linear
+solve from being the last correction in a nominally converged nonlinear step
+when strict final convergence is requested.
+
+If any of the nonlinear errors is NaN, the current attempt is treated as failed.
+The iteration counter is forced to the maximum and a large residual error is
+assigned.
+
+\section{Adaptive Linear Tolerance}
+
+The nonlinear solver can dynamically switch the requested tolerance of the
+linear solver during direct residual solves.  This is controlled by the
+adaptive-linear-tolerance members, especially:
+
+\begin{itemize}[leftmargin=2em]
+  \item \code{linearAdaptiveTolEnabled};
+  \item \code{linearAdaptiveLooseTol};
+  \item \code{linearAdaptiveTightTol};
+  \item \code{linearAdaptiveTriggerRatio};
+  \item \code{linearAdaptiveRequireTightConvergence}.
+\end{itemize}
+
+The rule is:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Adaptive tolerance only applies to RHS kind \code{direct_residual}.
+  \item The loose tolerance is used by default.
+  \item The tight tolerance is used if the solver has requested a strict final
+        solve or if the current nonlinear error ratio is already below the
+        configured trigger ratio.
+  \item The nonlinear error ratio is the maximum of the residual, energy, and
+        displacement errors divided by their target tolerances.  The
+        displacement component is ignored for the first nonlinear iteration.
+  \item If a step appears converged after a loose linear solve and strict final
+        convergence is required, the solver performs one more iteration using
+        the tight linear tolerance.
+\end{enumerate}
+
+This mechanism is meant to avoid oversolving early nonlinear iterations while
+still ending each accepted nonlinear step with a sufficiently accurate linear
+correction.
+
+\section{Indirect Displacement Control}
+
+When \code{idc} is configured, the nonlinear solver does not simply solve one
+linear correction per iteration.  It solves two related systems and computes a
+load multiplier correction.
+
+The variables are:
+
+\begin{longtable}{p{0.22\linewidth} p{0.28\linewidth} p{0.41\linewidth}}
+\caption{Indirect displacement control variables.}
+\label{tab:idc-vars}\\
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & C++ member & Meaning \\
+\midrule
+\endhead
+\(\lambda\) & \code{idc_time} &
+The indirect-control load coordinate currently used to evaluate loads and
+boundary conditions. \\
+
+\(\lambda_n\) & \code{idc_time_converged} &
+Last accepted indirect-control load coordinate. \\
+
+\(\Delta \lambda_0\) & \code{idc_dt} &
+Small probe increment used to form a load-increment direction. \\
+
+\(\mu\) & \code{load_mult} &
+Multiplier correction returned by the indirect-control object. \\
+
+\(\Delta r_f^R\) & \code{ddr} &
+Residual correction direction. \\
+
+\(\Delta r_f^L\) & \code{ddf} &
+Load-increment correction direction. \\
+\bottomrule
+\end{longtable}
+
+The conceptual sequence is:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Save the current trial state and reduced residual.
+  \item Solve:
+        \[
+          K_{\mathrm{eff}} \Delta r_f^R = R_f.
+        \]
+  \item Advance the indirect-control load coordinate by \(\Delta \lambda_0\),
+        update loads and boundary conditions, and recompute forces.
+  \item Solve:
+        \[
+          K_{\mathrm{eff}} \Delta r_f^L
+          =
+          R_f(\lambda+\Delta\lambda_0) - R_f(\lambda).
+        \]
+  \item Form trial states A and B, optionally evaluate external forces for
+        both states, and ask the indirect-control object for the multiplier
+        \(\mu\).
+  \item Correct the residual direction:
+        \[
+          \Delta r_f \leftarrow \Delta r_f^R + \mu \Delta r_f^L.
+        \]
+  \item Update:
+        \[
+          \lambda \leftarrow \lambda + \mu \Delta\lambda_0.
+        \]
+  \item Restore the original trial state, apply the corrected load and boundary
+        conditions at the new indirect-control coordinate, then apply the
+        corrected displacement increment.
+\end{enumerate}
+
+On restart, \code{idc_time} is reset to \code{idc_time_converged}, so the failed
+trial load advancement is discarded.
+
+\section{Restart, Relaxed Acceptance, and Termination}
+
+When the inner nonlinear loop ends, the solver has either converged or exhausted
+the nonlinear iteration budget.
+
+\subsection{Normal Convergence}
+
+If the convergence criteria are satisfied, the solver marks:
+\[
+  \code{fully_converged} \leftarrow \code{true},
+\]
+and computes step-end forces:
+\[
+  \code{computeForcesAtStepEnd(false)}.
+\]
+For the steady-state nonlinear solver, this is another force evaluation at the
+accepted trial state.  It ensures the final force state is consistent before the
+step is committed.
+
+\subsection{Critical Restart}
+
+If the step did not converge and the current increment is larger than the
+minimum increment, the solver restarts the same step:
+\[
+  \Delta t \leftarrow
+  \max(\gamma_{\mathrm{crit}} \Delta t, \Delta t_{\min}),
+\]
+where:
+\[
+  \gamma_{\mathrm{crit}} = \code{critical_step_decrease}.
+\]
+The default is \(0.5\).
+
+The restart restores:
+
+\begin{itemize}[leftmargin=2em]
+  \item the target time to the previous value, then advances it by the reduced
+        \(\Delta t\);
+  \item \code{trial_r} back to the last committed \code{r};
+  \item old internal and external forces;
+  \item the load vector and reduced correction to zero;
+  \item material statuses through \code{elems->resetMaterialStatuses()};
+  \item indirect-control state, if active.
+\end{itemize}
+
+The nonlinear loop then tries the same physical step again with the smaller
+increment.
+
+\subsection{Relaxed-Tolerance Acceptance}
+
+If the step still did not meet the main tolerances, but the errors satisfy the
+configured limit tolerances, the solver can accept the step as not fully
+converged:
+\[
+  \code{fully_converged} \leftarrow \code{false}.
+\]
+This path is only available when nonzero limit tolerances were configured.
+Otherwise, the default limit tolerances are zero and this fallback is disabled.
+
+\subsection{Failure}
+
+If the step cannot be restarted and cannot be accepted under relaxed tolerances,
+the solver prints an error message and sets:
+\[
+  \code{terminated} \leftarrow \code{true}.
+\]
+The model-level solve loop then stops.
+
+\section{Adaptive Time-Step Control}
+
+After an accepted step, the next increment can be adjusted based on the number
+of nonlinear iterations:
+
+\[
+\Delta t_{\mathrm{next}} =
+\begin{cases}
+\min(\gamma_{\mathrm{inc}} \Delta t, \Delta t_{\max}),
+  & \text{if } i < N_{\mathrm{enlarge}} \text{ and no restart occurred},\\
+\max(\gamma_{\mathrm{dec}} \Delta t, \Delta t_{\min}),
+  & \text{if } i > N_{\mathrm{shorten}},\\
+\Delta t,
+  & \text{otherwise}.
+\end{cases}
+\]
+
+The default multipliers are:
+
+\begin{longtable}{p{0.27\linewidth} p{0.27\linewidth} p{0.35\linewidth}}
+\caption{Adaptive time-step factors.}
+\label{tab:timestep-factors}\\
+\toprule
+Meaning & C++ member & Default \\
+\midrule
+\endfirsthead
+\toprule
+Meaning & C++ member & Default \\
+\midrule
+\endhead
+Normal enlargement factor & \code{step_increase} & \(1.25\) \\
+Normal reduction factor & \code{step_decrease} & \(0.8\) \\
+Critical restart reduction factor & \code{critical_step_decrease} & \(0.5\) \\
+\bottomrule
+\end{longtable}
+
+The final increment is clamped to \([\Delta t_{\min}, \Delta t_{\max}]\).  The
+base \code{runAfterEachStep()} also reduces the next increment if it would pass
+the configured termination time.
+
+\section{Step Commit}
+
+After \code{solve()} returns, \code{solveStep()} calls
+\code{runAfterEachStep()}.  The base implementation performs the actual state
+commit:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Apply scheduled perturbations if they are active at the current time.
+  \item Compute total internal, external, and kinetic energies.
+  \item Commit the trial vector:
+        \[
+          r \leftarrow r^{\mathrm{tr}}.
+        \]
+  \item Store old force vectors:
+        \[
+          f_{\mathrm{int},n} \leftarrow f_{\mathrm{int}},\qquad
+          f_{\mathrm{ext},n} \leftarrow f_{\mathrm{ext}}.
+        \]
+  \item Commit element material statuses:
+        \[
+          \code{elems->updateMaterialStatuses()}.
+        \]
+  \item Clamp or terminate based on the next \(\Delta t\).
+  \item Commit old energy values.
+\end{enumerate}
+
+The nonlinear override prints a separator and, for indirect displacement
+control, commits:
+\[
+  \code{idc_time_converged} \leftarrow \code{idc_time}.
+\]
+
+\section{Energy Accounting}
+
+The base energy update integrates internal and external work with a trapezoidal
+rule over the accepted correction:
+\[
+  W_{\mathrm{int}}^p
+  \leftarrow
+  W_{\mathrm{int},n}^p
+  +
+  \sum_{i\in I_p}
+  \frac{1}{2}
+  \left(f_{\mathrm{int},i} + f_{\mathrm{int},n,i}\right)
+  \left(r_i^{\mathrm{tr}} - r_{n,i}\right),
+\]
+\[
+  W_{\mathrm{ext}}^p
+  \leftarrow
+  W_{\mathrm{ext},n}^p
+  +
+  \sum_{i\in I_p}
+  \frac{1}{2}
+  \left(f_{\mathrm{ext},i} + f_{\mathrm{ext},n,i}\right)
+  \left(r_i^{\mathrm{tr}} - r_{n,i}\right).
+\]
+In the steady-state base class, kinetic energy is not updated.  Transient
+mechanical solvers can override this behavior to include a meaningful
+\(W_{\mathrm{kin}}\).
+
+\section{Matrix Assembly and Effective System}
+
+\subsection{Element Stiffness Assembly}
+
+The element container prepares the sparsity pattern before the nonlinear solve
+starts.  During a matrix update it:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Resets matrix values while preserving the pattern.
+  \item Adds Lagrange multiplier constraint entries.
+  \item Requests local element matrices \(K_e\) from each element.
+  \item Scatters local entries into global matrix entries using element
+        degree-of-freedom indices.
+\end{enumerate}
+
+The code supports optimized assembly paths using a precomputed sparse-entry map
+when the current matrix pattern is compatible.  The mathematical result remains
+the same: the global structural matrix is the sum of all element and constraint
+contributions.
+
+\subsection{Effective Matrix Construction}
+
+For the steady-state nonlinear solver:
+\[
+  K_{\mathrm{eff}} \leftarrow K.
+\]
+If constraints exist:
+\[
+  K_{\mathrm{eff}} \leftarrow
+  \text{constraint-space-transform}(K_{\mathrm{eff}}).
+\]
+The transformed matrix is then passed to the configured linear solver.  The
+same high-level function also handles linear solver creation on first use and
+calls symbolic analysis where required.
+
+\section{Linear Solver Interface}
+
+\subsection{Supported Solver Families}
+
+\code{factorizeLinearSystem()} selects the configured solver backend.  The
+available choices depend on compile-time flags.  The implemented families
+include:
+
+\begin{itemize}[leftmargin=2em]
+  \item Eigen direct and iterative solvers.
+  \item Pardiso, Cholmod, SuperLU, when compiled in.
+  \item AMGCL conjugate-gradient solver, when compiled in.
+  \item Hypre BoomerAMG conjugate-gradient solver, when compiled in.
+  \item Native \code{DeflatedFGMRES}.
+\end{itemize}
+
+For AMGCL, Hypre, and native deflated FGMRES paths, the solver may also build an
+elastic degree-of-freedom map used for block structure, nullspace hints, lifting,
+or deflation metadata.
+
+\subsection{Profiling Wrapper}
+
+The nonlinear solver does not call the linear solver directly.  It calls:
+\[
+  \code{profiledLinearSolve(x, b, rhsKind)}.
+\]
+The wrapper records:
+
+\begin{itemize}[leftmargin=2em]
+  \item total linear solve time;
+  \item matrix event number and nonlinear iteration context;
+  \item right-hand-side kind;
+  \item right-hand-side norm and change from the previous RHS;
+  \item solution norm;
+  \item linear iteration count and reported error;
+  \item requested tolerance;
+  \item deflation basis size and deflation update metrics, when available;
+  \item detailed sub-phase timings for native deflated FGMRES, when available.
+\end{itemize}
+
+\begin{longtable}{p{0.30\linewidth} p{0.60\linewidth}}
+\caption{RHS kinds used by the nonlinear and reset paths.}
+\label{tab:rhs-kinds}\\
+\toprule
+RHS kind & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+RHS kind & Meaning \\
+\midrule
+\endhead
+\code{direct_residual} &
+Ordinary nonlinear correction for direct-control steps.  Successful solves can
+contribute vectors to the deflation basis. \\
+
+\code{idc_residual} &
+Residual correction direction for indirect displacement control. \\
+
+\code{idc_load_increment} &
+Load-increment correction direction for indirect displacement control. \\
+
+\code{reset_residual} &
+Residual correction used by the nonlinear reset procedure. \\
+
+\code{linear_step} &
+Single linear solve used by the steady-state linear solver path. \\
+\bottomrule
+\end{longtable}
+
+\section{Runtime Profiling Names}
+
+The solver contains nested timing scopes.  The exact set can vary with compile
+options and selected solver, but the nonlinear path commonly records the
+categories shown in Table~\ref{tab:runtime-phases}.
+
+\begin{longtable}{p{0.34\linewidth} p{0.56\linewidth}}
+\caption{Important runtime profile names.}
+\label{tab:runtime-phases}\\
+\toprule
+Profile name & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Profile name & Meaning \\
+\midrule
+\endhead
+\code{model.solve.solve_step} &
+Wall time spent in one call to \code{solver->solveStep()}. \\
+
+\code{solver.before_step} &
+Step preparation, trial-state reset, time update, and nonlinear before-step
+logic. \\
+
+\code{solver.solve} &
+Main solver body for the current step. \\
+
+\code{solver.after_step} &
+Accepted-step commit, energy update, material status commit, and termination
+checks. \\
+
+\code{nonlinear.iteration} &
+One nonlinear iteration, including matrix update when triggered, linear solve,
+state update, force evaluation, and error evaluation. \\
+
+\code{matrix.stiffness_update} &
+Structural stiffness matrix assembly. \\
+
+\code{matrix.compute_keff} &
+Effective matrix construction, constraint transform, and factorization. \\
+
+\code{linear.solve_total} &
+One profiled linear solve. \\
+
+\code{forces.total} &
+Total force evaluation wrapper. \\
+
+\code{forces.simplex_volumetric_strains} &
+Simplex volumetric strain update before element force integration. \\
+
+\code{forces.integrate_internal_forces} &
+Element strain, stress, and internal-force integration. \\
+
+\code{forces.external_reactions} &
+Completion of external forces and reactions after internal force assembly. \\
+
+\code{nonlinear.evaluate_errors} &
+Residual, displacement, and energy error calculation. \\
+\bottomrule
+\end{longtable}
+
+Native deflated FGMRES can further split \code{linear.solve_total} into matvec,
+preconditioner setup/apply, orthogonalization, reorthogonalization, deflation
+projection, least-squares work, and residual checks.
+
+\section{Reset Path}
+
+\code{SteadyStateNonLinearSolver::reset()} is a separate nonlinear correction
+path used when the model state must be re-equilibrated without advancing the
+usual load step.  It follows the same basic pattern:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Compute forces with frozen internal variables.
+  \item Repeatedly update the matrix as needed.
+  \item Reduce the residual.
+  \item Solve \code{reset_residual}.
+  \item Update the trial vector.
+  \item Recompute frozen forces.
+  \item Evaluate convergence errors.
+\end{enumerate}
+
+Unlike the normal \code{solve()} method, the reset routine calls
+\code{runAfterEachStep()} itself after it converges.  It is therefore a
+self-contained equilibration and commit operation.
+
+\section{Configuration Summary}
+
+\begin{longtable}{p{0.24\linewidth} p{0.34\linewidth} p{0.34\linewidth}}
+\caption{Important nonlinear configuration options read by the solver.}
+\label{tab:config}\\
+\toprule
+Input concept & C++ member & Effect \\
+\midrule
+\endfirsthead
+\toprule
+Input concept & C++ member & Effect \\
+\midrule
+\endhead
+Initial time step & \code{initdt}, \code{dt} &
+Starting load/time increment. \\
+
+Minimum/maximum time step & \code{dtmin}, \code{dtmax} &
+Enable and bound adaptive time stepping. \\
+
+Residual tolerance & \code{maxResErr} &
+Target residual error. \\
+
+Energy tolerance & \code{maxEneErr} &
+Target residual-work error. \\
+
+Increment tolerance & \code{maxDisErr} &
+Target correction-size error. \\
+
+Limit tolerances & \code{limitResErr}, \code{limitEneErr}, \code{limitDisErr} &
+Optional relaxed acceptance thresholds. \\
+
+Minimum/maximum nonlinear iterations & \code{minIt}, \code{maxIt} &
+Lower and upper nonlinear iteration limits. \\
+
+Step enlarge/shorten iteration counts & \code{enlargeIt}, \code{shortenIt} &
+Iteration thresholds for next-step adaptation. \\
+
+Step increase/decrease factors & \code{step_increase}, \code{step_decrease} &
+Normal accepted-step time-step scaling. \\
+
+Critical decrease factor & \code{critical_step_decrease} &
+Failed-step restart scaling. \\
+
+Matrix update by step & \code{stiffnessMatrixStepUpdate} &
+Controls whether the first iteration of some steps updates the matrix. \\
+
+Matrix update by iteration & \code{stiffnessMatrixIterUpdate} &
+Controls per-step nonlinear iteration update frequency. \\
+
+Matrix update by cumulative iteration & \code{stiffnessMatrixCumulIterUpdate} &
+Controls matrix update frequency across restarts or cumulative iterations. \\
+
+Matrix type & \code{stiffMatType} &
+Selects \code{elastic}, \code{secant}, \code{tangent}, or \code{consistent}. \\
+
+First-iteration matrix type & \code{stiffMatTypeFirstIT} &
+Optional different matrix type for the first nonlinear iteration. \\
+
+Adaptive linear tolerance & \code{linearAdaptiveTolEnabled} and related members &
+Switches iterative linear solve tolerance between loose and tight values inside
+the nonlinear process. \\
+\bottomrule
+\end{longtable}
+
+\section{What a Single Direct-Control Iteration Means Physically}
+
+For mechanics, the nonlinear iteration can be read as the following equilibrium
+correction:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Given the current trial displacement \(u^{\mathrm{tr}}\), compute the
+        internal nodal force \(f_{\mathrm{int}}(u^{\mathrm{tr}})\) from element
+        stresses.
+  \item Compute the external nodal force \(f_{\mathrm{ext}}\), including
+        reactions for prescribed degrees of freedom.
+  \item The imbalance is
+        \[
+          R = f_{\mathrm{ext}} - f_{\mathrm{int}}.
+        \]
+  \item Reduce that imbalance to the active free system \(R_f\).
+  \item Solve a linearized equilibrium correction
+        \[
+          K_{\mathrm{eff}} \Delta u_f = R_f.
+        \]
+  \item Expand \(\Delta u_f\), update constrained dependent quantities, and set
+        \[
+          u^{\mathrm{tr}} \leftarrow u^{\mathrm{tr}} + \Delta u.
+        \]
+  \item Repeat until the remaining force imbalance, correction size, and
+        residual work are all small relative to their natural scales.
+\end{enumerate}
+
+For transport, temperature, and humidity fields the same algebraic structure is
+used.  The physical meaning of \(r\), \(f_{\mathrm{int}}\), and
+\(f_{\mathrm{ext}}\) changes with the field, and the convergence calculation
+normalizes each field separately before combining them.
+
+\section{Important Implementation Consequences}
+
+\subsection{The Committed State Does Not Move During Iterations}
+
+During nonlinear iterations:
+\[
+  r \quad \text{remains fixed}, \qquad
+  r^{\mathrm{tr}} \quad \text{changes}.
+\]
+This distinction is important for restarts.  A failed step can restore
+\(r^{\mathrm{tr}} \leftarrow r\) without losing the last accepted state.
+
+\subsection{Material Statuses Have Trial and Committed Roles}
+
+Element force evaluation can update temporary material-status quantities during
+the trial process.  These are only committed by
+\code{elems->updateMaterialStatuses()} after the step is accepted.  If a step is
+restarted, \code{elems->resetMaterialStatuses()} discards the failed trial
+state.
+
+\subsection{Prescribed Degrees of Freedom Are Balanced by Reactions}
+
+The residual on directly prescribed degrees of freedom is not used as an
+unknown equation in the reduced system.  Instead, the external force on those
+degrees of freedom is set to the value needed to balance internal, damping, and
+inertial forces.  This makes the reaction force an output quantity rather than
+an unknown correction.
+
+\subsection{Matrix Update Frequency Changes the Nonlinear Method}
+
+If the matrix is rebuilt every nonlinear iteration with a tangent stiffness, the
+algorithm behaves most like Newton's method.  If the matrix is rebuilt less
+often or uses a secant/elastic matrix, the method trades convergence rate for
+cheaper iterations and sometimes improved robustness.
+
+\subsection{Linear Solver Accuracy Can Affect Nonlinear Acceptance}
+
+For iterative linear solvers, the correction is approximate.  Adaptive linear
+tolerance allows early nonlinear iterations to be solved loosely, but the code
+can require a tight final correction before accepting the nonlinear step.  This
+is especially relevant for deflated FGMRES and AMG preconditioned paths.
+
+\section{Compact Algorithm Reference}
+
+\begin{Verbatim}[fontsize=\small, frame=single]
+Model::solve:
+    export initial data
+    while not solver.terminated:
+        solver.solveStep()
+        export accepted step
+
+Solver::solveStep:
+    runBeforeEachStep()
+    solve()
+    runAfterEachStep()
+
+SteadyStateNonLinearSolver::solve, direct control:
+    converged = false
+    while not converged:
+        load = loads(time)
+        trial_r = prescribed_boundary_values(trial_r, time)
+        updateFieldVariables() with zero ddr
+        computeForcesAtIntegrationTime(frozen=true)
+
+        it = 0
+        while not converged and it < maxIt:
+            if matrix_update_required:
+                K = assemble_structural_matrix(stiffness_type)
+                Keff = constraint_transform(K)
+                factorize_or_setup_linear_solver(Keff)
+
+            f = reduce(residuals)
+            ddr = solve(Keff, f)
+            full_ddr = expand_and_apply_dependencies(ddr)
+            trial_r += full_ddr
+
+            computeForcesAtIntegrationTime(frozen=false)
+            evaluateErrors()
+            converged = errors_below_tolerances and it+1 >= minIt
+            export iteration
+            it += 1
+
+        if converged:
+            fully_converged = true
+            computeForcesAtStepEnd(frozen=false)
+        else if dt can be reduced:
+            restore committed state
+            reset material statuses
+            reduce dt and retry
+        else if limit tolerances are satisfied:
+            fully_converged = false
+            computeForcesAtStepEnd(frozen=false)
+            converged = true
+        else:
+            terminated = true
+            return
+
+        adapt next dt
+
+Solver::runAfterEachStep:
+    compute energies
+    r = trial_r
+    f_int_old = f_int
+    f_ext_old = f_ext
+    commit material statuses
+    update termination and next dt
+\end{Verbatim}
+
+\section{Reading Solver Output}
+
+The nonlinear solver prints a table per step.  The key columns map directly to
+the internal quantities:
+
+\begin{longtable}{p{0.22\linewidth} p{0.68\linewidth}}
+\caption{Typical nonlinear output fields.}
+\label{tab:output-fields}\\
+\toprule
+Output field & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Output field & Meaning \\
+\midrule
+\endhead
+\code{time} &
+Current target time/load coordinate. \\
+
+\code{timestep} &
+Current \(\Delta t\). \\
+
+\code{iter} &
+Nonlinear iteration number. \\
+
+\code{residuals} &
+\code{resErr}, the normalized force residual error. \\
+
+\code{increments} &
+\code{disErr}, the normalized correction/increment error. \\
+
+\code{energies} &
+\code{eneErr}, the normalized residual-work error. \\
+\bottomrule
+\end{longtable}
+
+For iterative linear solvers, the more detailed event file records each linear
+system inside each nonlinear iteration.  This is the right place to check
+whether more nonlinear work is caused by changed matrix updates, worse
+preconditioner quality, loose linear tolerance, or increased linear iterations.
+
+\section{Summary}
+
+The \oas{} nonlinear solver is a load/time-step Newton-like equilibrium solver
+with:
+
+\begin{itemize}[leftmargin=2em]
+  \item a clear separation between committed state \code{r} and trial state
+        \code{trial_r};
+  \item full-space force assembly followed by reduced-space linear solves;
+  \item explicit constraint and prescribed-boundary handling through
+        \code{NodeContainer};
+  \item residual, increment, and energy convergence checks separated by
+        physical field;
+  \item restart and adaptive time-step control when convergence is difficult;
+  \item optional relaxed-tolerance acceptance;
+  \item optional indirect displacement control using two linear solves per
+        nonlinear iteration;
+  \item detailed runtime and linear-solver profiling hooks.
+\end{itemize}
+
+The central nonlinear equation is the active equilibrium residual
+\[
+  R_f(r^{\mathrm{tr}}, t) = 0,
+\]
+solved by repeated linear corrections
+\[
+  K_{\mathrm{eff}} \Delta r_f = R_f,
+\]
+where the definitions of \(K_{\mathrm{eff}}\), \(R_f\), and the convergence
+scales are determined by the current stiffness update policy, constraints,
+physical fields, and selected linear solver backend.
+
+\end{document}

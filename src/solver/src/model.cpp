@@ -36,34 +36,62 @@ Model :: Model(bool pT) {
 
 //////////////////////////////////////////////////////////
 void Model :: init(const bool &initial) {     //initialization
+    if ( solver ) {
+        solver->initializeRuntimeProfilerForExternalTiming();
+    }
+    auto phaseStart = std :: chrono :: steady_clock :: now();
+    auto recordPhase = [this](const std :: string &phase, std :: chrono :: steady_clock :: time_point start) {
+        if ( solver ) {
+            solver->recordExternalRuntimePhase(phase, std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - start).count() );
+        }
+    };
+
     if ( initial ) {
         cout << "initialization of materials" << endl;
         cout.flush();
+        phaseStart = std :: chrono :: steady_clock :: now();
         matrs.init();
+        recordPhase("model.init.materials", phaseStart);
     }
     cout << "initialization of elements" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     crosssects.init();
     elems.init();
+    recordPhase("model.init.elements", phaseStart);
     cout << "initialization of preprocessing blocks" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     pblocks.init();
+    recordPhase("model.init.preprocessing_blocks", phaseStart);
     cout << "initialization of boundary conditions" << endl;
     cout.flush();
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     bconds.init(solver->giveTime() );
+    recordPhase("model.init.boundary_conditions", phaseStart);
     cout << "initialization of nodes" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     nodes.init();
+    recordPhase("model.init.nodes", phaseStart);
     if ( matrs.requestTetrahedralBackgroundMesh() ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         nodes.initSimplices();
+        recordPhase("model.init.simplices", phaseStart);
     }
     cout << "initialization of constraints" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     constr.init(& nodes, & bconds, solver);
+    recordPhase("model.init.constraints", phaseStart);
+    phaseStart = std :: chrono :: steady_clock :: now();
     elems.assignFibersToElems();
+    recordPhase("model.init.fiber_assignment", phaseStart);
     if ( matrs.requestTetrahedralBackgroundMesh() ) {
+        phaseStart = std :: chrono :: steady_clock :: now();
         elems.findElementFriends();                                           //find tetraherons for volumetric strain
+        recordPhase("model.init.element_friends", phaseStart);
     }
     if ( initialFieldFile.compare("") != 0 ) {
         initialFieldFile = ( baseDir / initialFieldFile ).string();
@@ -73,13 +101,17 @@ void Model :: init(const bool &initial) {     //initialization
     }
     cout << "initialization of solver" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     solver->init(initialFieldFile, initialTimeDerFieldFile, initial);
+    recordPhase("model.init.solver", phaseStart);
     cout << "initialization of exporters" << endl;
     cout.flush();
+    phaseStart = std :: chrono :: steady_clock :: now();
     exporters.setResultDirectory(resultDir);
     exporters.setSolver(solver);
     exporters.init(initial);
     bconds.setInitialDoFFields(solver);
+    recordPhase("model.init.exporters", phaseStart);
     cout << "Model succesfully initialized" << endl;
     cout.flush();
     // exporters.updateAllTimeAndStepToSave(solver->giveTime(), solver->giveStepNumber());  // needed especially in adaptivity
@@ -99,16 +131,32 @@ void Model :: jumpToNextStage() {
 void Model :: solve() {
     //solution
     signal(SIGINT, my_handler);
+    auto phaseStart = std :: chrono :: steady_clock :: now();
     exporters.exportData( solver->giveStepNumber(), -1, solver->giveTime(), solver->isTerminated() );
+    if ( solver ) {
+        solver->recordExternalRuntimePhase("model.solve.initial_export", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+    }
     while ( !solver->isTerminated() && TERMINATED == 0 ) {
         auto start_part = std :: chrono :: system_clock :: now();
+        phaseStart = std :: chrono :: steady_clock :: now();
         solver->solveStep();
+        if ( solver ) {
+            solver->recordExternalRuntimePhase("model.solve.solve_step", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+        }
+        phaseStart = std :: chrono :: steady_clock :: now();
         exporters.exportData( solver->giveStepNumber(), -1, solver->giveTime(), solver->isTerminated() );
+        if ( solver ) {
+            solver->recordExternalRuntimePhase("model.solve.step_export", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+        }
         if ( printTime && solver->showStepTime() ) {
+            phaseStart = std :: chrono :: steady_clock :: now();
             auto now = std :: chrono :: system_clock :: now();
             auto elapsed_seconds = now - start_part;
             std :: cout << "step duration: " << convertTimeToString(elapsed_seconds) << endl;
             cout.flush();
+            if ( solver ) {
+                solver->recordExternalRuntimePhase("model.solve.print_step_time", std :: chrono :: duration< double >(std :: chrono :: steady_clock :: now() - phaseStart).count() );
+            }
         }
     }
 }

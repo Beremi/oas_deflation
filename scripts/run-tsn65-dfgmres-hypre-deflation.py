@@ -41,6 +41,7 @@ VTK_EXPORT_LINE = "VTKElementExporter state saveSteps 2 1 2 ascii pointData 1 di
 class RunSpec:
     name: str
     nvec: int
+    tolerance: str
 
 
 def read_tsv(path: Path) -> list[dict[str, str]]:
@@ -95,14 +96,26 @@ def md_table(headers: list[str], rows: list[list[Any]]) -> str:
 def read_solver_out(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
-    with path.open("r", encoding="utf-8", errors="replace") as handle:
-        header = handle.readline().strip().lstrip("#").split("\t")
-        rows = []
-        for line in handle:
-            if not line.strip() or line.startswith("#"):
-                continue
-            rows.append(dict(zip(header, line.rstrip("\n").split("\t"))))
+    header: list[str] = []
+    rows: list[dict[str, str]] = []
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            maybe_header = line.lstrip("#").strip()
+            if maybe_header:
+                header = maybe_header.split()
+            continue
+        if not header:
+            continue
+        parts = line.split()
+        rows.append({key: parts[i] if i < len(parts) else "" for i, key in enumerate(header)})
     return rows
+
+
+def slug_tolerance(tolerance: str) -> str:
+    return tolerance.replace("-", "m").replace("+", "p").replace(".", "p")
 
 
 def patch_key_value_file(path: Path, updates: dict[str, str], marker: str) -> str:
@@ -166,9 +179,20 @@ def clean_case_results() -> None:
 def solver_updates(
     nvec: int,
     eps: str,
+    time_step: str | None,
     total_time: str,
     linear_tol: str,
     true_tol: str,
+    stiffness_matrix_iter_update: str,
+    stiffness_matrix_step_update: str,
+    hypre_relax_type: str,
+    hypre_num_sweeps: str,
+    hypre_boomer_max_iterations: str,
+    hypre_cheby_order: str,
+    hypre_cheby_fraction: str,
+    hypre_elastic_reorder: str,
+    hypre_threads: str,
+    hypre_nodal_diag: str,
     adaptive: bool,
     loose_tol: str,
     tight_tol: str,
@@ -183,8 +207,8 @@ def solver_updates(
         "linear_solver_profile_file": "linear_profile",
         "runtime_phase_profile": "1",
         "runtime_phase_profile_file": "runtime_profile",
-        "stiffness_matrix_iter_update": "-5",
-        "stiffness_matrix_step_update": "1",
+        "stiffness_matrix_iter_update": stiffness_matrix_iter_update,
+        "stiffness_matrix_step_update": stiffness_matrix_step_update,
         "max_iterations": "1000",
         "dfgmres_tolerance": linear_tol,
         "dfgmres_true_tolerance": true_tol,
@@ -195,6 +219,7 @@ def solver_updates(
         "dfgmres_collect_newton_steps": "1",
         "dfgmres_preconditioner": "hypre",
         "dfgmres_reorthogonalize_on_matrix_change": "1",
+        "dfgmres_elastic_reorder": hypre_elastic_reorder,
         "amgcl_near_nullspace": "1",
         "amgcl_elastic_full_lift": "1",
         "amgcl_use_block_backend": "1",
@@ -202,9 +227,15 @@ def solver_updates(
         "hypre_interp_type": "6",
         "hypre_strong_threshold": "0.25",
         "hypre_nodal": "4",
-        "hypre_relax_type": "6",
+        "hypre_nodal_diag": hypre_nodal_diag,
+        "hypre_relax_type": hypre_relax_type,
+        "hypre_num_sweeps": hypre_num_sweeps,
         "hypre_p_max": "4",
-        "hypre_boomer_max_iterations": "1",
+        "hypre_boomer_max_iterations": hypre_boomer_max_iterations,
+        "hypre_cheby_order": hypre_cheby_order,
+        "hypre_cheby_fraction": hypre_cheby_fraction,
+        "hypre_elastic_reorder": hypre_elastic_reorder,
+        "hypre_threads": hypre_threads,
         "hypre_use_dof_functions": "0",
         "hypre_use_interp_vectors": "0",
     }
@@ -218,6 +249,8 @@ def solver_updates(
                 "linear_solver_adaptive_require_tight_convergence": "1" if require_tight_convergence else "0",
             }
         )
+    if time_step:
+        updates["time_step"] = time_step
     return updates
 
 
@@ -266,6 +299,8 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     analyze = [row for row in events if row.get("phase") == "analyze"]
     iterations = [as_int(row.get("solver_iterations"), -1) for row in solve if as_int(row.get("solver_iterations"), -1) >= 0]
     residuals = [as_float(row.get("solver_error")) for row in solve if as_float(row.get("solver_error")) >= 0]
+    final_solver_row = solve[-1] if solve else {}
+    final_solver_error = as_float(final_solver_row.get("solver_error"), None)
     requested_tolerances: dict[str, int] = {}
     for row in solve:
         tolerance = row.get("requested_tolerance") or ""
@@ -274,6 +309,10 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     successes = [as_int(row.get("success"), 0) for row in solve]
     max_step = max([as_int(row.get("step"), 0) for row in solver_rows], default=0)
     nonlinear_iterations = sum(as_int(row.get("iterations"), 0) for row in solver_rows)
+    final_nonlinear_row = solver_rows[-1] if solver_rows else {}
+    final_nonlinear_residual = as_float(final_nonlinear_row.get("error_residuals"), None)
+    final_displacement_error = as_float(final_nonlinear_row.get("error_displacements"), None)
+    final_energy_error = as_float(final_nonlinear_row.get("error_energy"), None)
     elapsed_solver = max([as_float(row.get("elapsed_time"), 0.0) for row in solver_rows], default=0.0)
     elapsed_wall = max(elapsed_solver, wall_seconds)
     solve_seconds = sum(as_float(row.get("duration_seconds"), 0.0) for row in solve)
@@ -311,6 +350,7 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
     return {
         "name": spec.name,
         "N": spec.nvec,
+        "tolerance": spec.tolerance,
         "eps": eps,
         "status": status,
         "returncode": returncode,
@@ -323,6 +363,10 @@ def summarize_run(run_dir: Path, spec: RunSpec, returncode: int, wall_seconds: f
         "median_iterations": median(iterations) if iterations else None,
         "max_iterations": max(iterations, default=None),
         "max_true_residual": max(residuals, default=None),
+        "final_true_residual": final_solver_error,
+        "final_nonlinear_residual": final_nonlinear_residual,
+        "final_displacement_error": final_displacement_error,
+        "final_energy_error": final_energy_error,
         "requested_tolerances": requested_tolerances,
         "max_basis": max_basis,
         "final_basis": final_basis,
@@ -414,15 +458,26 @@ def run_spec(
     oas_bin: Path,
     threads: int,
     eps: str,
+    time_step: str | None,
     total_time: str,
-    linear_tol: str,
-    true_tol: str,
+    stiffness_matrix_iter_update: str,
+    stiffness_matrix_step_update: str,
+    hypre_relax_type: str,
+    hypre_num_sweeps: str,
+    hypre_boomer_max_iterations: str,
+    hypre_cheby_order: str,
+    hypre_cheby_fraction: str,
+    hypre_elastic_reorder: str,
+    hypre_threads: str,
+    hypre_nodal_diag: str,
     adaptive: bool,
     loose_tol: str,
     tight_tol: str,
     trigger_ratio: str,
     require_tight_convergence: bool,
     reference_dir: Path | None,
+    omp_proc_bind: str,
+    omp_places: str,
 ) -> dict[str, Any]:
     run_dir = out_dir / spec.name
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -441,9 +496,20 @@ def run_spec(
             solver_updates(
                 spec.nvec,
                 eps,
+                time_step,
                 total_time,
-                linear_tol,
-                true_tol,
+                spec.tolerance,
+                spec.tolerance,
+                stiffness_matrix_iter_update,
+                stiffness_matrix_step_update,
+                hypre_relax_type,
+                hypre_num_sweeps,
+                hypre_boomer_max_iterations,
+                hypre_cheby_order,
+                hypre_cheby_fraction,
+                hypre_elastic_reorder,
+                hypre_threads,
+                hypre_nodal_diag,
                 adaptive,
                 loose_tol,
                 tight_tol,
@@ -461,16 +527,48 @@ def run_spec(
         env.setdefault("MKLROOT", "/opt/intel/oneapi/mkl/latest")
         env["MKL_NUM_THREADS"] = str(threads)
         env["OMP_NUM_THREADS"] = str(threads)
+        env["OMP_DYNAMIC"] = "FALSE"
+        if omp_proc_bind == "unset":
+            env.pop("OMP_PROC_BIND", None)
+        else:
+            env["OMP_PROC_BIND"] = omp_proc_bind
+        if omp_places == "unset":
+            env.pop("OMP_PLACES", None)
+        else:
+            env["OMP_PLACES"] = omp_places
+        affinity_before = ""
+        affinity_after = ""
+        if hasattr(os, "sched_getaffinity"):
+            try:
+                affinity_before = ",".join(str(cpu) for cpu in sorted(os.sched_getaffinity(0)))
+            except OSError:
+                affinity_before = "<unavailable>"
+        if omp_proc_bind == "unset" and hasattr(os, "sched_setaffinity"):
+            try:
+                os.sched_setaffinity(0, set(range(os.cpu_count() or 1)))
+            except OSError:
+                pass
+        if hasattr(os, "sched_getaffinity"):
+            try:
+                affinity_after = ",".join(str(cpu) for cpu in sorted(os.sched_getaffinity(0)))
+            except OSError:
+                affinity_after = "<unavailable>"
         cmd = [str(oas_bin), "-j", str(threads), str(MASTER_FILE)]
         print(f"[{started}] starting {spec.name}: {' '.join(cmd)}", flush=True)
         with log_path.open("w", encoding="utf-8", errors="replace") as log:
             log.write(f"Starting {spec.name} at {started}\n")
             log.write(f"Command: {' '.join(cmd)}\n")
             log.write(f"Threads: {threads}\n")
+            log.write(f"OMP_DYNAMIC: {env.get('OMP_DYNAMIC', '')}\n")
+            log.write(f"OMP_PROC_BIND: {env.get('OMP_PROC_BIND', '<unset>')}\n")
+            log.write(f"OMP_PLACES: {env.get('OMP_PLACES', '<unset>')}\n")
+            if affinity_before or affinity_after:
+                log.write(f"CPU affinity before runner reset: {affinity_before}\n")
+                log.write(f"CPU affinity after runner reset: {affinity_after}\n")
             log.write(f"Deflation vectors: {spec.nvec}\n")
             log.write(f"Deflation eps: {eps}\n")
-            log.write(f"Linear tolerance: {linear_tol}\n")
-            log.write(f"True tolerance: {true_tol}\n")
+            log.write(f"Linear tolerance: {spec.tolerance}\n")
+            log.write(f"True tolerance: {spec.tolerance}\n")
             if adaptive:
                 log.write(f"Adaptive tolerance: loose={loose_tol}, tight={tight_tol}, trigger_ratio={trigger_ratio}\n")
             log.flush()
@@ -508,7 +606,7 @@ def make_plots(out_dir: Path, manifests: list[dict[str, Any]]) -> list[str]:
     for row in completed:
         events = read_tsv(out_dir / row["name"] / "linear_profile_events.tsv")
         solve = [event for event in events if event.get("phase") == "solve"]
-        ax.plot(range(1, len(solve) + 1), [as_int(event.get("solver_iterations"), 0) for event in solve], label=f"N={row['N']}")
+        ax.plot(range(1, len(solve) + 1), [as_int(event.get("solver_iterations"), 0) for event in solve], label=f"tol={row.get('tolerance', '')}, N={row['N']}")
     ax.set_xlabel("Linear solve index")
     ax.set_ylabel("DFGMRES iterations")
     ax.legend()
@@ -522,7 +620,7 @@ def make_plots(out_dir: Path, manifests: list[dict[str, Any]]) -> list[str]:
     for row in completed:
         events = read_tsv(out_dir / row["name"] / "linear_profile_events.tsv")
         solve = [event for event in events if event.get("phase") == "solve"]
-        ax.plot(range(1, len(solve) + 1), [as_int(event.get("deflation_basis_size"), 0) for event in solve], label=f"N={row['N']}")
+        ax.plot(range(1, len(solve) + 1), [as_int(event.get("deflation_basis_size"), 0) for event in solve], label=f"tol={row.get('tolerance', '')}, N={row['N']}")
     ax.set_xlabel("Linear solve index")
     ax.set_ylabel("Basis size")
     ax.legend()
@@ -534,15 +632,86 @@ def make_plots(out_dir: Path, manifests: list[dict[str, Any]]) -> list[str]:
     return plots
 
 
-def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
+def pardiso_reference_aggregate(reference_dir: Path | None) -> list[Any] | None:
+    if reference_dir is None:
+        return None
+    path = reference_dir / "run.json"
+    if not path.exists():
+        return None
+    row = json.loads(path.read_text(encoding="utf-8"))
+    setup_seconds = as_float(str(row.get("analyze_seconds", 0.0)), 0.0) + as_float(str(row.get("factorize_seconds", 0.0)), 0.0)
+    linear_total = as_float(str(row.get("linear_seconds", 0.0)), 0.0)
+    wall = max(
+        as_float(str(row.get("wall_seconds_solver", 0.0)), 0.0),
+        as_float(str(row.get("wall_seconds_runner", 0.0)), 0.0),
+    )
+    return [
+        "PardisoLDLT reference",
+        "direct",
+        "",
+        row.get("status", ""),
+        row.get("completed_steps", ""),
+        row.get("nonlinear_iterations", ""),
+        row.get("linear_solves", ""),
+        row.get("factorizations", ""),
+        row.get("krylov_iter_median", ""),
+        row.get("krylov_iter_max", ""),
+        row.get("true_relres_max", ""),
+        row.get("true_relres_max", ""),
+        "",
+        "",
+        "",
+        "",
+        "",
+        setup_seconds,
+        row.get("solve_seconds", ""),
+        linear_total,
+        row.get("other_seconds", ""),
+        wall,
+        row.get("linear_share", ""),
+    ]
+
+
+def write_summary(out_dir: Path, manifests: list[dict[str, Any]], reference_dir: Path | None = DEFAULT_REFERENCE_DIR) -> None:
     plots = make_plots(out_dir, manifests)
+    manifests = sorted(manifests, key=lambda row: (as_float(row.get("tolerance")), as_int(str(row.get("N", 0)))))
+    aggregate_rows = []
+    pardiso_row = pardiso_reference_aggregate(reference_dir)
+    if pardiso_row:
+        aggregate_rows.append(pardiso_row)
     run_rows = []
     timing_rows = []
     comparison_rows = []
     hotspot_rows = []
     for row in manifests:
+        aggregate_rows.append([
+            row["name"],
+            row.get("tolerance", ""),
+            row["N"],
+            row["status"],
+            row["steps"],
+            row["nonlinear_iterations"],
+            row["linear_solves"],
+            row["factorizations"],
+            row["median_iterations"],
+            row["max_iterations"],
+            row["max_true_residual"],
+            row.get("final_true_residual", ""),
+            row.get("final_nonlinear_residual", ""),
+            row["max_basis"],
+            row["final_basis"],
+            row["preconditioner_apply_seconds"],
+            row["deflation_seconds"],
+            row["analyze_seconds"] + row["setup_seconds"],
+            row["solve_seconds"],
+            row["analyze_seconds"] + row["setup_seconds"] + row["solve_seconds"],
+            row["other_seconds"],
+            row["wall_seconds"],
+            row["linear_share"],
+        ])
         run_rows.append([
             row["name"],
+            row.get("tolerance", ""),
             row["N"],
             row["eps"],
             row["status"],
@@ -555,6 +724,8 @@ def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
             row["median_iterations"],
             row["max_iterations"],
             row["max_true_residual"],
+            row.get("final_true_residual", ""),
+            row.get("final_nonlinear_residual", ""),
             ", ".join(f"{format_cell(float(k))}:{v}" for k, v in sorted(row.get("requested_tolerances", {}).items())),
             row["max_basis"],
             row["final_basis"],
@@ -600,9 +771,13 @@ def write_summary(out_dir: Path, manifests: list[dict[str, Any]]) -> None:
         handle.write("# TS-N_65 DFGMRES Hypre Deflation Two-Step Runs\n\n")
         handle.write(f"Generated: {datetime.now().isoformat(timespec='seconds')}\n\n")
         handle.write("Outer solver is native `DeflatedFGMRES`; hypre BoomerAMG is used only as a right preconditioner. Runs target the first two TS-N_65 load steps with `total_time=0.01`, 16 shared-memory threads, and matrix-delta profiling disabled.\n\n")
+        handle.write("## Aggregate Comparison\n\n")
+        handle.write(md_table([
+            "run", "tol", "N", "status", "steps", "nonlinear iters", "linear solves", "factorizations", "median iter", "max iter", "max true relres", "final true relres", "final nonlinear residual", "max basis", "final basis", "precond apply s", "deflation s", "setup/analyze s", "solve s", "linear total s", "other s", "wall s", "linear share",
+        ], aggregate_rows) + "\n\n")
         handle.write("## Run Summary\n\n")
         handle.write(md_table([
-            "run", "N", "eps", "status", "steps", "nonlinear iters", "linear solves", "factorizations", "unique matrices", "outer iters", "median iter", "max iter", "max true relres", "requested tol counts", "max basis", "final basis", "discarded", "capacity evictions", "max offdiag",
+            "run", "tol", "N", "eps", "status", "steps", "nonlinear iters", "linear solves", "factorizations", "unique matrices", "outer iters", "median iter", "max iter", "max true relres", "final true relres", "final nonlinear residual", "requested tol counts", "max basis", "final basis", "discarded", "capacity evictions", "max offdiag",
         ], run_rows) + "\n\n")
         if comparison_rows:
             handle.write("## VTU Displacement Closeness vs Pardiso\n\n")
@@ -640,8 +815,30 @@ def main() -> int:
     parser.add_argument("--oas-bin", type=Path, default=DEFAULT_OAS_BIN)
     parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--eps", default="1e-15")
+    parser.add_argument("--time-step", default=None)
     parser.add_argument("--total-time", default="1.000000e-02")
+    parser.add_argument("--stiffness-matrix-iter-update", default="-5")
+    parser.add_argument("--stiffness-matrix-step-update", default="1")
+    parser.add_argument("--hypre-relax-type", default="16")
+    parser.add_argument("--hypre-num-sweeps", default="3")
+    parser.add_argument("--hypre-boomer-max-iterations", default="1")
+    parser.add_argument("--hypre-cheby-order", default="3")
+    parser.add_argument("--hypre-cheby-fraction", default="-1")
+    parser.add_argument("--hypre-elastic-reorder", default="2")
+    parser.add_argument("--hypre-threads", default="0")
+    parser.add_argument("--hypre-nodal-diag", default="0")
+    parser.add_argument(
+        "--omp-proc-bind",
+        default="unset",
+        help="OpenMP binding policy for OAS runs. Default unsets OMP_PROC_BIND because TS-N_65 force kernels are slower when pinned to cores on this host.",
+    )
+    parser.add_argument(
+        "--omp-places",
+        default="unset",
+        help="OpenMP places for OAS runs. Default unsets OMP_PLACES; use values such as cores only for affinity diagnostics.",
+    )
     parser.add_argument("--linear-tol", default="1e-6")
+    parser.add_argument("--linear-tols", default=None)
     parser.add_argument("--true-tol", default=None)
     parser.add_argument("--adaptive-tolerance", action="store_true")
     parser.add_argument("--loose-tol", default="1e-1")
@@ -651,6 +848,7 @@ def main() -> int:
     parser.add_argument("--reference-dir", type=Path, default=DEFAULT_REFERENCE_DIR)
     parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--only", action="append", default=[])
+    parser.add_argument("--nvecs", default="0,5,10")
     parser.add_argument("--report-only", type=Path, default=None)
     args = parser.parse_args()
 
@@ -658,7 +856,7 @@ def main() -> int:
         manifests = []
         for run_json in sorted(args.report_only.glob("*/run.json")):
             manifests.append(json.loads(run_json.read_text(encoding="utf-8")))
-        write_summary(args.report_only, manifests)
+        write_summary(args.report_only, manifests, args.reference_dir)
         return 0
 
     if not args.oas_bin.exists() or not os.access(args.oas_bin, os.X_OK):
@@ -669,10 +867,12 @@ def main() -> int:
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     out_dir = args.out_dir or ROOT / f"results/tsn65-dfgmres-hypre-deflation-{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    tolerances = [item.strip() for item in (args.linear_tols or args.linear_tol).split(",") if item.strip()]
+    nvecs = [int(item.strip()) for item in args.nvecs.split(",") if item.strip()]
     specs = [
-        RunSpec("dfgmres-hypre-N0", 0),
-        RunSpec("dfgmres-hypre-N5", 5),
-        RunSpec("dfgmres-hypre-N10", 10),
+        RunSpec(f"dfgmres-hypre-tol{slug_tolerance(tolerance)}-N{nvec}", nvec, tolerance)
+        for tolerance in tolerances
+        for nvec in nvecs
     ]
     if args.only:
         specs = [spec for spec in specs if any(token in spec.name for token in args.only)]
@@ -689,19 +889,30 @@ def main() -> int:
             args.oas_bin,
             args.threads,
             args.eps,
+            args.time_step,
             args.total_time,
-            args.linear_tol,
-            args.true_tol or args.linear_tol,
+            args.stiffness_matrix_iter_update,
+            args.stiffness_matrix_step_update,
+            args.hypre_relax_type,
+            args.hypre_num_sweeps,
+            args.hypre_boomer_max_iterations,
+            args.hypre_cheby_order,
+            args.hypre_cheby_fraction,
+            args.hypre_elastic_reorder,
+            args.hypre_threads,
+            args.hypre_nodal_diag,
             args.adaptive_tolerance,
             args.loose_tol,
             args.tight_tol,
             args.trigger_ratio,
             not args.allow_loose_step_acceptance,
             args.reference_dir,
+            args.omp_proc_bind,
+            args.omp_places,
         )
         manifests.append(manifest)
-        write_summary(out_dir, manifests)
-    write_summary(out_dir, manifests)
+        write_summary(out_dir, manifests, args.reference_dir)
+    write_summary(out_dir, manifests, args.reference_dir)
     (out_dir / "campaign.json").write_text(json.dumps(manifests, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 0
 

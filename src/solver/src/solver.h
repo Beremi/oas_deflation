@@ -53,6 +53,7 @@ protected:
     void initializeRuntimeProfiler();
     void setRuntimeProfileContext(std :: string systemKind, int iteration, unsigned cumulIteration);
     void recordRuntimePhase(std :: string phase, double durationSeconds, std :: string detail = "");
+    void recordRuntimePhaseSamples(std :: string phase, double durationSeconds, long long sampleCount, std :: string detail = "");
     
     std :: vector< Pertrubation * >pertrubations;
 
@@ -61,6 +62,9 @@ protected:
 public:
     Solver();
     virtual ~Solver();
+    void initializeRuntimeProfilerForExternalTiming() { initializeRuntimeProfiler(); };
+    void recordExternalRuntimePhase(std :: string phase, double durationSeconds, std :: string detail = "", std :: string systemKind = "Model");
+    void recordExternalRuntimePhaseSamples(std :: string phase, double durationSeconds, long long sampleCount, std :: string detail = "", std :: string systemKind = "Model");
     virtual void init(std :: string init_r_file, std :: string init_v_file, const bool initial = true);
     virtual Solver *readFromFile(const std :: string filename);
     virtual void solveStep() { runBeforeEachStep(); solve();  runAfterEachStep(); };

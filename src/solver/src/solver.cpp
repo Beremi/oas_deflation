@@ -52,6 +52,21 @@ void Solver :: recordRuntimePhase(string phase, double durationSeconds, string d
 }
 
 //////////////////////////////////////////////////////////
+void Solver :: recordRuntimePhaseSamples(string phase, double durationSeconds, long long sampleCount, string detail) {
+    runtimeProfiler.recordPhaseSamples(step, runtimeProfileIteration, runtimeProfileCumulIteration, runtimeProfileSystemKind, phase, detail, durationSeconds, sampleCount);
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: recordExternalRuntimePhase(string phase, double durationSeconds, string detail, string systemKind) {
+    runtimeProfiler.recordPhase(step, -1, runtimeProfileCumulIteration, systemKind, phase, detail, durationSeconds);
+}
+
+//////////////////////////////////////////////////////////
+void Solver :: recordExternalRuntimePhaseSamples(string phase, double durationSeconds, long long sampleCount, string detail, string systemKind) {
+    runtimeProfiler.recordPhaseSamples(step, -1, runtimeProfileCumulIteration, systemKind, phase, detail, durationSeconds, sampleCount);
+}
+
+//////////////////////////////////////////////////////////
 void Solver :: setContainers(ElementContainer *e, NodeContainer *n, FunctionContainer *functions, BCContainer *bc, ExporterContainer *exp) {
     elems = e;
     nodes = n;
