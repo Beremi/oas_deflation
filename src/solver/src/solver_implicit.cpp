@@ -1,5 +1,8 @@
 #include "solver_implicit.h"
 #include "adaptivity.h"
+#include <algorithm>
+#include <array>
+#include <limits>
 #define numPhysicalFields 4
 
 using namespace std;
@@ -47,6 +50,235 @@ void SteadyStateLinearSolver :: rebuild() {
     Solver :: rebuild();
     prepareSystemMatricesAndInitialField("", "", false);
     computeKeff();
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateLinearSolver :: collectLinearDeflationVector(const Vector &x, bool success) {
+    if ( success && linalgsolver ) {
+        linalgsolver->collectDeflationVector(x);
+    }
+}
+
+//////////////////////////////////////////////////////////
+ElasticDofMap SteadyStateLinearSolver :: buildElasticDofMap() const {
+    ElasticDofMap map;
+    if ( !nodes || freeDoFnum == 0 ) {
+        return map;
+    }
+
+    unsigned dim = 0;
+    std :: array< unsigned, numPhysicalFields >freeRowsByField {};
+    unsigned unclassifiedRows = 0;
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        const unsigned fullDoF = nodes->giveInvDoFid(i);
+        const unsigned physicalField = nodes->givePhysicalFieldOfDoF(fullDoF);
+        if ( physicalField < freeRowsByField.size() ) {
+            freeRowsByField [ physicalField ]++;
+        } else {
+            unclassifiedRows++;
+        }
+        const Node *node = nodes->giveNodePointerOfDoFID(fullDoF);
+        if ( node->doesMechanics() ) {
+            dim = node->giveDimension();
+        }
+    }
+    if ( dim != 2 && dim != 3 ) {
+        return map;
+    }
+
+    unsigned blockSize = dim;
+    std :: vector< const Node * >mechanicalNodes;
+    std :: map< unsigned, unsigned >nodeIdToElasticBlock;
+    for ( auto nodeIt = nodes->begin(); nodeIt != nodes->end(); ++nodeIt ) {
+        const Node *node = *nodeIt;
+        if ( !node->doesMechanics() ) {
+            continue;
+        }
+        const unsigned nodeDofs = node->giveNumberOfDoFs();
+        if ( dim == 2 && nodeDofs >= 3 ) {
+            blockSize = 3;
+        } else if ( dim == 3 && nodeDofs >= 6 ) {
+            blockSize = 6;
+        }
+        nodeIdToElasticBlock [ node->giveID() ] = mechanicalNodes.size();
+        mechanicalNodes.push_back(node);
+    }
+
+    if ( mechanicalNodes.empty() ) {
+        return map;
+    }
+
+    map.dimension = dim;
+    map.blockSize = blockSize;
+    map.fullRows = mechanicalNodes.size() * blockSize;
+    map.reducedToFull.assign(freeDoFnum, std :: numeric_limits< unsigned > :: max() );
+    std :: vector< char >fullRowIsFree(map.fullRows, 0);
+
+    unsigned translationalMechanicalRows = 0;
+    unsigned rotationalMechanicalRows = 0;
+    unsigned mappedRows = 0;
+    unsigned unsupportedRows = 0;
+
+    for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+        const unsigned fullDoF = nodes->giveInvDoFid(i);
+        const Node *node = nodes->giveNodePointerOfDoFID(fullDoF);
+        const unsigned relativeDoF = fullDoF - node->giveStartingDoF();
+        if ( !node->doesMechanics() || relativeDoF >= blockSize ) {
+            unsupportedRows++;
+            continue;
+        }
+        const auto found = nodeIdToElasticBlock.find(node->giveID() );
+        if ( found == nodeIdToElasticBlock.end() ) {
+            unsupportedRows++;
+            continue;
+        }
+        map.reducedToFull [ i ] = found->second * blockSize + relativeDoF;
+        fullRowIsFree [ map.reducedToFull [ i ] ] = 1;
+        mappedRows++;
+        if ( relativeDoF < dim ) {
+            translationalMechanicalRows++;
+        } else {
+            rotationalMechanicalRows++;
+        }
+    }
+
+    if ( unsupportedRows > 0 || mappedRows != freeDoFnum ) {
+        std :: cout << "AMG elasticity map unavailable: mapped_rows=" << mappedRows
+                    << ", free_rows=" << freeDoFnum
+                    << ", unsupported_rows=" << unsupportedRows << std :: endl;
+        map.reducedToFull.clear();
+        map.fullRows = 0;
+        return map;
+    }
+
+    Point center = Point :: Zero();
+    for ( const Node *node : mechanicalNodes ) {
+        center += node->givePoint();
+    }
+    center /= double(mechanicalNodes.size() );
+
+    double radius2 = 0.;
+    map.coordinates.assign(size_t( mechanicalNodes.size() ) * dim, 0.);
+    for ( unsigned nodeIndex = 0; nodeIndex < mechanicalNodes.size(); nodeIndex++ ) {
+        Point point = mechanicalNodes [ nodeIndex ]->givePoint() - center;
+        radius2 += point.squaredNorm();
+        map.coordinates [ size_t(nodeIndex) * dim + 0 ] = point.x();
+        map.coordinates [ size_t(nodeIndex) * dim + 1 ] = point.y();
+        if ( dim == 3 ) {
+            map.coordinates [ size_t(nodeIndex) * dim + 2 ] = point.z();
+        }
+    }
+
+    const double scale = sqrt(radius2 / std :: max<size_t>(mechanicalNodes.size(), 1) );
+    const bool hasRotationalDoFs = blockSize > dim;
+    const double nearNullspaceScale = elasticNearNullspaceCoordinateScale > 0. ? elasticNearNullspaceCoordinateScale : scale;
+    if ( nearNullspaceScale > 0. && ( !hasRotationalDoFs || elasticNearNullspaceCoordinateScale > 0. ) ) {
+        for ( double &value : map.coordinates ) {
+            value /= nearNullspaceScale;
+        }
+    }
+
+    const int rawColumns = ( dim == 2 ) ? 3 : 6;
+    std :: vector< double >raw(size_t( map.fullRows ) * rawColumns, 0.);
+    for ( unsigned nodeIndex = 0; nodeIndex < mechanicalNodes.size(); nodeIndex++ ) {
+        const double x = map.coordinates [ size_t(nodeIndex) * dim + 0 ];
+        const double y = map.coordinates [ size_t(nodeIndex) * dim + 1 ];
+        const double z = ( dim == 3 ) ? map.coordinates [ size_t(nodeIndex) * dim + 2 ] : 0.;
+        for ( unsigned relativeDoF = 0; relativeDoF < blockSize; relativeDoF++ ) {
+            const size_t row = size_t(nodeIndex) * blockSize + relativeDoF;
+            if ( !fullRowIsFree [ row ] ) {
+                continue;
+            }
+            if ( relativeDoF < dim ) {
+                raw [ row * rawColumns + relativeDoF ] = 1.;
+            }
+            if ( dim == 2 ) {
+                if ( relativeDoF == 0 ) {
+                    raw [ row * rawColumns + 2 ] = -y;
+                } else if ( relativeDoF == 1 ) {
+                    raw [ row * rawColumns + 2 ] = x;
+                } else if ( relativeDoF == 2 ) {
+                    raw [ row * rawColumns + 2 ] = 1.;
+                }
+            } else {
+                if ( relativeDoF == 0 ) {
+                    raw [ row * rawColumns + 4 ] = z;
+                    raw [ row * rawColumns + 5 ] = -y;
+                } else if ( relativeDoF == 1 ) {
+                    raw [ row * rawColumns + 3 ] = -z;
+                    raw [ row * rawColumns + 5 ] = x;
+                } else if ( relativeDoF == 2 ) {
+                    raw [ row * rawColumns + 3 ] = y;
+                    raw [ row * rawColumns + 4 ] = -x;
+                } else if ( relativeDoF >= 3 && relativeDoF < 6 ) {
+                    raw [ row * rawColumns + relativeDoF ] = 1.;
+                }
+            }
+        }
+    }
+
+    int columns = 0;
+    std :: vector< double >orthonormal(size_t( map.fullRows ) * rawColumns, 0.);
+    for ( int col = 0; col < rawColumns; col++ ) {
+        std :: vector< double >candidate(map.fullRows, 0.);
+        for ( unsigned row = 0; row < map.fullRows; row++ ) {
+            candidate [ row ] = raw [ size_t(row) * rawColumns + col ];
+        }
+        for ( int previous = 0; previous < columns; previous++ ) {
+            double dot = 0.;
+            for ( unsigned row = 0; row < map.fullRows; row++ ) {
+                dot += candidate [ row ] * orthonormal [ size_t(row) * rawColumns + previous ];
+            }
+            for ( unsigned row = 0; row < map.fullRows; row++ ) {
+                candidate [ row ] -= dot * orthonormal [ size_t(row) * rawColumns + previous ];
+            }
+        }
+
+        double norm2 = 0.;
+        for ( double value : candidate ) {
+            norm2 += value * value;
+        }
+        const double norm = sqrt(norm2);
+        if ( norm <= 1e-12 ) {
+            continue;
+        }
+        for ( unsigned row = 0; row < map.fullRows; row++ ) {
+            orthonormal [ size_t(row) * rawColumns + columns ] = candidate [ row ] / norm;
+        }
+        columns++;
+    }
+
+    if ( columns == 0 ) {
+        map.reducedToFull.clear();
+        map.fullRows = 0;
+        return map;
+    }
+
+    map.nearNullspaceColumns = columns;
+    map.nearNullspace.assign(size_t( map.fullRows ) * columns, 0.);
+    for ( unsigned row = 0; row < map.fullRows; row++ ) {
+        for ( int col = 0; col < columns; col++ ) {
+            map.nearNullspace [ size_t(row) * columns + col ] = orthonormal [ size_t(row) * rawColumns + col ];
+        }
+    }
+
+    std :: cout << "AMG elasticity map: full_rows=" << map.fullRows
+                << ", reduced_rows=" << freeDoFnum
+                << ", lifted_identity_rows=" << ( map.fullRows - mappedRows )
+                << ", block_size=" << map.blockSize
+                << ", dimension=" << map.dimension
+                << ", centered_coordinate_scale=" << scale
+                << ", near_nullspace_coordinate_scale="
+                << ( elasticNearNullspaceCoordinateScale > 0. ? std :: to_string(elasticNearNullspaceCoordinateScale) : ( hasRotationalDoFs ? "physical" : "normalized" ) ) << std :: endl;
+    std :: cout << "AMG elasticity map: prepared " << columns << " near-nullspace modes from "
+                << translationalMechanicalRows << " translational and " << rotationalMechanicalRows
+                << " rotational mechanical free DOF rows out of " << freeDoFnum << " free DOFs" << std :: endl;
+    std :: cout << "AMG elasticity map: free reduced rows by physical field: mechanics=" << freeRowsByField [ 0 ]
+                << ", transport=" << freeRowsByField [ 1 ]
+                << ", thermal=" << freeRowsByField [ 2 ]
+                << ", humidity=" << freeRowsByField [ 3 ]
+                << ", unclassified=" << unclassifiedRows << std :: endl;
+    return map;
 }
 
 //////////////////////////////////////////////////////////
@@ -111,6 +343,99 @@ Solver *SteadyStateLinearSolver :: readFromFile(const string filename) {
                 iss >> this->init_step;
             } else if ( param.compare("solver_type") == 0 ) {
                 iss >> symsolver_type;
+            } else if ( param.compare("elastic_near_nullspace_coordinate_scale") == 0
+                        || param.compare("amg_near_nullspace_coordinate_scale") == 0 ) {
+                iss >> elasticNearNullspaceCoordinateScale;
+            } else if ( param.compare("dfgmres_tolerance") == 0 ) {
+                iss >> dfgmresOptions.tolerance;
+            } else if ( param.compare("dfgmres_true_tolerance") == 0 ) {
+                iss >> dfgmresOptions.trueTolerance;
+            } else if ( param.compare("dfgmres_max_iterations") == 0 ) {
+                iss >> dfgmresOptions.maxIterations;
+            } else if ( param.compare("dfgmres_restart") == 0 ) {
+                iss >> dfgmresOptions.restart;
+            } else if ( param.compare("dfgmres_deflation_vectors") == 0 ) {
+                iss >> dfgmresOptions.deflationVectors;
+            } else if ( param.compare("dfgmres_deflation_eps") == 0 ) {
+                iss >> dfgmresOptions.deflationEps;
+            } else if ( param.compare("dfgmres_collect_newton_steps") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.collectNewtonSteps = ( value != 0 );
+            } else if ( param.compare("dfgmres_preconditioner") == 0 ) {
+                iss >> dfgmresOptions.preconditioner;
+            } else if ( param.compare("dfgmres_reorthogonalize_on_matrix_change") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.reorthogonalizeOnMatrixChange = ( value != 0 );
+            } else if ( param.compare("dfgmres_reorthogonalize") == 0 || param.compare("dfgmres_reorthogonalize_krylov") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.reorthogonalizeKrylov = ( value != 0 );
+            } else if ( param.compare("dfgmres_elastic_reorder") == 0 ) {
+                iss >> dfgmresOptions.elasticReorder;
+            } else if ( param.compare("dfgmres_elastic_full_lift") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.elasticFullLift = ( value != 0 );
+            } else if ( param.compare("dfgmres_verbose") == 0 ) {
+                int value = 0;
+                iss >> value;
+                dfgmresOptions.verbose = ( value != 0 );
+            } else if ( param.compare("hypre_tolerance") == 0 ) {
+                iss >> hypreOptions.tolerance;
+            } else if ( param.compare("hypre_max_iterations") == 0 ) {
+                iss >> hypreOptions.maxIterations;
+            } else if ( param.compare("hypre_coarsen_type") == 0 ) {
+                iss >> hypreOptions.coarsenType;
+            } else if ( param.compare("hypre_interp_type") == 0 ) {
+                iss >> hypreOptions.interpType;
+            } else if ( param.compare("hypre_strong_threshold") == 0 ) {
+                iss >> hypreOptions.strongThreshold;
+            } else if ( param.compare("hypre_nodal") == 0 ) {
+                iss >> hypreOptions.nodal;
+            } else if ( param.compare("hypre_nodal_diag") == 0 ) {
+                iss >> hypreOptions.nodalDiag;
+            } else if ( param.compare("hypre_num_functions") == 0 ) {
+                iss >> hypreOptions.numFunctions;
+            } else if ( param.compare("hypre_relax_type") == 0 ) {
+                iss >> hypreOptions.relaxType;
+            } else if ( param.compare("hypre_relax_order") == 0 ) {
+                iss >> hypreOptions.relaxOrder;
+            } else if ( param.compare("hypre_num_sweeps") == 0 || param.compare("hypre_sweeps") == 0 ) {
+                iss >> hypreOptions.numSweeps;
+            } else if ( param.compare("hypre_p_max") == 0 || param.compare("hypre_pmax") == 0 ) {
+                iss >> hypreOptions.pMaxElmts;
+            } else if ( param.compare("hypre_agg_levels") == 0 || param.compare("hypre_agg_num_levels") == 0 ) {
+                iss >> hypreOptions.aggNumLevels;
+            } else if ( param.compare("hypre_boomer_max_iterations") == 0 ) {
+                iss >> hypreOptions.boomerMaxIterations;
+            } else if ( param.compare("hypre_cheby_order") == 0 ) {
+                iss >> hypreOptions.chebyOrder;
+            } else if ( param.compare("hypre_cheby_fraction") == 0 ) {
+                iss >> hypreOptions.chebyFraction;
+            } else if ( param.compare("hypre_elastic_reorder") == 0 ) {
+                iss >> hypreOptions.elasticReorder;
+            } else if ( param.compare("hypre_print_level") == 0 ) {
+                iss >> hypreOptions.printLevel;
+            } else if ( param.compare("hypre_non_galerkin_tol") == 0 ) {
+                iss >> hypreOptions.nonGalerkinTol;
+            } else if ( param.compare("hypre_use_dof_functions") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.useDofFunctions = ( value != 0 );
+            } else if ( param.compare("hypre_use_interp_vectors") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.useInterpVectors = ( value != 0 );
+            } else if ( param.compare("hypre_interp_vec_variant") == 0 ) {
+                iss >> hypreOptions.interpVecVariant;
+            } else if ( param.compare("hypre_check_matrix") == 0 ) {
+                int value = 0;
+                iss >> value;
+                hypreOptions.checkMatrix = ( value != 0 );
+            } else if ( param.compare("hypre_threads") == 0 || param.compare("hypre_thread_count") == 0 ) {
+                iss >> hypreOptions.threads;
             } else if ( param.compare("silent") == 0 ) {
                 silent = true;
             } else if ( param.compare("pertrubation") == 0 ) {
@@ -244,6 +569,15 @@ void SteadyStateLinearSolver :: factorizeLinearSystem() {
             linalgsolver->analyzePattern(Keff);
         } else if  ( symsolver_type == "CholmodSupernodalLLT" ) {
             linalgsolver = std :: make_unique< CholmodSupernodalLLTSolver >();
+            linalgsolver->analyzePattern(Keff);
+#endif
+#ifdef HYPRE_FOUND
+        } else if  ( symsolver_type == "DeflatedFGMRES" || symsolver_type == "DFGMRES" || symsolver_type == "DeflatedFlexibleGMRES" ) {
+            std :: unique_ptr< DeflatedFGMRESSolver >dfgmres = std :: make_unique< DeflatedFGMRESSolver >();
+            dfgmres->setOptions(dfgmresOptions);
+            dfgmres->setHypreOptions(hypreOptions);
+            dfgmres->setElasticDofMap(buildElasticDofMap() );
+            linalgsolver = std :: move(dfgmres);
             linalgsolver->analyzePattern(Keff);
 #endif
         } else {
@@ -602,7 +936,8 @@ void SteadyStateNonLinearSolver :: reset() {
              * }
              */
 
-            linalgsolver->solve(ddr, f);
+            const bool directSolveSuccess = linalgsolver->solve(ddr, f);
+            collectLinearDeflationVector(ddr, directSolveSuccess);
 
             //update DoFs
             updateFieldVariables();
@@ -759,7 +1094,8 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
             } else {         //direct controll
-                  linalgsolver->solve(ddr, f);
+                  const bool directSolveSuccess = linalgsolver->solve(ddr, f);
+                  collectLinearDeflationVector(ddr, directSolveSuccess);
             }
 
             //update DoFs

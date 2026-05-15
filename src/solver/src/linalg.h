@@ -14,6 +14,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
@@ -62,7 +63,121 @@ public:
     virtual bool factorize(const CoordinateIndexedSparseMatrix &A) { ( void ) A; name = "null solver, base class"; return false; };
     virtual bool solve(Vector &x, const Vector &b) { ( void ) x; ( void ) b; return false; };
     std :: string giveName()const { return name; };
+    virtual long long giveLastIterations() const { return 0; };
+    virtual double giveLastError() const { return 0.; };
+    virtual double giveLastTrueRelativeResidual() const { return giveLastError(); };
+    virtual void collectDeflationVector(const Vector &v) { ( void ) v; };
 };
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Reduced-to-elastic-block metadata for vector AMG setup
+struct ElasticDofMap
+{
+    unsigned fullRows = 0;
+    unsigned blockSize = 0;
+    unsigned dimension = 0;
+    std :: vector< unsigned >reducedToFull;
+    std :: vector< double >coordinates;
+    std :: vector< double >nearNullspace;
+    int nearNullspaceColumns = 0;
+
+    bool isValid() const {
+        return fullRows > 0 && blockSize > 0 && !reducedToFull.empty();
+    }
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// Deflated flexible GMRES options
+struct DeflatedFGMRESOptions
+{
+    double tolerance = 1e-6;
+    double trueTolerance = 1e-6;
+    unsigned maxIterations = 500;
+    unsigned restart = 80;
+    unsigned deflationVectors = 20;
+    double deflationEps = 1e-3;
+    bool collectNewtonSteps = true;
+    bool reorthogonalizeOnMatrixChange = true;
+    bool reorthogonalizeKrylov = true;
+    bool elasticFullLift = true;
+    int elasticReorder = 0;      // 0 = none, 1 = node-major, 2 = coordinate-sorted node-major
+    std :: string preconditioner = "hypre";
+    bool verbose = false;
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// hypre BoomerAMG options used as a DFGMRES preconditioner
+struct HypreBoomerAMGOptions
+{
+    double tolerance = 1e-6;
+    unsigned maxIterations = 500;
+    int coarsenType = 8;
+    int interpType = 6;
+    double strongThreshold = 0.5;
+    int nodal = 4;
+    int nodalDiag = 0;
+    int numFunctions = 0;
+    int relaxType = 6;
+    int relaxOrder = 0;
+    int numSweeps = 0;
+    int pMaxElmts = 4;
+    int aggNumLevels = 0;
+    int boomerMaxIterations = 1;
+    int chebyOrder = 0;
+    double chebyFraction = -1.;
+    int elasticReorder = 0;      // 0 = none, 1 = node-major, 2 = coordinate-sorted node-major
+    int printLevel = 0;
+    double nonGalerkinTol = -1.;
+    bool useDofFunctions = false;
+    bool useInterpVectors = false;
+    int interpVecVariant = 2;
+    bool checkMatrix = false;
+    int threads = 0;             // 0 = use the current OpenMP thread count
+};
+
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// SOLVER FOR LINEAR ALGEBRA, DEFLATED FLEXIBLE GMRES
+#ifdef HYPRE_FOUND
+class DeflatedFGMRESSolver : public LinAlgSolver
+{
+protected:
+    struct Impl;
+    std :: unique_ptr< Impl >impl;
+    DeflatedFGMRESOptions options;
+    HypreBoomerAMGOptions hypreOptions;
+    ElasticDofMap elasticMap;
+    long long lastIterations;
+    double lastError;
+    double lastTrueRelativeResidual;
+
+    Vector reducedVectorToActiveUnknown(const Vector &v) const;
+    bool appendRawDeflationVector(const Vector &v);
+    bool appendActiveDeflationVector(const Vector &rawReducedVector, bool storeRawVector);
+    void updateDeflationOrthogonalityDiagnostics();
+    void rebuildDeflationBasis();
+    Vector projectDeflation(const Vector &v) const;
+    Vector applyPreconditioner(const Vector &v);
+    Vector activeMatvec(const Vector &v) const;
+
+public:
+    DeflatedFGMRESSolver();
+    virtual ~DeflatedFGMRESSolver();
+    virtual bool analyzePattern(const CoordinateIndexedSparseMatrix &A);
+    virtual bool factorize(const CoordinateIndexedSparseMatrix &A);
+    virtual bool solve(Vector &x, const Vector &b);
+    void setOptions(const DeflatedFGMRESOptions &opts);
+    void setHypreOptions(const HypreBoomerAMGOptions &opts);
+    void setElasticDofMap(ElasticDofMap map);
+    virtual void collectDeflationVector(const Vector &v);
+    virtual long long giveLastIterations() const { return lastIterations; };
+    virtual double giveLastError() const { return lastError; };
+    virtual double giveLastTrueRelativeResidual() const { return lastTrueRelativeResidual; };
+};
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

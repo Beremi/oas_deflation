@@ -13,6 +13,7 @@
 #include "constraint.h"
 #include "cross_section.h"
 #include "element_beam.h"
+#include "openmp_utils.h"
 
 using namespace std;
 
@@ -413,8 +414,15 @@ void ElementContainer :: init() {
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: updateMaterialStatuses() {
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-        ( * e )->updateMaterialStatuses();
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( elems.size() ); i++ ) {
+            elems [ i ]->updateMaterialStatuses();
+        }
+    } else {
+        for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+            ( * e )->updateMaterialStatuses();
+        }
     }
 }
 
@@ -648,43 +656,92 @@ CoordinateIndexedSparseMatrix ElementContainer :: updateOutputStiffnessMatrix(Co
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: resetEigenStrain(double time) {
-    for ( auto &e : elems ) {
-        e->removeEigenStrain();
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+#pragma omp parallel for schedule(static)
+        for ( ptrdiff_t i = 0; i < static_cast< ptrdiff_t >( elems.size() ); i++ ) {
+            elems [ i ]->removeEigenStrain();
+        }
+    } else {
+        for ( auto &e : elems ) {
+            e->removeEigenStrain();
+        }
     }
     bconds->applyEigenStrainLoads(time);   
 }
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: integrateInternalForces(const Vector &full_r, Vector &full_f, bool frozen, double time, double timeStep) {
-    Vector elDoFvalues, elForces;
-    vector< unsigned >elDoFs;
     full_f.setZero();  // clear array
 
     resetEigenStrain(time);
 
     materials->runPreparationForStressEvaluation(this);
 
-    for ( unsigned so = 0; so <= max_sol_order; so++ ) {
-        for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-            if ( ( * e )->giveSolutionOrder() != so ) {
-                continue;                                  //correct order must be used;
+    if ( OmpUtils :: shouldParallelize(elems.size() ) ) {
+        for ( unsigned so = 0; so <= max_sol_order; so++ ) {
+#pragma omp parallel for schedule(dynamic)
+            for ( ptrdiff_t elemIndex = 0; elemIndex < static_cast< ptrdiff_t >( elems.size() ); elemIndex++ ) {
+                Element *elem = elems [ elemIndex ];
+                if ( elem->giveSolutionOrder() != so ) {
+                    continue;                                  //correct order must be used;
+                }
+                vector< unsigned >elDoFs = elem->giveDoFs();
+                Vector elDoFvalues = Vector :: Zero(elDoFs.size() );
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+                }
+                elem->evaluateStrains(elDoFvalues);
+                elem->evaluateStresses(frozen, timeStep);
             }
-            elDoFs = ( * e )->giveDoFs();
-            elDoFvalues.resize( elDoFs.size() );
-            elDoFvalues.setZero();
-            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-                elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
-            }
-            ( * e )->evaluateStrains(elDoFvalues);
-            ( * e )->evaluateStresses(frozen, timeStep);
         }
-    }
 
-    for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
-        elForces = ( * e )->giveInternalForces();
-        elDoFs = ( * e )->giveDoFs();
-        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
-            full_f [ elDoFs [ i ] ] += elForces [ i ];
+        const int threads = OmpUtils :: usableThreads(elems.size() );
+        std :: vector< Vector >threadForces;
+        threadForces.reserve(threads);
+        for ( int i = 0; i < threads; i++ ) {
+            threadForces.emplace_back( Vector :: Zero(full_f.size() ) );
+        }
+#pragma omp parallel num_threads(threads)
+        {
+            Vector &localForce = threadForces [ OmpUtils :: threadNum() ];
+#pragma omp for schedule(static)
+            for ( ptrdiff_t elemIndex = 0; elemIndex < static_cast< ptrdiff_t >( elems.size() ); elemIndex++ ) {
+                Element *elem = elems [ elemIndex ];
+                Vector elForces = elem->giveInternalForces();
+                vector< unsigned >elDoFs = elem->giveDoFs();
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    localForce [ elDoFs [ i ] ] += elForces [ i ];
+                }
+            }
+        }
+        for ( int i = 0; i < threads; i++ ) {
+            full_f += threadForces [ i ];
+        }
+    } else {
+        Vector elDoFvalues, elForces;
+        vector< unsigned >elDoFs;
+        for ( unsigned so = 0; so <= max_sol_order; so++ ) {
+            for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+                if ( ( * e )->giveSolutionOrder() != so ) {
+                    continue;                                  //correct order must be used;
+                }
+                elDoFs = ( * e )->giveDoFs();
+                elDoFvalues.resize( elDoFs.size() );
+                elDoFvalues.setZero();
+                for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                    elDoFvalues [ i ] = full_r [ elDoFs [ i ] ];
+                }
+                ( * e )->evaluateStrains(elDoFvalues);
+                ( * e )->evaluateStresses(frozen, timeStep);
+            }
+        }
+
+        for ( vector< Element * > :: iterator e = elems.begin(); e != elems.end(); ++e ) {
+            elForces = ( * e )->giveInternalForces();
+            elDoFs = ( * e )->giveDoFs();
+            for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+                full_f [ elDoFs [ i ] ] += elForces [ i ];
+            }
         }
     }
 }

@@ -4,7 +4,381 @@
  #include <mkl.h>     // For mkl_set_num_threads
 #endif
 
+#ifdef HYPRE_FOUND
+ #include <HYPRE.h>
+ #include <HYPRE_IJ_mv.h>
+ #include <HYPRE_parcsr_ls.h>
+ #include <HYPRE_utilities.h>
+ #include <mpi.h>
+#endif
+
+#ifdef _OPENMP
+ #include <omp.h>
+#endif
+
+#include <cctype>
+#include <cstddef>
+#include <cmath>
+#include <cstdlib>
+#include <limits>
+
 using namespace std;
+
+namespace {
+
+#ifdef HYPRE_FOUND
+
+double trueRelativeResidual(const CoordinateIndexedSparseMatrix &A, const Vector &x, const Vector &b) {
+    if ( b.size() == 0 ) {
+        return 0.;
+    }
+    const double bNorm = std :: max(b.norm(), 1e-300);
+    return ( A * x - b ).norm() / bNorm;
+}
+
+std :: string lowerCopy(std :: string value) {
+    std :: transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+        return static_cast< char >(std :: tolower(c) );
+    });
+    return value;
+}
+
+CoordinateIndexedSparseMatrix liftMatrixToElasticSpace(const CoordinateIndexedSparseMatrix &A, const ElasticDofMap &map) {
+    if ( !map.isValid() ) {
+        return A;
+    }
+
+    std :: vector< Ttripletd >triplets;
+    triplets.reserve(A.nonZeros() + map.fullRows);
+    std :: vector< char >hasReducedRow(map.fullRows, 0);
+    for ( unsigned row = 0; row < map.reducedToFull.size(); row++ ) {
+        if ( map.reducedToFull [ row ] < map.fullRows ) {
+            hasReducedRow [ map.reducedToFull [ row ] ] = 1;
+        }
+    }
+    for ( int outer = 0; outer < A.outerSize(); outer++ ) {
+        for ( CoordinateIndexedSparseMatrix :: InnerIterator it(A, outer); it; ++it ) {
+            const unsigned fullRow = map.reducedToFull [ it.row() ];
+            const unsigned fullCol = map.reducedToFull [ it.col() ];
+            triplets.emplace_back(fullRow, fullCol, it.value() );
+        }
+    }
+    for ( unsigned row = 0; row < map.fullRows; row++ ) {
+        if ( !hasReducedRow [ row ] ) {
+            triplets.emplace_back(row, row, 1.);
+        }
+    }
+    CoordinateIndexedSparseMatrix lifted(map.fullRows, map.fullRows);
+    lifted.setFromTriplets(triplets.begin(), triplets.end());
+    lifted.makeCompressed();
+    return lifted;
+}
+
+Vector liftVectorToElasticSpace(const Vector &v, const ElasticDofMap &map) {
+    if ( !map.isValid() ) {
+        return v;
+    }
+    Vector full = Vector :: Zero(map.fullRows);
+    for ( unsigned row = 0; row < map.reducedToFull.size(); row++ ) {
+        full [ map.reducedToFull [ row ] ] = v [ row ];
+    }
+    return full;
+}
+
+Vector restrictVectorFromElasticSpace(const Vector &v, const ElasticDofMap &map) {
+    if ( !map.isValid() ) {
+        return v;
+    }
+    Vector reduced = Vector :: Zero(map.reducedToFull.size());
+    for ( unsigned row = 0; row < map.reducedToFull.size(); row++ ) {
+        reduced [ row ] = v [ map.reducedToFull [ row ] ];
+    }
+    return reduced;
+}
+
+std :: vector< unsigned > makeElasticOldToNewPermutation(const ElasticDofMap &map, int reorderMode) {
+    if ( reorderMode <= 0 || !map.isValid() || map.blockSize == 0 || map.fullRows == 0 || map.fullRows % map.blockSize != 0 ) {
+        return {};
+    }
+    const unsigned nodeCount = map.fullRows / map.blockSize;
+    std :: vector< unsigned >nodeOrder(nodeCount);
+    std :: iota(nodeOrder.begin(), nodeOrder.end(), 0u);
+
+    if ( reorderMode >= 2 && map.dimension > 0 && map.coordinates.size() >= size_t(nodeCount) * map.dimension ) {
+        const unsigned dim = map.dimension;
+        std :: stable_sort(nodeOrder.begin(), nodeOrder.end(), [&](unsigned a, unsigned b) {
+            for ( unsigned d = 0; d < dim; d++ ) {
+                const double av = map.coordinates [ size_t(a) * dim + d ];
+                const double bv = map.coordinates [ size_t(b) * dim + d ];
+                if ( av < bv ) {
+                    return true;
+                }
+                if ( av > bv ) {
+                    return false;
+                }
+            }
+            return a < b;
+        });
+    }
+
+    std :: vector< unsigned >oldToNew(map.fullRows);
+    for ( unsigned newNode = 0; newNode < nodeCount; newNode++ ) {
+        const unsigned oldNode = nodeOrder [ newNode ];
+        for ( unsigned dof = 0; dof < map.blockSize; dof++ ) {
+            oldToNew [ oldNode * map.blockSize + dof ] = newNode * map.blockSize + dof;
+        }
+    }
+    return oldToNew;
+}
+
+std :: vector< unsigned > invertPermutation(const std :: vector< unsigned > &oldToNew) {
+    std :: vector< unsigned >newToOld(oldToNew.size() );
+    for ( unsigned oldIndex = 0; oldIndex < oldToNew.size(); oldIndex++ ) {
+        newToOld [ oldToNew [ oldIndex ] ] = oldIndex;
+    }
+    return newToOld;
+}
+
+bool permutationIsIdentity(const std :: vector< unsigned > &oldToNew) {
+    for ( unsigned i = 0; i < oldToNew.size(); i++ ) {
+        if ( oldToNew [ i ] != i ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+CoordinateIndexedSparseMatrix symmetricallyPermuteMatrix(const CoordinateIndexedSparseMatrix &A, const std :: vector< unsigned > &oldToNew) {
+    if ( oldToNew.empty() || A.rows() != Eigen :: Index(oldToNew.size() ) || A.cols() != Eigen :: Index(oldToNew.size() ) ) {
+        return A;
+    }
+    std :: vector< Ttripletd >triplets;
+    triplets.reserve(A.nonZeros() );
+    for ( int outer = 0; outer < A.outerSize(); outer++ ) {
+        for ( CoordinateIndexedSparseMatrix :: InnerIterator it(A, outer); it; ++it ) {
+            triplets.emplace_back(oldToNew [ it.row() ], oldToNew [ it.col() ], it.value() );
+        }
+    }
+    CoordinateIndexedSparseMatrix permuted(A.rows(), A.cols() );
+    permuted.setFromTriplets(triplets.begin(), triplets.end());
+    permuted.makeCompressed();
+    return permuted;
+}
+
+Vector permuteVectorToNewOrdering(const Vector &oldVector, const std :: vector< unsigned > &oldToNew) {
+    if ( oldToNew.empty() || oldVector.size() != Eigen :: Index(oldToNew.size() ) ) {
+        return oldVector;
+    }
+    Vector newVector(oldVector.size() );
+    for ( Eigen :: Index oldIndex = 0; oldIndex < oldVector.size(); oldIndex++ ) {
+        newVector [ oldToNew [ oldIndex ] ] = oldVector [ oldIndex ];
+    }
+    return newVector;
+}
+
+Vector permuteVectorToOldOrdering(const Vector &newVector, const std :: vector< unsigned > &newToOld) {
+    if ( newToOld.empty() || newVector.size() != Eigen :: Index(newToOld.size() ) ) {
+        return newVector;
+    }
+    Vector oldVector(newVector.size() );
+    for ( Eigen :: Index newIndex = 0; newIndex < newVector.size(); newIndex++ ) {
+        oldVector [ newToOld [ newIndex ] ] = newVector [ newIndex ];
+    }
+    return oldVector;
+}
+
+const char *elasticReorderName(int mode) {
+    if ( mode <= 0 ) {
+        return "none";
+    }
+    if ( mode == 1 ) {
+        return "node_major";
+    }
+    if ( mode == 2 ) {
+        return "coordinate_node_major";
+    }
+    return "coordinate_node_major";
+}
+
+#ifdef HYPRE_FOUND
+void ensureHypreRuntimeInitialized() {
+    static bool mpiInitializedHere = false;
+    int mpiInitialized = 0;
+    MPI_Initialized(&mpiInitialized);
+    if ( !mpiInitialized ) {
+        int provided = MPI_THREAD_SINGLE;
+        const int mpiError = MPI_Init_thread(nullptr, nullptr, MPI_THREAD_FUNNELED, &provided);
+        if ( mpiError != MPI_SUCCESS ) {
+            std :: cerr << "MPI_Init_thread failed before hypre initialization" << std :: endl;
+        } else {
+            mpiInitializedHere = true;
+        }
+    }
+
+    static bool initializedHere = false;
+    if ( !HYPRE_Initialized() ) {
+        HYPRE_Initialize();
+        initializedHere = true;
+    }
+    if ( initializedHere ) {
+        HYPRE_SetMemoryLocation(HYPRE_MEMORY_HOST);
+        HYPRE_SetExecutionPolicy(HYPRE_EXEC_HOST);
+    }
+
+    static bool registeredFinalize = false;
+    if ( mpiInitializedHere && !registeredFinalize ) {
+        std :: atexit([]() {
+            if ( HYPRE_Initialized() ) {
+                HYPRE_Finalize();
+            }
+            int finalized = 0;
+            MPI_Finalized(&finalized);
+            if ( !finalized ) {
+                MPI_Finalize();
+            }
+        });
+        registeredFinalize = true;
+    }
+}
+
+bool hypreCheck(HYPRE_Int error, const char *operation) {
+    if ( error == 0 ) {
+        return true;
+    }
+    std :: cerr << "hypre error " << error << " during " << operation << std :: endl;
+    HYPRE_ClearAllErrors();
+    return false;
+}
+
+int maxOpenMPThreadCount() {
+#ifdef _OPENMP
+    return std :: max(1, omp_get_max_threads() );
+#else
+    return 1;
+#endif
+}
+
+bool hypreRelaxTypeUsesThreadStableSmoother(int relaxType) {
+    switch ( relaxType ) {
+    case 0:
+    case 7:
+    case 16:
+    case 18:
+        return true;
+    default:
+        return false;
+    }
+}
+
+int desiredHypreThreadCount(const HypreBoomerAMGOptions &options) {
+    const int maxThreads = maxOpenMPThreadCount();
+    if ( options.threads > 0 ) {
+        return std :: max(1, std :: min(options.threads, maxThreads) );
+    }
+    if ( !hypreRelaxTypeUsesThreadStableSmoother(options.relaxType) ) {
+        return 1;
+    }
+    return maxThreads;
+}
+
+class ScopedOpenMPThreadLimit
+{
+public:
+    explicit ScopedOpenMPThreadLimit(int threads) {
+#ifdef _OPENMP
+        previousThreads = omp_get_max_threads();
+        if ( threads > 0 && previousThreads != threads ) {
+            omp_set_num_threads(threads);
+            changed = true;
+        }
+#else
+        ( void ) threads;
+#endif
+    }
+
+    ~ScopedOpenMPThreadLimit() {
+#ifdef _OPENMP
+        if ( changed ) {
+            omp_set_num_threads(previousThreads);
+        }
+#endif
+    }
+
+private:
+    int previousThreads = 1;
+    bool changed = false;
+};
+
+bool setHypreMatrixValuesFromRowMajor(
+    HYPRE_IJMatrix matrix,
+    const Eigen :: SparseMatrix< double, Eigen :: RowMajor, ptrdiff_t > &rowMajor
+) {
+    const ptrdiff_t rows = rowMajor.rows();
+    if ( rows <= 0 || rows > static_cast< ptrdiff_t >( std :: numeric_limits< HYPRE_Int > :: max() ) ) {
+        return false;
+    }
+
+    std :: vector< HYPRE_Int >rowSizes(rows, 0);
+    std :: vector< HYPRE_BigInt >rowIds(rows, 0);
+    std :: vector< HYPRE_BigInt >rowColumns(rowMajor.nonZeros(), 0);
+    for ( ptrdiff_t row = 0; row < rows; row++ ) {
+        rowSizes [ row ] = static_cast< HYPRE_Int >( rowMajor.outerIndexPtr() [ row + 1 ] - rowMajor.outerIndexPtr() [ row ] );
+        rowIds [ row ] = static_cast< HYPRE_BigInt >( row );
+    }
+    for ( ptrdiff_t i = 0; i < rowMajor.nonZeros(); i++ ) {
+        rowColumns [ i ] = static_cast< HYPRE_BigInt >( rowMajor.innerIndexPtr() [ i ] );
+    }
+
+    return hypreCheck(
+        HYPRE_IJMatrixSetValues(
+            matrix,
+            static_cast< HYPRE_Int >( rows ),
+            rowSizes.data(),
+            rowIds.data(),
+            rowColumns.data(),
+            rowMajor.valuePtr()
+        ),
+        "HYPRE_IJMatrixSetValues"
+    );
+}
+
+const HYPRE_BigInt *hypreIndexPointer(const std :: vector< HYPRE_BigInt > &indices) {
+    return indices.empty() ? nullptr : indices.data();
+}
+
+bool makeHypreVector(
+    const std :: vector< HYPRE_BigInt > &indices,
+    const std :: vector< double > &values,
+    HYPRE_IJVector &ijVector,
+    HYPRE_ParVector &parVector
+) {
+    if ( indices.empty() || indices.size() != values.size() ) {
+        return false;
+    }
+    const HYPRE_BigInt first = indices.front();
+    const HYPRE_BigInt last = indices.back();
+    if ( !hypreCheck(HYPRE_IJVectorCreate(MPI_COMM_SELF, first, last, &ijVector), "HYPRE_IJVectorCreate") ) {
+        return false;
+    }
+    if ( !hypreCheck(HYPRE_IJVectorSetObjectType(ijVector, HYPRE_PARCSR), "HYPRE_IJVectorSetObjectType") ) {
+        return false;
+    }
+    if ( !hypreCheck(HYPRE_IJVectorInitialize(ijVector), "HYPRE_IJVectorInitialize") ) {
+        return false;
+    }
+    if ( !hypreCheck(HYPRE_IJVectorSetValues(ijVector, static_cast< HYPRE_Int >( indices.size() ), hypreIndexPointer(indices), values.data() ), "HYPRE_IJVectorSetValues") ) {
+        return false;
+    }
+    if ( !hypreCheck(HYPRE_IJVectorAssemble(ijVector), "HYPRE_IJVectorAssemble") ) {
+        return false;
+    }
+    return hypreCheck(HYPRE_IJVectorGetObject(ijVector, reinterpret_cast< void ** >( &parVector ) ), "HYPRE_IJVectorGetObject");
+}
+#endif
+
+#endif
+
+} // namespace
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -103,6 +477,664 @@ bool ConjGradSolver :: solve(Vector &x, const Vector &b) {
 #endif
     return result;
 }
+
+#ifdef HYPRE_FOUND
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+// DEFLATED FLEXIBLE GMRES SOLVER
+//////////////////////////////////////////////////////////
+
+struct DeflatedFGMRESSolver :: Impl
+{
+    Eigen :: Index rows = 0;
+    CoordinateIndexedSparseMatrix reducedMatrix;
+    CoordinateIndexedSparseMatrix activeMatrix;
+    std :: vector< unsigned >activeOldToNew;
+    std :: vector< unsigned >activeNewToOld;
+    HYPRE_IJMatrix hypreIjMatrix = nullptr;
+    HYPRE_ParCSRMatrix hypreParMatrix = nullptr;
+    HYPRE_Solver hyprePrecond = nullptr;
+    HYPRE_IJVector hypreSetupIjB = nullptr;
+    HYPRE_IJVector hypreSetupIjX = nullptr;
+    HYPRE_ParVector hypreSetupParB = nullptr;
+    HYPRE_ParVector hypreSetupParX = nullptr;
+    HYPRE_IJVector hypreApplyIjB = nullptr;
+    HYPRE_IJVector hypreApplyIjX = nullptr;
+    HYPRE_ParVector hypreApplyParB = nullptr;
+    HYPRE_ParVector hypreApplyParX = nullptr;
+    std :: vector< HYPRE_BigInt >hypreIndices;
+    std :: vector< Vector >reducedBasis;
+    std :: vector< Vector >basisU;
+    std :: vector< Vector >basisC;
+    unsigned discardedBasisVectors = 0;
+    unsigned capacityEvictions = 0;
+    unsigned nonfiniteDiscardCount = 0;
+    unsigned lowNormDiscardCount = 0;
+    unsigned lowANormDiscardCount = 0;
+    unsigned reorthogonalizationCount = 0;
+    double lastCandidateInitialANorm = 0.;
+    double lastCandidateFinalANorm = 0.;
+    double basisOrthogonalityMaxOffdiag = 0.;
+    double basisOrthogonalityMaxDiagError = 0.;
+    std :: string lastDiscardReason = "";
+    std :: string activePreconditioner = "none";
+    bool matrixReady = false;
+
+    void clearHyprePreconditioner() {
+        if ( hyprePrecond ) {
+            HYPRE_BoomerAMGDestroy(hyprePrecond);
+            hyprePrecond = nullptr;
+        }
+        if ( hypreSetupIjB ) {
+            HYPRE_IJVectorDestroy(hypreSetupIjB);
+            hypreSetupIjB = nullptr;
+            hypreSetupParB = nullptr;
+        }
+        if ( hypreSetupIjX ) {
+            HYPRE_IJVectorDestroy(hypreSetupIjX);
+            hypreSetupIjX = nullptr;
+            hypreSetupParX = nullptr;
+        }
+        if ( hypreApplyIjB ) {
+            HYPRE_IJVectorDestroy(hypreApplyIjB);
+            hypreApplyIjB = nullptr;
+            hypreApplyParB = nullptr;
+        }
+        if ( hypreApplyIjX ) {
+            HYPRE_IJVectorDestroy(hypreApplyIjX);
+            hypreApplyIjX = nullptr;
+            hypreApplyParX = nullptr;
+        }
+        if ( hypreIjMatrix ) {
+            HYPRE_IJMatrixDestroy(hypreIjMatrix);
+            hypreIjMatrix = nullptr;
+            hypreParMatrix = nullptr;
+        }
+        hypreIndices.clear();
+    }
+
+    void clearPreconditioner() {
+        clearHyprePreconditioner();
+        activeOldToNew.clear();
+        activeNewToOld.clear();
+        activePreconditioner = "none";
+        matrixReady = false;
+    }
+
+    ~Impl() {
+        clearPreconditioner();
+    }
+};
+
+//////////////////////////////////////////////////////////
+DeflatedFGMRESSolver :: DeflatedFGMRESSolver() {
+    name = "DeflatedFGMRES";
+    impl = std :: make_unique< Impl >();
+    lastIterations = -1;
+    lastError = -1.;
+    lastTrueRelativeResidual = -1.;
+}
+
+//////////////////////////////////////////////////////////
+DeflatedFGMRESSolver :: ~DeflatedFGMRESSolver() {}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: setOptions(const DeflatedFGMRESOptions &opts) {
+    options = opts;
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: setHypreOptions(const HypreBoomerAMGOptions &opts) {
+    hypreOptions = opts;
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: setElasticDofMap(ElasticDofMap map) {
+    elasticMap = std :: move(map);
+}
+
+//////////////////////////////////////////////////////////
+bool DeflatedFGMRESSolver :: analyzePattern(const CoordinateIndexedSparseMatrix &A) {
+    ( void ) A;
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+Vector DeflatedFGMRESSolver :: reducedVectorToActiveUnknown(const Vector &v) const {
+    Vector active = ( options.elasticFullLift && elasticMap.isValid() ) ? liftVectorToElasticSpace(v, elasticMap) : v;
+    if ( !impl->activeOldToNew.empty() ) {
+        active = permuteVectorToNewOrdering(active, impl->activeOldToNew);
+    }
+    return active;
+}
+
+//////////////////////////////////////////////////////////
+Vector DeflatedFGMRESSolver :: activeMatvec(const Vector &v) const {
+    return impl->activeMatrix * v;
+}
+
+//////////////////////////////////////////////////////////
+bool DeflatedFGMRESSolver :: appendRawDeflationVector(const Vector &v) {
+    if ( options.deflationVectors == 0 || !impl->matrixReady ) {
+        return false;
+    }
+    if ( v.size() != impl->reducedMatrix.rows() || !v.allFinite() ) {
+        impl->discardedBasisVectors++;
+        impl->nonfiniteDiscardCount++;
+        impl->lastDiscardReason = "nonfinite_or_size";
+        return false;
+    }
+    if ( v.norm() <= 1e-300 ) {
+        impl->discardedBasisVectors++;
+        impl->lowNormDiscardCount++;
+        impl->lastDiscardReason = "low_vector_norm";
+        return false;
+    }
+
+    if ( impl->reducedBasis.size() >= options.deflationVectors ) {
+        impl->reducedBasis.erase(impl->reducedBasis.begin() );
+        if ( !impl->basisU.empty() ) {
+            impl->basisU.erase(impl->basisU.begin() );
+        }
+        if ( !impl->basisC.empty() ) {
+            impl->basisC.erase(impl->basisC.begin() );
+        }
+        impl->capacityEvictions++;
+        impl->lastDiscardReason = "capacity_eviction";
+    }
+    const bool accepted = appendActiveDeflationVector(v, true);
+    updateDeflationOrthogonalityDiagnostics();
+    return accepted;
+}
+
+//////////////////////////////////////////////////////////
+bool DeflatedFGMRESSolver :: appendActiveDeflationVector(const Vector &rawReducedVector, bool storeRawVector) {
+    Vector u = reducedVectorToActiveUnknown(rawReducedVector);
+    if ( !u.allFinite() || u.norm() <= 1e-300 ) {
+        impl->discardedBasisVectors++;
+        impl->lowNormDiscardCount++;
+        impl->lastDiscardReason = "low_vector_norm";
+        return false;
+    }
+
+    Vector au = activeMatvec(u);
+    const double initialANorm = u.dot(au);
+    impl->lastCandidateInitialANorm = initialANorm;
+    if ( !std :: isfinite(initialANorm) ) {
+        impl->discardedBasisVectors++;
+        impl->nonfiniteDiscardCount++;
+        impl->lastDiscardReason = "nonfinite_a_norm";
+        return false;
+    }
+
+    for ( int pass = 0; pass < 2; ++pass ) {
+        for ( size_t basisIndex = 0; basisIndex < impl->basisU.size(); ++basisIndex ) {
+            const double coefficient = impl->basisU [ basisIndex ].dot(au);
+            u.noalias() -= coefficient * impl->basisU [ basisIndex ];
+            au.noalias() -= coefficient * impl->basisC [ basisIndex ];
+        }
+    }
+
+    const double finalANorm = u.dot(au);
+    impl->lastCandidateFinalANorm = finalANorm;
+    if ( !std :: isfinite(finalANorm) || std :: abs(finalANorm) <= options.deflationEps ) {
+        impl->discardedBasisVectors++;
+        impl->lowANormDiscardCount++;
+        impl->lastDiscardReason = "low_a_norm";
+        return false;
+    }
+
+    const double invANorm = 1. / sqrt(std :: abs(finalANorm) );
+    u *= invANorm;
+    au *= invANorm;
+    if ( !u.allFinite() || !au.allFinite() ) {
+        impl->discardedBasisVectors++;
+        impl->nonfiniteDiscardCount++;
+        impl->lastDiscardReason = "nonfinite_orthogonalized";
+        return false;
+    }
+
+    impl->basisU.push_back(u);
+    impl->basisC.push_back(au);
+    if ( storeRawVector ) {
+        impl->reducedBasis.push_back(rawReducedVector);
+    }
+    impl->lastDiscardReason = "accepted";
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: updateDeflationOrthogonalityDiagnostics() {
+    impl->basisOrthogonalityMaxOffdiag = 0.;
+    impl->basisOrthogonalityMaxDiagError = 0.;
+
+    for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
+        for ( size_t j = 0; j < impl->basisU.size(); ++j ) {
+            const double value = impl->basisU [ i ].dot(impl->basisC [ j ]);
+            if ( i == j ) {
+                impl->basisOrthogonalityMaxDiagError = std :: max(impl->basisOrthogonalityMaxDiagError, std :: abs(value - 1.) );
+            } else {
+                impl->basisOrthogonalityMaxOffdiag = std :: max(impl->basisOrthogonalityMaxOffdiag, std :: abs(value) );
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: rebuildDeflationBasis() {
+    std :: vector< Vector >rawBasis = impl->reducedBasis;
+    impl->basisU.clear();
+    impl->basisC.clear();
+    impl->reducedBasis.clear();
+    impl->basisOrthogonalityMaxOffdiag = 0.;
+    impl->basisOrthogonalityMaxDiagError = 0.;
+    impl->lastDiscardReason = "none";
+
+    if ( !impl->matrixReady || rawBasis.empty() || options.deflationVectors == 0 ) {
+        return;
+    }
+
+    for ( const Vector &rawVector : rawBasis ) {
+        if ( impl->reducedBasis.size() >= options.deflationVectors ) {
+            impl->reducedBasis.erase(impl->reducedBasis.begin() );
+            if ( !impl->basisU.empty() ) {
+                impl->basisU.erase(impl->basisU.begin() );
+            }
+            if ( !impl->basisC.empty() ) {
+                impl->basisC.erase(impl->basisC.begin() );
+            }
+            impl->capacityEvictions++;
+        }
+        appendActiveDeflationVector(rawVector, true);
+    }
+    updateDeflationOrthogonalityDiagnostics();
+    impl->reorthogonalizationCount++;
+}
+
+//////////////////////////////////////////////////////////
+Vector DeflatedFGMRESSolver :: projectDeflation(const Vector &v) const {
+    if ( impl->basisU.empty() ) {
+        return v;
+    }
+    Vector projected = v;
+    for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
+        const double coefficient = impl->basisC [ i ].dot(projected);
+        projected.noalias() -= coefficient * impl->basisU [ i ];
+    }
+    return projected;
+}
+
+//////////////////////////////////////////////////////////
+Vector DeflatedFGMRESSolver :: applyPreconditioner(const Vector &v) {
+    if ( lowerCopy(options.preconditioner) == "none" || lowerCopy(options.preconditioner) == "identity" ) {
+        return v;
+    }
+    if ( impl->hyprePrecond && impl->hypreParMatrix ) {
+        if ( v.size() != Eigen :: Index(impl->hypreIndices.size() )
+             || !impl->hypreApplyIjB || !impl->hypreApplyIjX
+             || !impl->hypreApplyParB || !impl->hypreApplyParX ) {
+            return v;
+        }
+
+        const HYPRE_BigInt *indexPointer = hypreIndexPointer(impl->hypreIndices);
+        const HYPRE_Int vectorSize = static_cast< HYPRE_Int >( impl->hypreIndices.size() );
+        if ( !hypreCheck(HYPRE_IJVectorSetValues(impl->hypreApplyIjB, vectorSize, indexPointer, v.data() ), "HYPRE_IJVectorSetValues") ) {
+            return v;
+        }
+        if ( !hypreCheck(HYPRE_IJVectorSetConstantValues(impl->hypreApplyIjX, 0.), "HYPRE_IJVectorSetConstantValues") ) {
+            return v;
+        }
+
+        HYPRE_Int solveError = 0;
+        {
+            ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(hypreOptions) );
+            solveError = HYPRE_BoomerAMGSolve(impl->hyprePrecond, impl->hypreParMatrix, impl->hypreApplyParB, impl->hypreApplyParX);
+        }
+        if ( solveError != 0 ) {
+            HYPRE_ClearAllErrors();
+            if ( options.verbose ) {
+                std :: cerr << "DeflatedFGMRES hypre preconditioner apply failed with error " << solveError << "; using identity fallback" << std :: endl;
+            }
+            return v;
+        }
+        Vector answer(v.size() );
+        if ( !hypreCheck(HYPRE_IJVectorGetValues(impl->hypreApplyIjX, vectorSize, indexPointer, answer.data() ), "HYPRE_IJVectorGetValues") ) {
+            return v;
+        }
+        return answer;
+    }
+    return v;
+}
+
+//////////////////////////////////////////////////////////
+bool DeflatedFGMRESSolver :: factorize(const CoordinateIndexedSparseMatrix &A) {
+    if ( A.rows() <= 0 ) {
+        return true;
+    }
+
+    impl->clearPreconditioner();
+    const bool useElasticLift = options.elasticFullLift && elasticMap.isValid();
+    const std :: string preconditionerMode = lowerCopy(options.preconditioner);
+    const bool useHypreApply = preconditionerMode == "hypre" || preconditionerMode == "boomeramg"
+        || preconditionerMode == "hypre_boomeramg" || preconditionerMode == "hypre-boomeramg";
+    const int activeElasticReorderMode = options.elasticReorder > 0 ? options.elasticReorder : hypreOptions.elasticReorder;
+
+    impl->reducedMatrix = A;
+    impl->activeMatrix = useElasticLift ? liftMatrixToElasticSpace(A, elasticMap) : A;
+    if ( activeElasticReorderMode > 0 && useElasticLift && elasticMap.blockSize > 1 ) {
+        impl->activeOldToNew = makeElasticOldToNewPermutation(elasticMap, activeElasticReorderMode);
+        if ( impl->activeOldToNew.size() == size_t( impl->activeMatrix.rows() ) && !permutationIsIdentity(impl->activeOldToNew) ) {
+            impl->activeNewToOld = invertPermutation(impl->activeOldToNew);
+            impl->activeMatrix = symmetricallyPermuteMatrix(impl->activeMatrix, impl->activeOldToNew);
+        } else {
+            impl->activeOldToNew.clear();
+            impl->activeNewToOld.clear();
+        }
+    }
+    impl->rows = impl->activeMatrix.rows();
+
+    if ( hypreOptions.checkMatrix ) {
+        Vector probe(impl->activeMatrix.cols() );
+        for ( Eigen :: Index i = 0; i < probe.size(); i++ ) {
+            probe [ i ] = sin(0.001 * static_cast< double >( i + 1 ) );
+        }
+        const Vector product = activeMatvec(probe);
+        const Vector reference = impl->activeMatrix * probe;
+        const double relativeDifference = ( product - reference ).norm() / std :: max(reference.norm(), 1e-300);
+        std :: cout << "DeflatedFGMRES: active matvec check relative_difference=" << relativeDifference << std :: endl;
+        if ( !std :: isfinite(relativeDifference) || relativeDifference > 1e-10 ) {
+            std :: cerr << "DeflatedFGMRES Error: active matvec does not match Eigen sparse matvec" << std :: endl;
+            impl->clearPreconditioner();
+            return false;
+        }
+    }
+
+    if ( useHypreApply ) {
+        ensureHypreRuntimeInitialized();
+        if ( impl->rows <= 0 || impl->rows > std :: numeric_limits< HYPRE_Int > :: max() ) {
+            std :: cerr << "DeflatedFGMRES hypre preconditioner supports positive row counts fitting HYPRE_Int; rows=" << impl->rows << std :: endl;
+            impl->clearPreconditioner();
+            return false;
+        }
+
+        const HYPRE_BigInt firstRow = 0;
+        const HYPRE_BigInt lastRow = impl->rows - 1;
+        impl->hypreIndices.resize(impl->rows);
+        for ( Eigen :: Index row = 0; row < impl->rows; row++ ) {
+            impl->hypreIndices [ row ] = row;
+        }
+
+        Eigen :: SparseMatrix< double, Eigen :: RowMajor, ptrdiff_t >rowMajor = impl->activeMatrix;
+        rowMajor.makeCompressed();
+        if ( !hypreCheck(HYPRE_IJMatrixCreate(MPI_COMM_SELF, firstRow, lastRow, firstRow, lastRow, &impl->hypreIjMatrix), "HYPRE_IJMatrixCreate") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        if ( !hypreCheck(HYPRE_IJMatrixSetObjectType(impl->hypreIjMatrix, HYPRE_PARCSR), "HYPRE_IJMatrixSetObjectType") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        std :: vector< HYPRE_Int >rowSizes(impl->rows, 0);
+        for ( Eigen :: Index row = 0; row < impl->rows; row++ ) {
+            rowSizes [ row ] = static_cast< HYPRE_Int >( rowMajor.outerIndexPtr() [ row + 1 ] - rowMajor.outerIndexPtr() [ row ] );
+        }
+        HYPRE_IJMatrixSetRowSizes(impl->hypreIjMatrix, rowSizes.data() );
+        HYPRE_IJMatrixSetOMPFlag(impl->hypreIjMatrix, 1);
+        if ( !hypreCheck(HYPRE_IJMatrixInitialize(impl->hypreIjMatrix), "HYPRE_IJMatrixInitialize") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        if ( !setHypreMatrixValuesFromRowMajor(impl->hypreIjMatrix, rowMajor) ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        if ( !hypreCheck(HYPRE_IJMatrixAssemble(impl->hypreIjMatrix), "HYPRE_IJMatrixAssemble") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        if ( !hypreCheck(HYPRE_IJMatrixGetObject(impl->hypreIjMatrix, reinterpret_cast< void ** >( &impl->hypreParMatrix ) ), "HYPRE_IJMatrixGetObject") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        if ( !hypreCheck(HYPRE_BoomerAMGCreate(&impl->hyprePrecond), "HYPRE_BoomerAMGCreate") ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+
+        HYPRE_BoomerAMGSetTol(impl->hyprePrecond, 0.);
+        HYPRE_BoomerAMGSetMaxIter(impl->hyprePrecond, hypreOptions.boomerMaxIterations);
+        HYPRE_BoomerAMGSetCoarsenType(impl->hyprePrecond, hypreOptions.coarsenType);
+        HYPRE_BoomerAMGSetInterpType(impl->hyprePrecond, hypreOptions.interpType);
+        HYPRE_BoomerAMGSetStrongThreshold(impl->hyprePrecond, hypreOptions.strongThreshold);
+        HYPRE_BoomerAMGSetRelaxType(impl->hyprePrecond, hypreOptions.relaxType);
+        HYPRE_BoomerAMGSetRelaxOrder(impl->hyprePrecond, hypreOptions.relaxOrder);
+        if ( hypreOptions.numSweeps > 0 ) {
+            HYPRE_BoomerAMGSetNumSweeps(impl->hyprePrecond, hypreOptions.numSweeps);
+        }
+        HYPRE_BoomerAMGSetPMaxElmts(impl->hyprePrecond, hypreOptions.pMaxElmts);
+        HYPRE_BoomerAMGSetAggNumLevels(impl->hyprePrecond, hypreOptions.aggNumLevels);
+        if ( hypreOptions.nodalDiag != 0 ) {
+            HYPRE_BoomerAMGSetNodalDiag(impl->hyprePrecond, hypreOptions.nodalDiag);
+        }
+        if ( hypreOptions.chebyOrder > 0 ) {
+            HYPRE_BoomerAMGSetChebyOrder(impl->hyprePrecond, hypreOptions.chebyOrder);
+        }
+        if ( hypreOptions.chebyFraction > 0. ) {
+            HYPRE_BoomerAMGSetChebyFraction(impl->hyprePrecond, hypreOptions.chebyFraction);
+        }
+        HYPRE_BoomerAMGSetPrintLevel(impl->hyprePrecond, hypreOptions.printLevel);
+        if ( hypreOptions.nonGalerkinTol >= 0. ) {
+            HYPRE_Real tolerances [ 3 ] = { 0., static_cast< HYPRE_Real >( hypreOptions.nonGalerkinTol ), static_cast< HYPRE_Real >( hypreOptions.nonGalerkinTol ) };
+            HYPRE_BoomerAMGSetNonGalerkTol(impl->hyprePrecond, 3, tolerances);
+        }
+        if ( useElasticLift && elasticMap.blockSize > 1 ) {
+            const HYPRE_Int numFunctions = static_cast< HYPRE_Int >( hypreOptions.numFunctions > 0 ? hypreOptions.numFunctions : elasticMap.blockSize );
+            HYPRE_BoomerAMGSetNumFunctions(impl->hyprePrecond, numFunctions);
+            if ( hypreOptions.nodal > 0 ) {
+                HYPRE_BoomerAMGSetNodal(impl->hyprePrecond, hypreOptions.nodal);
+            }
+            if ( hypreOptions.useDofFunctions && options.verbose ) {
+                std :: cout << "DeflatedFGMRES hypre: explicit dof_func is disabled; using hypre's default cyclic node-major mapping." << std :: endl;
+            }
+            if ( hypreOptions.useInterpVectors && options.verbose ) {
+                std :: cout << "DeflatedFGMRES hypre: interpolation vectors requested but skipped in this minimal port." << std :: endl;
+            }
+        }
+
+        std :: vector< double >setupRhs(impl->rows, 1.);
+        std :: vector< double >setupGuess(impl->rows, 0.);
+        if ( !makeHypreVector(impl->hypreIndices, setupRhs, impl->hypreSetupIjB, impl->hypreSetupParB)
+             || !makeHypreVector(impl->hypreIndices, setupGuess, impl->hypreSetupIjX, impl->hypreSetupParX)
+             || !makeHypreVector(impl->hypreIndices, setupGuess, impl->hypreApplyIjB, impl->hypreApplyParB)
+             || !makeHypreVector(impl->hypreIndices, setupGuess, impl->hypreApplyIjX, impl->hypreApplyParX) ) {
+            impl->clearPreconditioner();
+            return false;
+        }
+        {
+            ScopedOpenMPThreadLimit hypreThreadLimit(desiredHypreThreadCount(hypreOptions) );
+            if ( !hypreCheck(HYPRE_BoomerAMGSetup(impl->hyprePrecond, impl->hypreParMatrix, impl->hypreSetupParB, impl->hypreSetupParX), "HYPRE_BoomerAMGSetup") ) {
+                impl->clearPreconditioner();
+                return false;
+            }
+        }
+        impl->activePreconditioner = "hypre_boomeramg_apply";
+    } else {
+        impl->activePreconditioner = "identity";
+    }
+
+    impl->matrixReady = true;
+    if ( options.reorthogonalizeOnMatrixChange ) {
+        rebuildDeflationBasis();
+    }
+    if ( options.verbose || useHypreApply ) {
+        std :: cout << "DeflatedFGMRES setup complete: rows=" << impl->rows
+                    << ", nnz=" << impl->activeMatrix.nonZeros()
+                    << ", reduced_rows=" << A.rows()
+                    << ", preconditioner=" << impl->activePreconditioner
+                    << ", tolerance=" << options.tolerance
+                    << ", true_tolerance=" << options.trueTolerance
+                    << ", restart=" << options.restart
+                    << ", max_iterations=" << options.maxIterations
+                    << ", basis_size=" << impl->basisU.size()
+                    << ", elastic_lift=" << ( useElasticLift ? 1 : 0 )
+                    << ", elastic_reorder=" << elasticReorderName(activeElasticReorderMode)
+                    << ", hypre_threads=" << ( useHypreApply ? desiredHypreThreadCount(hypreOptions) : 0 )
+                    << std :: endl;
+    }
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool DeflatedFGMRESSolver :: solve(Vector &x, const Vector &b) {
+    if ( b.size() == 0 ) {
+        lastIterations = 0;
+        lastError = 0.;
+        lastTrueRelativeResidual = 0.;
+        return true;
+    }
+    if ( !impl->matrixReady ) {
+        std :: cerr << "DeflatedFGMRES Error: solve called before factorize" << std :: endl;
+        return false;
+    }
+
+    const bool useElasticLift = options.elasticFullLift && elasticMap.isValid();
+    Vector activeB = useElasticLift ? liftVectorToElasticSpace(b, elasticMap) : b;
+    if ( !impl->activeOldToNew.empty() ) {
+        activeB = permuteVectorToNewOrdering(activeB, impl->activeOldToNew);
+    }
+
+    const Eigen :: Index n = activeB.size();
+    const unsigned restart = std :: max(1u, std :: min(options.restart, options.maxIterations) );
+    Vector activeX = Vector :: Zero(n);
+    const double bNorm = std :: max(activeB.norm(), 1e-300);
+
+    if ( !impl->basisU.empty() ) {
+        for ( size_t i = 0; i < impl->basisU.size(); ++i ) {
+            const double coefficient = impl->basisU [ i ].dot(activeB);
+            activeX.noalias() += coefficient * impl->basisU [ i ];
+        }
+    }
+
+    Vector residual = activeB - activeMatvec(activeX);
+    double trueResidual = residual.norm() / bNorm;
+    double gmresResidual = trueResidual;
+    unsigned totalIterations = 0;
+
+    while ( totalIterations < options.maxIterations && trueResidual > options.trueTolerance ) {
+        const double beta = residual.norm();
+        if ( beta / bNorm <= options.tolerance ) {
+            break;
+        }
+
+        const unsigned innerLimit = std :: min(restart, options.maxIterations - totalIterations);
+        Eigen :: MatrixXd V = Eigen :: MatrixXd :: Zero(n, innerLimit + 1);
+        Eigen :: MatrixXd Z = Eigen :: MatrixXd :: Zero(n, innerLimit);
+        Eigen :: MatrixXd H = Eigen :: MatrixXd :: Zero(innerLimit + 1, innerLimit);
+        Eigen :: VectorXd g = Eigen :: VectorXd :: Zero(innerLimit + 1);
+        V.col(0) = residual / beta;
+        g [ 0 ] = beta;
+
+        Eigen :: VectorXd y;
+        unsigned usedInner = 0;
+        bool happyBreakdown = false;
+        for ( unsigned j = 0; j < innerLimit; ++j ) {
+            Vector basisVector = V.col(j);
+            Vector z = applyPreconditioner(basisVector);
+            z = projectDeflation(z);
+            Vector w = activeMatvec(z);
+
+            for ( unsigned i = 0; i <= j; ++i ) {
+                H(i, j) = V.col(i).dot(w);
+                w.noalias() -= H(i, j) * V.col(i);
+            }
+            if ( options.reorthogonalizeKrylov ) {
+                for ( unsigned i = 0; i <= j; ++i ) {
+                    const double correction = V.col(i).dot(w);
+                    H(i, j) += correction;
+                    w.noalias() -= correction * V.col(i);
+                }
+            }
+
+            H(j + 1, j) = w.norm();
+            Z.col(j) = z;
+            usedInner = j + 1;
+            if ( H(j + 1, j) > 1e-14 ) {
+                V.col(j + 1) = w / H(j + 1, j);
+            }
+
+            Eigen :: MatrixXd subH = H.block(0, 0, j + 2, j + 1);
+            Eigen :: VectorXd subg = g.head(j + 2);
+            y = subH.colPivHouseholderQr().solve(subg);
+            gmresResidual = ( subg - subH * y ).norm() / bNorm;
+            totalIterations++;
+
+            if ( options.verbose ) {
+                std :: cout << "DeflatedFGMRES iter " << totalIterations
+                            << " gmres_residual=" << gmresResidual
+                            << " basis_size=" << impl->basisU.size() << std :: endl;
+            }
+            if ( H(j + 1, j) <= 1e-14 ) {
+                happyBreakdown = true;
+                break;
+            }
+            if ( gmresResidual <= options.tolerance || totalIterations >= options.maxIterations ) {
+                break;
+            }
+        }
+
+        if ( usedInner > 0 ) {
+            if ( y.size() != Eigen :: Index(usedInner) ) {
+                Eigen :: MatrixXd subH = H.block(0, 0, usedInner + 1, usedInner);
+                Eigen :: VectorXd subg = g.head(usedInner + 1);
+                y = subH.colPivHouseholderQr().solve(subg);
+            }
+            activeX.noalias() += Z.leftCols(usedInner) * y.head(usedInner);
+        }
+
+        residual = activeB - activeMatvec(activeX);
+        trueResidual = residual.norm() / bNorm;
+        if ( trueResidual <= options.trueTolerance || happyBreakdown || usedInner == 0 || totalIterations >= options.maxIterations ) {
+            break;
+        }
+    }
+
+    if ( !impl->activeNewToOld.empty() ) {
+        activeX = permuteVectorToOldOrdering(activeX, impl->activeNewToOld);
+    }
+    x = useElasticLift ? restrictVectorFromElasticSpace(activeX, elasticMap) : activeX;
+
+    lastIterations = totalIterations;
+    lastTrueRelativeResidual = trueRelativeResidual(impl->reducedMatrix, x, b);
+    lastError = lastTrueRelativeResidual;
+    const bool converged = lastTrueRelativeResidual <= options.trueTolerance;
+    if ( !converged ) {
+        std :: cerr << "DeflatedFGMRES warning: performed " << lastIterations
+                    << " iterations and reached true relative residual " << lastTrueRelativeResidual
+                    << ", required true tolerance is " << options.trueTolerance
+                    << ", active_basis_size=" << impl->basisU.size() << std :: endl;
+    }
+    return converged;
+}
+
+//////////////////////////////////////////////////////////
+void DeflatedFGMRESSolver :: collectDeflationVector(const Vector &v) {
+    if ( !options.collectNewtonSteps || options.deflationVectors == 0 || !impl->matrixReady ) {
+        return;
+    }
+    appendRawDeflationVector(v);
+    std :: cout << "DeflatedFGMRES: collected Newton increment, raw_candidate_count=" << impl->reducedBasis.size()
+                << ", active_basis_size=" << impl->basisU.size()
+                << ", discarded_basis_vectors=" << impl->discardedBasisVectors
+                << ", low_a_norm_discards=" << impl->lowANormDiscardCount
+                << ", capacity_evictions=" << impl->capacityEvictions
+                << ", last_initial_a_norm=" << impl->lastCandidateInitialANorm
+                << ", last_final_a_norm=" << impl->lastCandidateFinalANorm
+                << ", basis_orthogonality_max_offdiag=" << impl->basisOrthogonalityMaxOffdiag
+                << ", basis_orthogonality_max_diag_error=" << impl->basisOrthogonalityMaxDiagError
+                << ", last_discard_reason=" << ( impl->lastDiscardReason.empty() ? "-" : impl->lastDiscardReason )
+                << std :: endl;
+}
+#endif
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////

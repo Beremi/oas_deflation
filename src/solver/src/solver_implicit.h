@@ -9,6 +9,9 @@ class SteadyStateLinearSolver : public Solver
 protected:
     double conj_grad_precision;
     double conj_grad_relative_maxit;
+    DeflatedFGMRESOptions dfgmresOptions;
+    HypreBoomerAMGOptions hypreOptions;
+    double elasticNearNullspaceCoordinateScale = -1.;
     CoordinateIndexedSparseMatrix Keff, K;
     std :: unique_ptr< LinAlgSolver >linalgsolver;
     std :: string symsolver_type = "EigenConj";
@@ -24,6 +27,8 @@ protected:
     virtual void computeForcesAtStepEnd(const bool frozen) { computeInternalExternalForces(trial_r, load, frozen, time, -1); };
     virtual void computeKeff();
     virtual void prepareSystemMatricesAndInitialField(std :: string init_r_file, std :: string init_v_file, const bool initial);
+    void collectLinearDeflationVector(const Vector &x, bool success);
+    ElasticDofMap buildElasticDofMap() const;
 private:
 public:
     SteadyStateLinearSolver();
