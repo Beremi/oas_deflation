@@ -2,8 +2,42 @@
 #include "element.h"
 #include "element_discrete.h"
 #include "material_container.h"
+#include <cstring>
 
 using namespace std;
+
+namespace {
+void hashCombine(std :: uint64_t &hash, std :: uint64_t value) {
+    hash ^= value;
+    hash *= 1099511628211ULL;
+}
+
+void hashBytes(std :: uint64_t &hash, const void *data, size_t size) {
+    const unsigned char *bytes = static_cast< const unsigned char * >( data );
+    for ( size_t i = 0; i < size; i++ ) {
+        hashCombine(hash, bytes [ i ] );
+    }
+}
+
+void hashDouble(std :: uint64_t &hash, double value) {
+    static_assert(sizeof(double) == sizeof(std :: uint64_t), "unexpected double size");
+    std :: uint64_t bits = 0;
+    std :: memcpy(&bits, &value, sizeof(double) );
+    hashCombine(hash, bits);
+}
+
+void hashVector(std :: uint64_t &hash, const Vector &values) {
+    hashCombine(hash, static_cast< std :: uint64_t >( values.size() ) );
+    for ( int i = 0; i < values.size(); i++ ) {
+        hashDouble(hash, values [ i ] );
+    }
+}
+
+void hashString(std :: uint64_t &hash, const std :: string &value) {
+    hashCombine(hash, static_cast< std :: uint64_t >( value.size() ) );
+    hashBytes(hash, value.data(), value.size() );
+}
+}
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -28,6 +62,52 @@ MaterialStatus :: ~MaterialStatus() {
             delete * n;
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > MaterialStatus :: cloneState() const {
+    std :: unique_ptr< MaterialStatus > copy = std :: make_unique< MaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void MaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    name = other.name;
+    mat = other.mat;
+    element = other.element;
+    eigenstrain = other.eigenstrain;
+    updt_strain = other.updt_strain;
+    temp_strain = other.temp_strain;
+    updt_stress = other.updt_stress;
+    temp_stress = other.temp_stress;
+    updt_strain_total = other.updt_strain_total;
+    temp_strain_total = other.temp_strain_total;
+    totalEnergyDensity = other.totalEnergyDensity;
+    strainEnergyDensity = other.strainEnergyDensity;
+    dissipEnergyDensity = other.dissipEnergyDensity;
+    updt_dissip_energy = other.updt_dissip_energy;
+    idx = other.idx;
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t MaterialStatus :: stateHash() const {
+    std :: uint64_t hash = 1469598103934665603ULL;
+    hashString(hash, name);
+    hashVector(hash, eigenstrain);
+    hashVector(hash, updt_strain);
+    hashVector(hash, temp_strain);
+    hashVector(hash, updt_stress);
+    hashVector(hash, temp_stress);
+    hashVector(hash, updt_strain_total);
+    hashVector(hash, temp_strain_total);
+    hashDouble(hash, totalEnergyDensity);
+    hashDouble(hash, strainEnergyDensity);
+    hashDouble(hash, dissipEnergyDensity);
+    hashDouble(hash, updt_dissip_energy);
+    hashCombine(hash, static_cast< std :: uint64_t >( idx ) );
+    hashString(hash, giveLineToSave() );
+    return hash;
 }
 
 //////////////////////////////////////////////////////////
@@ -375,6 +455,39 @@ void CoupledMaterialStatus :: update() {
 }
 
 //////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > CoupledMaterialStatus :: cloneState() const {
+    std :: unique_ptr< CoupledMaterialStatus > copy = std :: make_unique< CoupledMaterialStatus >( static_cast< CoupledMaterial * >( mat ), element, idx );
+    copy->restoreStateFrom( *this );
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void CoupledMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const CoupledMaterialStatus *otherCoupled = dynamic_cast< const CoupledMaterialStatus * >( &other );
+    if ( !otherCoupled ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    if ( stats.size() != otherCoupled->stats.size() ) {
+        std :: cerr << "Material status snapshot restore component count mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    MaterialStatus :: restoreStateFrom(other);
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        stats [ i ]->restoreStateFrom( *otherCoupled->stats [ i ] );
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t CoupledMaterialStatus :: stateHash() const {
+    std :: uint64_t hash = MaterialStatus :: stateHash();
+    for ( MaterialStatus *status : stats ) {
+        hashCombine(hash, status->stateHash() );
+    }
+    return hash;
+}
+
+//////////////////////////////////////////////////////////
 MaterialStatus * CoupledMaterialStatus :: giveMechanicalMaterialStatus() {
     for ( auto &s:stats ) {
         if ( s->giveMechanicalMaterialStatus() ) {
@@ -545,4 +658,3 @@ Material * CoupledMaterial :: giveHeatConductionMaterial() {
     }
     return nullptr;
 }
-

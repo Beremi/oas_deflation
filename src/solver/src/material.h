@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <cstdint>
 
 
 class Element; //forward declaration
@@ -28,6 +30,8 @@ public:
     virtual void init() {};
     virtual void update();
     virtual void resetTemporaryVariables();  ///> if step reset applied, reset temprary variables to last converged state
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void computeStress(double timeStep) { computeStressWithFrozenIntVars(timeStep); };
     virtual void computeStressWithFrozenIntVars(double timeStep) { ( void ) timeStep; };
@@ -55,11 +59,13 @@ public:
     double giveDissipatedEnergyDensity() const { return dissipEnergyDensity; };
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();
+    virtual std :: uint64_t stateHash() const;
     virtual MaterialStatus * giveMechanicalMaterialStatus() { return nullptr; };
     virtual MaterialStatus * giveTransportMaterialStatus() { return nullptr; };
     virtual MaterialStatus * giveHeatConductionMaterialStatus() { return nullptr; };
     unsigned giveID() const {return idx;};
 protected:
+    void clearSnapshotComponentPointers() { matStatComponents.clear(); };
     virtual void computeConstitutiveStrain();
     virtual double addEigenVolumetricStrain(double x) const { return x; };
     Element *element;
@@ -136,6 +142,9 @@ public:
     virtual MaterialStatus * giveMechanicalMaterialStatus();
     virtual MaterialStatus * giveTransportMaterialStatus();
     virtual MaterialStatus * giveHeatConductionMaterialStatus();
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
+    virtual std :: uint64_t stateHash() const;
     virtual void initializeStressAndStrainVector();
     virtual void addToEigenVolumetricStrain(double x);
     virtual void addToEigenStrain(const Vector &x);

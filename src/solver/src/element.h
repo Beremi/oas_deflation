@@ -7,6 +7,7 @@
 #include "material_container.h"
 #include "shape_functions.h"
 #include "integration.h"
+#include <cstdint>
 
 class ElementContainer; //forward declaration;
 class BodyLoad; //forward declaration
@@ -57,6 +58,8 @@ protected:
     std :: vector <unsigned> DoFsWhichChangeSignOfInternalForces; //terms in Poisson Equation that are reverted because of negative Flux
     
 public:
+    using MaterialStatusSnapshot = std :: vector< std :: unique_ptr< MaterialStatus > >;
+
     Element(unsigned dim);
     virtual ~Element();
     void setID(unsigned i) { idx = i; };
@@ -67,6 +70,10 @@ public:
     void initMaterialStatuses();
     void updateMaterialStatuses();
     void resetMaterialStatuses();
+    MaterialStatusSnapshot createMaterialStatusSnapshot() const;
+    void restoreMaterialStatusSnapshot(const MaterialStatusSnapshot &snapshot);
+    std :: uint64_t materialStatusStateHash() const;
+    static std :: uint64_t materialStatusSnapshotHash(const MaterialStatusSnapshot &snapshot);
     virtual Matrix giveStiffnessMatrix(std :: string matrixType) const;
     virtual Matrix giveMassMatrix();
     virtual Matrix giveDampingMatrix();

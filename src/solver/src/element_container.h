@@ -31,6 +31,8 @@ private:
     std :: vector< std :: string >file_to_load_from;
 
 public:
+    using MaterialStatusSnapshot = std :: vector< Element :: MaterialStatusSnapshot >;
+
     ElementContainer() { model = nullptr; };
     ~ElementContainer();
     void setModel(Model *mod);
@@ -46,6 +48,10 @@ public:
     void findElementFriends();
     void updateMaterialStatuses();
     void resetMaterialStatuses();
+    MaterialStatusSnapshot createMaterialStatusSnapshot() const;
+    void restoreMaterialStatusSnapshot(const MaterialStatusSnapshot &snapshot);
+    std :: uint64_t materialStatusStateHash() const;
+    static std :: uint64_t materialStatusSnapshotHash(const MaterialStatusSnapshot &snapshot);
     void addElement(Element *newelem);
     CoordinateIndexedSparseMatrix prepareOutputStiffnessMatrix(bool BC_applied = true) const;
     CoordinateIndexedSparseMatrix updateOutputStiffnessMatrix(CoordinateIndexedSparseMatrix K_out, std :: string param, bool BC_applied = true, bool solver_numbering = true) const;

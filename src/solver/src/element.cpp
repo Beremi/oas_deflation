@@ -151,6 +151,48 @@ void Element :: resetMaterialStatuses() {
 }
 
 //////////////////////////////////////////////////////////
+Element :: MaterialStatusSnapshot Element :: createMaterialStatusSnapshot() const {
+    MaterialStatusSnapshot snapshot;
+    snapshot.reserve(stats.size() );
+    for ( MaterialStatus *status : stats ) {
+        snapshot.push_back(status->cloneState() );
+    }
+    return snapshot;
+}
+
+//////////////////////////////////////////////////////////
+void Element :: restoreMaterialStatusSnapshot(const MaterialStatusSnapshot &snapshot) {
+    if ( snapshot.size() != stats.size() ) {
+        std :: cerr << name << " Error: material status snapshot size " << snapshot.size()
+                   << " does not match element status size " << stats.size() << std :: endl;
+        exit(1);
+    }
+    for ( unsigned i = 0; i < stats.size(); i++ ) {
+        stats [ i ]->restoreStateFrom( *snapshot [ i ] );
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t Element :: materialStatusStateHash() const {
+    std :: uint64_t hash = 1469598103934665603ULL;
+    for ( MaterialStatus *status : stats ) {
+        hash ^= status->stateHash();
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t Element :: materialStatusSnapshotHash(const MaterialStatusSnapshot &snapshot) {
+    std :: uint64_t hash = 1469598103934665603ULL;
+    for ( const auto &status : snapshot ) {
+        hash ^= status->stateHash();
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+//////////////////////////////////////////////////////////
 void Element :: removeEigenStrain() {
     for ( auto &s: stats ) {
         s->removeEigenStrain();

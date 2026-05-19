@@ -3,6 +3,7 @@
 #include "cross_section.h"
 #include "function.h"
 #include "model.h"
+#include <cstring>
 
 using namespace std;
 
@@ -58,6 +59,24 @@ void BeamMaterialStatus :: init() {
 //////////////////////////////////////////////////////////
 void BeamMaterialStatus :: update() {
     TensMechMaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > BeamMaterialStatus :: cloneState() const {
+    std :: unique_ptr< BeamMaterialStatus > copy = std :: make_unique< BeamMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void BeamMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const BeamMaterialStatus *otherBeam = dynamic_cast< const BeamMaterialStatus * >( &other );
+    if ( !otherBeam ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherBeam;
+    clearSnapshotComponentPointers();
 }
 
 //////////////////////////////////////////////////////////
@@ -159,6 +178,40 @@ void NormalPlasticBeamMaterialStatus :: update() {
     normalPlasticStrain = temp_normalPlasticStrain;
     cumulPlasticStrain = temp_cumulPlasticStrain;
     BeamMaterialStatus :: update();
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > NormalPlasticBeamMaterialStatus :: cloneState() const {
+    std :: unique_ptr< NormalPlasticBeamMaterialStatus > copy = std :: make_unique< NormalPlasticBeamMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void NormalPlasticBeamMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const NormalPlasticBeamMaterialStatus *otherBeam = dynamic_cast< const NormalPlasticBeamMaterialStatus * >( &other );
+    if ( !otherBeam ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherBeam;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t NormalPlasticBeamMaterialStatus :: stateHash() const {
+    auto combineDouble = [](std :: uint64_t &hash, double value) {
+        std :: uint64_t bits = 0;
+        std :: memcpy(&bits, &value, sizeof(double) );
+        hash ^= bits;
+        hash *= 1099511628211ULL;
+    };
+    std :: uint64_t hash = BeamMaterialStatus :: stateHash();
+    combineDouble(hash, normalPlasticStrain);
+    combineDouble(hash, temp_normalPlasticStrain);
+    combineDouble(hash, cumulPlasticStrain);
+    combineDouble(hash, temp_cumulPlasticStrain);
+    return hash;
 }
 
 //////////////////////////////////////////////////////////

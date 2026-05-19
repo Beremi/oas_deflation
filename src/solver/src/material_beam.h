@@ -19,6 +19,8 @@ public:
     virtual ~BeamMaterialStatus() {};
     virtual void init();
     virtual void update();
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
     void setCrossSection(CrossSection *X);
     CrossSection * giveCrossSection() { return CS; }
     virtual void resetTemporaryVariables();
@@ -59,6 +61,9 @@ public:
     virtual ~NormalPlasticBeamMaterialStatus() {};
     virtual void update();
     virtual void resetTemporaryVariables();
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
+    virtual std :: uint64_t stateHash() const;
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);

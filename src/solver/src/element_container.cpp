@@ -433,6 +433,48 @@ void ElementContainer :: resetMaterialStatuses() {
     }
 }
 
+//////////////////////////////////////////////////////////
+ElementContainer :: MaterialStatusSnapshot ElementContainer :: createMaterialStatusSnapshot() const {
+    MaterialStatusSnapshot snapshot;
+    snapshot.reserve(elems.size() );
+    for ( Element *elem : elems ) {
+        snapshot.push_back(elem->createMaterialStatusSnapshot() );
+    }
+    return snapshot;
+}
+
+//////////////////////////////////////////////////////////
+void ElementContainer :: restoreMaterialStatusSnapshot(const MaterialStatusSnapshot &snapshot) {
+    if ( snapshot.size() != elems.size() ) {
+        std :: cerr << "ElementContainer Error: material status snapshot size " << snapshot.size()
+                   << " does not match element count " << elems.size() << std :: endl;
+        exit(1);
+    }
+    for ( unsigned i = 0; i < elems.size(); i++ ) {
+        elems [ i ]->restoreMaterialStatusSnapshot(snapshot [ i ] );
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t ElementContainer :: materialStatusStateHash() const {
+    std :: uint64_t hash = 1469598103934665603ULL;
+    for ( Element *elem : elems ) {
+        hash ^= elem->materialStatusStateHash();
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t ElementContainer :: materialStatusSnapshotHash(const MaterialStatusSnapshot &snapshot) {
+    std :: uint64_t hash = 1469598103934665603ULL;
+    for ( const auto &elemSnapshot : snapshot ) {
+        hash ^= Element :: materialStatusSnapshotHash(elemSnapshot);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
 
 //////////////////////////////////////////////////////////
 void ElementContainer :: prepareStructuralMatrix(CoordinateIndexedSparseMatrix &K, unsigned diffType, bool lumped, bool BC_applied) const {

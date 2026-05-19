@@ -2,6 +2,7 @@
 #include "element_discrete.h"
 #include "element_ldpm.h"
 #include "element_container.h"
+#include <cstring>
 
 
 using namespace std;
@@ -271,6 +272,50 @@ void CSLMaterialStatus :: resetTemporaryVariables() {
 }
 
 
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > CSLMaterialStatus :: cloneState() const {
+    std :: unique_ptr< CSLMaterialStatus > copy = std :: make_unique< CSLMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const CSLMaterialStatus *otherCSL = dynamic_cast< const CSLMaterialStatus * >( &other );
+    if ( !otherCSL ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherCSL;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t CSLMaterialStatus :: stateHash() const {
+    auto combineDouble = [](std :: uint64_t &hash, double value) {
+        std :: uint64_t bits = 0;
+        std :: memcpy(&bits, &value, sizeof(double) );
+        hash ^= bits;
+        hash *= 1099511628211ULL;
+    };
+    std :: uint64_t hash = MaterialStatus :: stateHash();
+    combineDouble(hash, omega0);
+    combineDouble(hash, maxEpsT);
+    combineDouble(hash, maxEpsN);
+    combineDouble(hash, temp_maxEpsT);
+    combineDouble(hash, temp_maxEpsN);
+    combineDouble(hash, damage);
+    combineDouble(hash, temp_damage);
+    combineDouble(hash, Kt);
+    combineDouble(hash, Ks);
+    combineDouble(hash, L);
+    combineDouble(hash, nt);
+    combineDouble(hash, RAND_H);
+    combineDouble(hash, crackOpening);
+    combineDouble(hash, temp_crackOpening);
+    return hash;
+}
 
 //////////////////////////////////////////////////////////
 Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
