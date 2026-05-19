@@ -2,6 +2,8 @@
 #include "adaptivity.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <fstream>
 #include <limits>
 #define numPhysicalFields 4
 
@@ -496,10 +498,16 @@ void SteadyStateLinearSolver :: solve() {
 //////////////////////////////////////////////////////////
 bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce) {
     if ( enforce || ( iteration == 0 && ( stiffnessMatrixStepUpdate == 0 || ( stiffnessMatrixStepUpdate > 0 && step % stiffnessMatrixStepUpdate == 0 ) ) ) || stiffnessMatrixIterUpdate == 0 || ( stiffnessMatrixIterUpdate > 0 && iteration % stiffnessMatrixIterUpdate == 0 ) || ( stiffnessMatrixCumulIterUpdate > 0 && cumul_iteration % stiffnessMatrixCumulIterUpdate == 0 ) ) {
+        std :: string matrixType = stiffMatType;
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
-            elems->updateStiffnessMatrix(K, stiffMatTypeFirstIT);
-        } else {
-            elems->updateStiffnessMatrix(K, stiffMatType);
+            matrixType = stiffMatTypeFirstIT;
+        }
+        elems->updateStiffnessMatrix(K, matrixType);
+        if ( stiffMatElasticBlendBeta > 0. && matrixType.compare("elastic") != 0 ) {
+            CoordinateIndexedSparseMatrix elasticK(K);
+            elems->updateStiffnessMatrix(elasticK, "elastic");
+            K = ( 1. - stiffMatElasticBlendBeta ) * K + stiffMatElasticBlendBeta * elasticK;
+            K.makeCompressed();
         }
         return true;
     } else {
@@ -740,6 +748,191 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 } else {
                     critical_step_decrease = valueIN;
                 }
+            } else if ( param.compare("nonlinear_damping_type") == 0 ) {
+                iss >> param;
+                if ( param.compare("off") == 0 ) {
+                    nonlinearDampingType = NonlinearDampingType :: Off;
+                } else if ( param.compare("fixed") == 0 ) {
+                    nonlinearDampingType = NonlinearDampingType :: Fixed;
+                } else if ( param.compare("adaptive") == 0 ) {
+                    nonlinearDampingType = NonlinearDampingType :: Adaptive;
+                } else if ( param.compare("rollback_adaptive") == 0 || param.compare("adaptive_rollback") == 0 ) {
+                    nonlinearDampingType = NonlinearDampingType :: RollbackAdaptive;
+                } else {
+                    std :: cerr << "unknown nonlinear_damping_type '" << param << "', using off" << '\n';
+                    nonlinearDampingType = NonlinearDampingType :: Off;
+                }
+            } else if ( param.compare("nonlinear_damping_factor") == 0 ) {
+                iss >> nonlinearDampingFactor;
+            } else if ( param.compare("nonlinear_damping_min") == 0 ) {
+                iss >> nonlinearDampingMin;
+            } else if ( param.compare("nonlinear_damping_max") == 0 ) {
+                iss >> nonlinearDampingMax;
+            } else if ( param.compare("nonlinear_damping_increase") == 0 ) {
+                iss >> nonlinearDampingIncrease;
+            } else if ( param.compare("nonlinear_damping_decrease") == 0 ) {
+                iss >> nonlinearDampingDecrease;
+            } else if ( param.compare("nonlinear_line_search") == 0 ) {
+                iss >> param;
+                if ( param.compare("off") == 0 ) {
+                    nonlinearLineSearchType = NonlinearLineSearchType :: Off;
+                } else if ( param.compare("backtracking") == 0 ) {
+                    nonlinearLineSearchType = NonlinearLineSearchType :: Backtracking;
+                } else if ( param.compare("bisection") == 0 || param.compare("full_bisection") == 0 ) {
+                    nonlinearLineSearchType = NonlinearLineSearchType :: Bisection;
+                } else {
+                    std :: cerr << "unknown nonlinear_line_search '" << param << "', using off" << '\n';
+                    nonlinearLineSearchType = NonlinearLineSearchType :: Off;
+                }
+            } else if ( param.compare("nonlinear_line_search_merit") == 0 ) {
+                iss >> param;
+                if ( param.compare("residual") == 0 ) {
+                    nonlinearMeritType = NonlinearMeritType :: Residual;
+                } else if ( param.compare("energy") == 0 ) {
+                    nonlinearMeritType = NonlinearMeritType :: Energy;
+                } else if ( param.compare("mixed") == 0 ) {
+                    nonlinearMeritType = NonlinearMeritType :: Mixed;
+                } else {
+                    std :: cerr << "unknown nonlinear_line_search_merit '" << param << "', using mixed" << '\n';
+                    nonlinearMeritType = NonlinearMeritType :: Mixed;
+                }
+            } else if ( param.compare("nonlinear_line_search_reduction") == 0 ) {
+                iss >> nonlinearLineSearchReduction;
+            } else if ( param.compare("nonlinear_line_search_min_alpha") == 0 ) {
+                iss >> nonlinearLineSearchMinAlpha;
+            } else if ( param.compare("nonlinear_line_search_max_alpha") == 0 ) {
+                iss >> nonlinearLineSearchMaxAlpha;
+            } else if ( param.compare("nonlinear_line_search_bisection_tolerance") == 0 ) {
+                iss >> nonlinearLineSearchBisectionTolerance;
+            } else if ( param.compare("nonlinear_line_search_max_trials") == 0 ) {
+                iss >> nonlinearLineSearchMaxTrials;
+            } else if ( param.compare("nonlinear_line_search_armijo") == 0 ) {
+                iss >> nonlinearLineSearchArmijo;
+            } else if ( param.compare("nonlinear_line_search_accept_any_decrease") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearLineSearchAcceptAnyDecrease = ( value != 0 );
+            } else if ( param.compare("nonlinear_line_search_freeze_material") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearLineSearchFreezeMaterial = ( value != 0 );
+                nonlinearLineSearchEvaluationMode = nonlinearLineSearchFreezeMaterial ? NonlinearLineSearchEvaluationMode :: Frozen : NonlinearLineSearchEvaluationMode :: Actual;
+            } else if ( param.compare("nonlinear_line_search_evaluation") == 0 || param.compare("nonlinear_line_search_trial_evaluation") == 0 ) {
+                iss >> param;
+                if ( param.compare("frozen") == 0 ) {
+                    nonlinearLineSearchEvaluationMode = NonlinearLineSearchEvaluationMode :: Frozen;
+                    nonlinearLineSearchFreezeMaterial = true;
+                } else if ( param.compare("actual") == 0 ) {
+                    nonlinearLineSearchEvaluationMode = NonlinearLineSearchEvaluationMode :: Actual;
+                    nonlinearLineSearchFreezeMaterial = false;
+                } else if ( param.compare("frozen_then_actual") == 0 || param.compare("frozen-then-actual") == 0 ) {
+                    nonlinearLineSearchEvaluationMode = NonlinearLineSearchEvaluationMode :: FrozenThenActual;
+                    nonlinearLineSearchFreezeMaterial = true;
+                } else {
+                    std :: cerr << "unknown nonlinear_line_search_evaluation '" << param << "', using frozen" << '\n';
+                    nonlinearLineSearchEvaluationMode = NonlinearLineSearchEvaluationMode :: Frozen;
+                    nonlinearLineSearchFreezeMaterial = true;
+                }
+            } else if ( param.compare("nonlinear_line_search_cutback_on_fail") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearLineSearchCutbackOnFail = ( value != 0 );
+            } else if ( param.compare("nonlinear_line_search_report_trials") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearLineSearchReportTrials = ( value != 0 );
+            } else if ( param.compare("nonlinear_stagnation_cutback") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearStagnationCutback = ( value != 0 );
+            } else if ( param.compare("nonlinear_stagnation_iterations") == 0 ) {
+                iss >> nonlinearStagnationIterations;
+            } else if ( param.compare("nonlinear_stagnation_ratio") == 0 ) {
+                iss >> nonlinearStagnationRatio;
+            } else if ( param.compare("nonlinear_growth_cutback") == 0 ) {
+                iss >> nonlinearGrowthCutback;
+            } else if ( param.compare("nonlinear_adaptive_matrix_update") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearAdaptiveMatrixUpdate = ( value != 0 );
+            } else if ( param.compare("nonlinear_rebuild_on_small_alpha") == 0 ) {
+                iss >> nonlinearRebuildOnSmallAlpha;
+            } else if ( param.compare("nonlinear_rebuild_on_merit_growth") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearRebuildOnMeritGrowth = ( value != 0 );
+            } else if ( param.compare("nonlinear_rebuild_on_stagnation") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearRebuildOnStagnation = ( value != 0 );
+            } else if ( param.compare("nonlinear_trust_region") == 0 ) {
+                iss >> param;
+                if ( param.compare("off") == 0 ) {
+                    nonlinearTrustRegionType = NonlinearTrustRegionType :: Off;
+                } else if ( param.compare("step_norm") == 0 || param.compare("step-norm") == 0 ) {
+                    nonlinearTrustRegionType = NonlinearTrustRegionType :: StepNorm;
+                } else {
+                    std :: cerr << "unknown nonlinear_trust_region '" << param << "', using off" << '\n';
+                    nonlinearTrustRegionType = NonlinearTrustRegionType :: Off;
+                }
+            } else if ( param.compare("nonlinear_trust_radius_initial") == 0 ) {
+                iss >> nonlinearTrustRadiusInitial;
+            } else if ( param.compare("nonlinear_trust_radius_min") == 0 ) {
+                iss >> nonlinearTrustRadiusMin;
+            } else if ( param.compare("nonlinear_trust_radius_max") == 0 ) {
+                iss >> nonlinearTrustRadiusMax;
+            } else if ( param.compare("nonlinear_trust_shrink") == 0 ) {
+                iss >> nonlinearTrustShrink;
+            } else if ( param.compare("nonlinear_trust_expand") == 0 ) {
+                iss >> nonlinearTrustExpand;
+            } else if ( param.compare("nonlinear_trust_max_trials") == 0 ) {
+                iss >> nonlinearTrustMaxTrials;
+            } else if ( param.compare("nonlinear_rollback_ignore_initial_iterations") == 0 ) {
+                iss >> nonlinearRollbackIgnoreInitialIterations;
+            } else if ( param.compare("nonlinear_rollback_growth_ratio") == 0 ) {
+                iss >> nonlinearRollbackGrowthRatio;
+            } else if ( param.compare("nonlinear_rollback_increase_ratio") == 0 ) {
+                iss >> nonlinearRollbackIncreaseRatio;
+            } else if ( param.compare("nonlinear_rollback_enable") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearRollbackEnable = ( value != 0 );
+            } else if ( param.compare("nonlinear_rollback_decrease_on_any_increase") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearRollbackDecreaseOnAnyIncrease = ( value != 0 );
+            } else if ( param.compare("nonlinear_rollback_max_growth_decreases") == 0 ) {
+                iss >> nonlinearRollbackMaxGrowthDecreases;
+            } else if ( param.compare("nonlinear_material_snapshot_rollback") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearMaterialSnapshotRollback = ( value != 0 );
+            } else if ( param.compare("nonlinear_material_snapshot_verify") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearMaterialSnapshotVerify = ( value != 0 );
+            } else if ( param.compare("nonlinear_tangent_check") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearTangentCheck = ( value != 0 );
+            } else if ( param.compare("nonlinear_tangent_check_step") == 0 ) {
+                iss >> nonlinearTangentCheckStep;
+            } else if ( param.compare("nonlinear_tangent_check_iteration") == 0 ) {
+                iss >> nonlinearTangentCheckIteration;
+            } else if ( param.compare("nonlinear_tangent_check_eps") == 0 ) {
+                iss >> nonlinearTangentCheckEps;
+            } else if ( param.compare("nonlinear_tangent_check_random_vectors") == 0 ) {
+                iss >> nonlinearTangentCheckRandomVectors;
+            } else if ( param.compare("nonlinear_tangent_check_include_newton") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearTangentCheckIncludeNewton = ( value != 0 );
+            } else if ( param.compare("nonlinear_tangent_check_stop_after") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearTangentCheckStopAfter = ( value != 0 );
+            } else if ( param.compare("nonlinear_tangent_check_output") == 0 ) {
+                iss >> nonlinearTangentCheckOutput;
             } else if ( param.compare("indirect_displacement_control") == 0 || param.compare("indirect_control") == 0 ) {
                 iss >> helpuint;
                 if ( !idc ) {
@@ -758,6 +951,8 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                     cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatType << endl;
                     exit(1);
                 }
+            } else if ( param.compare("stiff_matrix_elastic_blend_beta") == 0 ) {
+                iss >> stiffMatElasticBlendBeta;
             } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
                 iss >> stiffMatTypeFirstIT;
                 if ( stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatTypeFirstIT.compare("secant") != 0  && stiffMatTypeFirstIT.compare("tangent") != 0  && stiffMatTypeFirstIT.compare("consistent") != 0 ) {
@@ -767,6 +962,10 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
             }
         }
         inputfile.close();
+    }
+    if ( stiffMatElasticBlendBeta < 0. || stiffMatElasticBlendBeta > 1. ) {
+        std :: cerr << "stiff_matrix_elastic_blend_beta must be in [0, 1], clamping" << std :: endl;
+        stiffMatElasticBlendBeta = std :: min(1., std :: max(0., stiffMatElasticBlendBeta) );
     }
     if ( !bdtmin && !bdtmax ) {
         cout << "fixed time step used" << endl;
@@ -793,6 +992,89 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
         std :: cerr << "cannot set number of iterations for step enlargement higher than number of iterations for step shortening, setting back to default values" << '\n';
         ben = false;
         bsh = false;
+    }
+    if ( nonlinearDampingMin <= 0. ) {
+        std :: cerr << "nonlinear_damping_min must be positive, setting to 0.03125" << '\n';
+        nonlinearDampingMin = 0.03125;
+    }
+    if ( nonlinearDampingMax < nonlinearDampingMin ) {
+        std :: cerr << "nonlinear_damping_max smaller than nonlinear_damping_min, setting max to min" << '\n';
+        nonlinearDampingMax = nonlinearDampingMin;
+    }
+    if ( nonlinearDampingFactor <= 0. ) {
+        std :: cerr << "nonlinear_damping_factor must be positive, setting to 1" << '\n';
+        nonlinearDampingFactor = 1.;
+    }
+    if ( nonlinearDampingIncrease < 1. ) {
+        std :: cerr << "nonlinear_damping_increase must be at least 1, setting to 1" << '\n';
+        nonlinearDampingIncrease = 1.;
+    }
+    if ( nonlinearDampingDecrease <= 0. || nonlinearDampingDecrease > 1. ) {
+        std :: cerr << "nonlinear_damping_decrease must be in (0, 1], setting to 0.5" << '\n';
+        nonlinearDampingDecrease = 0.5;
+    }
+    if ( nonlinearLineSearchReduction <= 0. || nonlinearLineSearchReduction >= 1. ) {
+        std :: cerr << "nonlinear_line_search_reduction must be in (0, 1), setting to 0.5" << '\n';
+        nonlinearLineSearchReduction = 0.5;
+    }
+    if ( nonlinearLineSearchMinAlpha <= 0. ) {
+        std :: cerr << "nonlinear_line_search_min_alpha must be positive, setting to 0.03125" << '\n';
+        nonlinearLineSearchMinAlpha = 0.03125;
+    }
+    if ( nonlinearLineSearchMaxAlpha <= 0. ) {
+        std :: cerr << "nonlinear_line_search_max_alpha must be positive, setting to 1" << '\n';
+        nonlinearLineSearchMaxAlpha = 1.;
+    }
+    if ( nonlinearLineSearchBisectionTolerance <= 0. ) {
+        std :: cerr << "nonlinear_line_search_bisection_tolerance must be positive, setting to 1e-3" << '\n';
+        nonlinearLineSearchBisectionTolerance = 1e-3;
+    }
+    if ( nonlinearLineSearchMaxTrials < 1 ) {
+        std :: cerr << "nonlinear_line_search_max_trials must be at least 1, setting to 1" << '\n';
+        nonlinearLineSearchMaxTrials = 1;
+    }
+    if ( nonlinearLineSearchArmijo < 0. ) {
+        std :: cerr << "nonlinear_line_search_armijo cannot be negative, setting to 0" << '\n';
+        nonlinearLineSearchArmijo = 0.;
+    }
+    if ( nonlinearStagnationIterations < 1 ) {
+        std :: cerr << "nonlinear_stagnation_iterations must be at least 1, setting to 1" << '\n';
+        nonlinearStagnationIterations = 1;
+    }
+    if ( nonlinearStagnationRatio <= 0. || nonlinearStagnationRatio >= 1. ) {
+        std :: cerr << "nonlinear_stagnation_ratio must be in (0, 1), setting to 0.95" << '\n';
+        nonlinearStagnationRatio = 0.95;
+    }
+    if ( nonlinearRebuildOnSmallAlpha < 0. ) {
+        std :: cerr << "nonlinear_rebuild_on_small_alpha cannot be negative, setting to 0" << '\n';
+        nonlinearRebuildOnSmallAlpha = 0.;
+    }
+    if ( nonlinearTrustRadiusMin <= 0. ) {
+        std :: cerr << "nonlinear_trust_radius_min must be positive, setting to 1e-12" << '\n';
+        nonlinearTrustRadiusMin = 1e-12;
+    }
+    if ( nonlinearTrustRadiusMax < nonlinearTrustRadiusMin ) {
+        std :: cerr << "nonlinear_trust_radius_max smaller than nonlinear_trust_radius_min, setting max to min" << '\n';
+        nonlinearTrustRadiusMax = nonlinearTrustRadiusMin;
+    }
+    if ( nonlinearTrustShrink <= 0. || nonlinearTrustShrink >= 1. ) {
+        std :: cerr << "nonlinear_trust_shrink must be in (0, 1), setting to 0.5" << '\n';
+        nonlinearTrustShrink = 0.5;
+    }
+    if ( nonlinearTrustExpand < 1. ) {
+        std :: cerr << "nonlinear_trust_expand must be at least 1, setting to 1" << '\n';
+        nonlinearTrustExpand = 1.;
+    }
+    if ( nonlinearTrustMaxTrials < 1 ) {
+        std :: cerr << "nonlinear_trust_max_trials must be at least 1, setting to 1" << '\n';
+        nonlinearTrustMaxTrials = 1;
+    }
+    if ( nonlinearTangentCheckEps <= 0. ) {
+        std :: cerr << "nonlinear_tangent_check_eps must be positive, setting to 1e-6" << '\n';
+        nonlinearTangentCheckEps = 1e-6;
+    }
+    if ( nonlinearTangentCheckOutput.empty() ) {
+        nonlinearTangentCheckOutput = "tangent_check.tsv";
     }
     if ( !ben ) {
         enlargeIt = maxIt / 3;
@@ -873,6 +1155,529 @@ void SteadyStateNonLinearSolver :: evaluateErrors() {
     resErr = sqrt(resErr);
     disErr = sqrt(disErr);
     eneErr = sqrt(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: nonlinearGlobalizationActive() const {
+    return nonlinearDampingType != NonlinearDampingType :: Off
+           || nonlinearLineSearchType != NonlinearLineSearchType :: Off
+           || nonlinearTrustRegionType != NonlinearTrustRegionType :: Off
+           || nonlinearAdaptiveMatrixUpdate
+           || nonlinearStagnationCutback;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: nonlinearConvergenceCriteriaSatisfied() const {
+    return disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr;
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearMerit() const {
+    return currentNonlinearGlobalizationMerit();
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearGlobalizationMerit() const {
+    const double residualMerit = resErr / std :: max(maxResErr, 1e-300);
+    const double energyMerit = eneErr / std :: max(maxEneErr, 1e-300);
+    double merit = residualMerit;
+
+    // The existing energy error is increment-based: before the first nonlinear
+    // correction of a load step, full_ddr is zero and the energy term is
+    // therefore not a meaningful line-search reference value. Use residual
+    // merit on iteration 0, but keep the normal convergence check below.
+    if ( it == 0 ) {
+        if ( !std :: isfinite(residualMerit) ) {
+            return std :: numeric_limits< double > :: infinity();
+        }
+        return residualMerit;
+    }
+
+    if ( nonlinearMeritType == NonlinearMeritType :: Energy ) {
+        merit = energyMerit;
+    } else if ( nonlinearMeritType == NonlinearMeritType :: Mixed ) {
+        merit = std :: max(residualMerit, energyMerit);
+    }
+
+    if ( !std :: isfinite(merit) ) {
+        return std :: numeric_limits< double > :: infinity();
+    }
+    return merit;
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearConvergenceMerit() const {
+    const double residualMerit = resErr / std :: max(maxResErr, 1e-300);
+    const double displacementMerit = disErr / std :: max(maxDisErr, 1e-300);
+    const double energyMerit = eneErr / std :: max(maxEneErr, 1e-300);
+    const double merit = std :: max(residualMerit, std :: max(displacementMerit, energyMerit) );
+    if ( !std :: isfinite(merit) ) {
+        return std :: numeric_limits< double > :: infinity();
+    }
+    return merit;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: nonlinearMeritAccepted(double trialMerit, double baseMerit, double alpha) const {
+    if ( !std :: isfinite(trialMerit) ) {
+        return false;
+    }
+    if ( !std :: isfinite(baseMerit) || baseMerit <= 0. ) {
+        return true;
+    }
+    if ( nonlinearLineSearchArmijo > 0. ) {
+        const double armijoFactor = std :: max(0., 1. - nonlinearLineSearchArmijo * alpha);
+        return trialMerit <= armijoFactor * baseMerit;
+    }
+    if ( nonlinearLineSearchAcceptAnyDecrease ) {
+        return trialMerit < baseMerit;
+    }
+    return trialMerit <= baseMerit;
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearStateSnapshot SteadyStateNonLinearSolver :: saveNonlinearState() const {
+    NonlinearStateSnapshot snapshot;
+    snapshot.trial_r = trial_r;
+    snapshot.ddr = ddr;
+    snapshot.full_ddr = full_ddr;
+    snapshot.f = f;
+    snapshot.f_int = f_int;
+    snapshot.f_ext = f_ext;
+    snapshot.f_dam = f_dam;
+    snapshot.f_acc = f_acc;
+    snapshot.residuals = residuals;
+    snapshot.load = load;
+    snapshot.W_int = W_int;
+    snapshot.W_ext = W_ext;
+    snapshot.W_kin = W_kin;
+    snapshot.disErr = disErr;
+    snapshot.resErr = resErr;
+    snapshot.eneErr = eneErr;
+    if ( nonlinearMaterialSnapshotRollback ) {
+        snapshot.materialStatuses = std :: make_shared< ElementContainer :: MaterialStatusSnapshot >( elems->createMaterialStatusSnapshot() );
+        if ( nonlinearMaterialSnapshotVerify ) {
+            snapshot.materialStatusHash = ElementContainer :: materialStatusSnapshotHash( *snapshot.materialStatuses );
+            snapshot.materialStatusHashValid = true;
+        }
+    }
+    return snapshot;
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: restoreNonlinearState(const NonlinearStateSnapshot &snapshot, bool resetMaterialStatuses) {
+    trial_r = snapshot.trial_r;
+    ddr = snapshot.ddr;
+    full_ddr = snapshot.full_ddr;
+    f = snapshot.f;
+    f_int = snapshot.f_int;
+    f_ext = snapshot.f_ext;
+    f_dam = snapshot.f_dam;
+    f_acc = snapshot.f_acc;
+    residuals = snapshot.residuals;
+    load = snapshot.load;
+    W_int = snapshot.W_int;
+    W_ext = snapshot.W_ext;
+    W_kin = snapshot.W_kin;
+    disErr = snapshot.disErr;
+    resErr = snapshot.resErr;
+    eneErr = snapshot.eneErr;
+    if ( resetMaterialStatuses ) {
+        if ( snapshot.materialStatuses ) {
+            elems->restoreMaterialStatusSnapshot( *snapshot.materialStatuses );
+            if ( nonlinearMaterialSnapshotVerify && snapshot.materialStatusHashValid ) {
+                const std :: uint64_t restoredHash = elems->materialStatusStateHash();
+                if ( restoredHash != snapshot.materialStatusHash ) {
+                    std :: cerr << "Material status snapshot verification failed: expected hash "
+                              << snapshot.materialStatusHash << ", restored hash " << restoredHash << std :: endl;
+                    exit(1);
+                }
+            }
+        } else {
+            elems->resetMaterialStatuses();
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: resetNonlinearGlobalizationAttempt() {
+    currentNonlinearDampingFactor = std :: min(nonlinearDampingMax, std :: max(nonlinearDampingMin, nonlinearDampingFactor) );
+    nonlinearBestMerit = std :: numeric_limits< double > :: infinity();
+    nonlinearStagnationCounter = 0;
+    lastNonlinearAlpha = ( nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) ? 0.5 * nonlinearLineSearchMaxAlpha : 1.;
+    lastNonlinearLineSearchTrials = 0;
+    lastNonlinearMeritBefore = 0.;
+    lastNonlinearMeritAfter = 0.;
+    lastNonlinearConvergenceMerit = 0.;
+    nonlinearForceMatrixRebuild = false;
+    lastNonlinearMatrixRebuild = false;
+    currentNonlinearTrustRadius = nonlinearTrustRadiusInitial;
+    lastNonlinearTrustRadius = currentNonlinearTrustRadius;
+    nonlinearCutbackReason.clear();
+    nonlinearRollbackGrowthDecreaseCounter = 0;
+    nonlinearTangentCheckDone = false;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: maybeRunNonlinearTangentCheck(const Vector &newtonIncrement) {
+    if ( !nonlinearTangentCheck || nonlinearTangentCheckDone ) {
+        return false;
+    }
+    if ( nonlinearTangentCheckStep > 0 && static_cast< unsigned >( step ) != nonlinearTangentCheckStep ) {
+        return false;
+    }
+    if ( it != nonlinearTangentCheckIteration ) {
+        return false;
+    }
+
+    nonlinearTangentCheckDone = true;
+
+    const NonlinearStateSnapshot baseState = saveNonlinearState();
+    ElementContainer :: MaterialStatusSnapshot materialSnapshot = elems->createMaterialStatusSnapshot();
+    const Vector baseResidual = f;
+    std :: vector< std :: pair< std :: string, Vector > > directions;
+
+    if ( nonlinearTangentCheckIncludeNewton && newtonIncrement.size() == static_cast< int >( freeDoFnum ) ) {
+        const double nrm = newtonIncrement.norm();
+        if ( nrm > 0. && std :: isfinite(nrm) ) {
+            directions.push_back( { "newton", newtonIncrement / nrm } );
+        }
+    }
+
+    for ( unsigned r = 0; r < nonlinearTangentCheckRandomVectors; r++ ) {
+        Vector p = Vector :: Zero(freeDoFnum);
+        unsigned long long state = 1469598103934665603ULL + static_cast< unsigned long long >( r + 1 ) * 1099511628211ULL;
+        for ( unsigned i = 0; i < freeDoFnum; i++ ) {
+            state = state * 2862933555777941757ULL + 3037000493ULL;
+            const double unit = static_cast< double >( ( state >> 11 ) & 0x1fffffULL ) / static_cast< double >( 0x1fffffULL );
+            p [ i ] = 2. * unit - 1.;
+        }
+        const double nrm = p.norm();
+        if ( nrm > 0. && std :: isfinite(nrm) ) {
+            directions.push_back( { "random_" + std :: to_string(r + 1), p / nrm } );
+        }
+    }
+
+    std :: ifstream input(nonlinearTangentCheckOutput);
+    const bool writeHeader = !input.good() || input.peek() == std :: ifstream :: traits_type :: eof();
+    input.close();
+    std :: ofstream output(nonlinearTangentCheckOutput, std :: ios :: app);
+    if ( writeHeader ) {
+        output << "step\titeration\teps\tdirection\trelative_error\tcosine\tkp_norm\tfd_norm\tresidual_norm\n";
+    }
+
+    for ( const auto &direction : directions ) {
+        restoreNonlinearState(baseState, false);
+        elems->restoreMaterialStatusSnapshot(materialSnapshot);
+        ddr = nonlinearTangentCheckEps * direction.second;
+        updateFieldVariables();
+        computeForcesAtIntegrationTime(false);
+        Vector perturbedResidual = Vector :: Zero(freeDoFnum);
+        nodes->giveReducedForceArray(residuals, perturbedResidual);
+
+        const Vector kp = Keff * direction.second;
+        const Vector fd = ( baseResidual - perturbedResidual ) / nonlinearTangentCheckEps;
+        const double kpNorm = kp.norm();
+        const double fdNorm = fd.norm();
+        const double relativeError = ( kp - fd ).norm() / std :: max(fdNorm, 1e-300);
+        const double cosine = kp.dot(fd) / std :: max(kpNorm * fdNorm, 1e-300);
+
+        output << step << '\t'
+               << it << '\t'
+               << nonlinearTangentCheckEps << '\t'
+               << direction.first << '\t'
+               << relativeError << '\t'
+               << cosine << '\t'
+               << kpNorm << '\t'
+               << fdNorm << '\t'
+               << baseResidual.norm() << '\n';
+
+        if ( !silent ) {
+            std :: cout << "TANGENT_CHECK"
+                        << " step " << step
+                        << " it " << it
+                        << " eps " << nonlinearTangentCheckEps
+                        << " direction " << direction.first
+                        << " relative_error " << relativeError
+                        << " cosine " << cosine
+                        << " kp_norm " << kpNorm
+                        << " fd_norm " << fdNorm
+                        << std :: endl;
+        }
+    }
+    output.close();
+
+    restoreNonlinearState(baseState, false);
+    elems->restoreMaterialStatusSnapshot(materialSnapshot);
+    return true;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: applyScaledIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double alpha, bool frozen, bool resetMaterialStatuses) {
+    restoreNonlinearState(baseState, resetMaterialStatuses);
+    ddr = alpha * increment;
+    updateFieldVariables();
+    computeForcesAtIntegrationTime(frozen);
+    evaluateErrors();
+    if ( it == 0 ) {
+        disErr = 0;                        //error in displacement change, only from second iteration
+    }
+    return std :: isfinite(resErr) && std :: isfinite(disErr) && std :: isfinite(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver :: performBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore) {
+    NonlinearTrialResult result;
+    result.meritBefore = meritBefore;
+    double alpha = nonlinearLineSearchMaxAlpha;
+
+    for ( unsigned trial = 0; trial < nonlinearLineSearchMaxTrials && alpha >= nonlinearLineSearchMinAlpha * ( 1. - 1e-12 ); trial++ ) {
+        const bool useFrozenTrial = nonlinearLineSearchEvaluationMode != NonlinearLineSearchEvaluationMode :: Actual;
+        const bool requireActualAcceptance = nonlinearLineSearchEvaluationMode == NonlinearLineSearchEvaluationMode :: FrozenThenActual;
+        const bool finiteFirstTrial = applyScaledIncrementAndEvaluate(baseState, increment, alpha, useFrozenTrial);
+        double trialMerit = currentNonlinearGlobalizationMerit();
+        const bool acceptedFirstTrial = finiteFirstTrial && nonlinearMeritAccepted(trialMerit, meritBefore, alpha);
+
+        if ( !silent && nonlinearLineSearchReportTrials ) {
+            std :: cout << "LS_TRIAL"
+                        << " it " << it
+                        << " trial " << trial + 1
+                        << " alpha " << alpha
+                        << " mode " << ( useFrozenTrial ? "frozen" : "actual" )
+                        << " finite " << finiteFirstTrial
+                        << " accepted " << acceptedFirstTrial
+                        << " merit_before " << meritBefore
+                        << " merit_trial " << trialMerit
+                        << " res " << resErr
+                        << " disp " << disErr
+                        << " energy " << eneErr
+                        << std :: endl;
+        }
+
+        if ( acceptedFirstTrial ) {
+            if ( useFrozenTrial ) {
+                const bool finiteActualTrial = applyScaledIncrementAndEvaluate(baseState, increment, alpha, false);
+                trialMerit = currentNonlinearGlobalizationMerit();
+                const bool acceptedActualTrial = finiteActualTrial && ( !requireActualAcceptance || nonlinearMeritAccepted(trialMerit, meritBefore, alpha) );
+                if ( !silent && nonlinearLineSearchReportTrials ) {
+                    std :: cout << "LS_ACTUAL"
+                                << " it " << it
+                                << " alpha " << alpha
+                                << " finite " << finiteActualTrial
+                                << " accepted " << acceptedActualTrial
+                                << " merit_actual " << trialMerit
+                                << " res " << resErr
+                                << " disp " << disErr
+                                << " energy " << eneErr
+                                << std :: endl;
+                }
+                if ( !acceptedActualTrial ) {
+                    restoreNonlinearState(baseState, true);
+                    result.alpha = alpha;
+                    result.trials = trial + 1;
+                    result.meritAfter = trialMerit;
+                    alpha *= nonlinearLineSearchReduction;
+                    continue;
+                }
+            }
+            result.accepted = true;
+            result.alpha = alpha;
+            result.trials = trial + 1;
+            result.meritAfter = trialMerit;
+            return result;
+        }
+
+        restoreNonlinearState(baseState, true);
+        alpha *= nonlinearLineSearchReduction;
+    }
+
+    restoreNonlinearState(baseState, true);
+    if ( !silent && nonlinearLineSearchReportTrials ) {
+        std :: cout << "LS_FAIL"
+                    << " it " << it
+                    << " trials " << nonlinearLineSearchMaxTrials
+                    << " merit_before " << meritBefore
+                    << " cutback_on_fail " << nonlinearLineSearchCutbackOnFail
+                    << std :: endl;
+    }
+    result.alpha = alpha;
+    result.trials = nonlinearLineSearchMaxTrials;
+    result.meritAfter = currentNonlinearMerit();
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver :: performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore) {
+    NonlinearTrialResult result;
+    result.meritBefore = meritBefore;
+
+    double lower = 0.;
+    double upper = std :: max(nonlinearLineSearchBisectionTolerance, 2. * std :: max(lastNonlinearAlpha, nonlinearLineSearchBisectionTolerance) );
+    upper = std :: min(upper, nonlinearLineSearchMaxAlpha);
+    double acceptedAlpha = 0.;
+    double acceptedMerit = std :: numeric_limits< double > :: infinity();
+    const unsigned maxBisectionTrials = 64;
+    unsigned trials = 0;
+
+    while ( upper - lower > nonlinearLineSearchBisectionTolerance && trials < maxBisectionTrials ) {
+        const double alpha = 0.5 * ( lower + upper );
+        const bool useFrozenTrial = nonlinearLineSearchEvaluationMode != NonlinearLineSearchEvaluationMode :: Actual;
+        const bool finiteTrial = applyScaledIncrementAndEvaluate(baseState, increment, alpha, useFrozenTrial);
+        const double trialMerit = currentNonlinearGlobalizationMerit();
+        trials++;
+
+        if ( finiteTrial && nonlinearMeritAccepted(trialMerit, meritBefore, alpha) ) {
+            lower = alpha;
+            acceptedAlpha = alpha;
+            acceptedMerit = trialMerit;
+        } else {
+            upper = alpha;
+        }
+        restoreNonlinearState(baseState, true);
+    }
+
+    result.trials = trials;
+    if ( acceptedAlpha <= 0. ) {
+        result.alpha = 0.;
+        result.meritAfter = currentNonlinearMerit();
+        return result;
+    }
+
+    const bool finiteActualTrial = applyScaledIncrementAndEvaluate(baseState, increment, acceptedAlpha, false);
+    if ( !finiteActualTrial || ( nonlinearLineSearchEvaluationMode == NonlinearLineSearchEvaluationMode :: FrozenThenActual && !nonlinearMeritAccepted(currentNonlinearGlobalizationMerit(), meritBefore, acceptedAlpha) ) ) {
+        restoreNonlinearState(baseState, true);
+        result.alpha = acceptedAlpha;
+        result.meritAfter = acceptedMerit;
+        return result;
+    }
+
+    result.accepted = true;
+    result.alpha = acceptedAlpha;
+    result.meritAfter = currentNonlinearGlobalizationMerit();
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver :: performStepNormTrustRegion(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore) {
+    NonlinearTrialResult result;
+    result.meritBefore = meritBefore;
+
+    const double incrementNorm = increment.norm();
+    if ( !std :: isfinite(incrementNorm) || incrementNorm <= 0. ) {
+        result.alpha = 1.;
+        result.trials = 1;
+        const bool finiteTrial = applyScaledIncrementAndEvaluate(baseState, increment, 1., false);
+        result.meritAfter = currentNonlinearGlobalizationMerit();
+        result.accepted = finiteTrial;
+        return result;
+    }
+
+    if ( currentNonlinearTrustRadius <= 0. || !std :: isfinite(currentNonlinearTrustRadius) ) {
+        currentNonlinearTrustRadius = nonlinearTrustRadiusInitial > 0. ? nonlinearTrustRadiusInitial : incrementNorm;
+    }
+    currentNonlinearTrustRadius = std :: min(nonlinearTrustRadiusMax, std :: max(nonlinearTrustRadiusMin, currentNonlinearTrustRadius) );
+
+    for ( unsigned trial = 0; trial < nonlinearTrustMaxTrials; trial++ ) {
+        const double alpha = std :: min(1., currentNonlinearTrustRadius / incrementNorm);
+        const bool finiteTrial = applyScaledIncrementAndEvaluate(baseState, increment, alpha, false);
+        const double trialMerit = currentNonlinearGlobalizationMerit();
+        result.trials = trial + 1;
+
+        if ( finiteTrial && ( nonlinearConvergenceCriteriaSatisfied() || nonlinearMeritAccepted(trialMerit, meritBefore, alpha) ) ) {
+            result.accepted = true;
+            result.alpha = alpha;
+            result.meritAfter = trialMerit;
+            lastNonlinearTrustRadius = currentNonlinearTrustRadius;
+            if ( std :: isfinite(meritBefore) && meritBefore > 0. && trialMerit < meritBefore ) {
+                currentNonlinearTrustRadius = std :: min(nonlinearTrustRadiusMax, currentNonlinearTrustRadius * nonlinearTrustExpand);
+            }
+            return result;
+        }
+
+        restoreNonlinearState(baseState, true);
+        currentNonlinearTrustRadius = std :: max(nonlinearTrustRadiusMin, currentNonlinearTrustRadius * nonlinearTrustShrink);
+    }
+
+    restoreNonlinearState(baseState, true);
+    result.alpha = std :: min(1., currentNonlinearTrustRadius / incrementNorm);
+    result.meritAfter = currentNonlinearGlobalizationMerit();
+    lastNonlinearTrustRadius = currentNonlinearTrustRadius;
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearDampingAlpha() const {
+    if ( nonlinearDampingType == NonlinearDampingType :: Off ) {
+        return 1.;
+    }
+    if ( nonlinearDampingType == NonlinearDampingType :: Adaptive || nonlinearDampingType == NonlinearDampingType :: RollbackAdaptive ) {
+        return std :: min(nonlinearDampingMax, std :: max(nonlinearDampingMin, currentNonlinearDampingFactor) );
+    }
+    return std :: min(nonlinearDampingMax, std :: max(nonlinearDampingMin, nonlinearDampingFactor) );
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: updateAdaptiveNonlinearDamping(double meritBefore, double meritAfter) {
+    if ( nonlinearDampingType != NonlinearDampingType :: Adaptive ) {
+        return;
+    }
+    if ( std :: isfinite(meritAfter) && ( !std :: isfinite(meritBefore) || meritAfter < meritBefore ) ) {
+        currentNonlinearDampingFactor = std :: min(nonlinearDampingMax, currentNonlinearDampingFactor * nonlinearDampingIncrease);
+    } else {
+        currentNonlinearDampingFactor = std :: max(nonlinearDampingMin, currentNonlinearDampingFactor * nonlinearDampingDecrease);
+    }
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: shouldCutbackForNonlinearProgress(double meritBefore, double meritAfter) {
+    if ( !nonlinearStagnationCutback || !std :: isfinite(meritAfter) ) {
+        return false;
+    }
+    if ( nonlinearGrowthCutback > 0. && std :: isfinite(meritBefore) && meritBefore > 0. && meritAfter > nonlinearGrowthCutback * meritBefore ) {
+        nonlinearCutbackReason = "nonlinear_growth";
+        if ( nonlinearAdaptiveMatrixUpdate && nonlinearRebuildOnMeritGrowth ) {
+            nonlinearForceMatrixRebuild = true;
+        }
+        return true;
+    }
+    if ( !std :: isfinite(nonlinearBestMerit) ) {
+        nonlinearBestMerit = meritAfter;
+        nonlinearStagnationCounter = 0;
+        return false;
+    }
+    if ( meritAfter <= nonlinearBestMerit * nonlinearStagnationRatio ) {
+        nonlinearBestMerit = meritAfter;
+        nonlinearStagnationCounter = 0;
+        return false;
+    }
+    nonlinearStagnationCounter++;
+    if ( nonlinearStagnationCounter >= nonlinearStagnationIterations ) {
+        nonlinearCutbackReason = "nonlinear_stagnation";
+        if ( nonlinearAdaptiveMatrixUpdate && nonlinearRebuildOnStagnation ) {
+            nonlinearForceMatrixRebuild = true;
+        }
+        return true;
+    }
+    return false;
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: requestAdaptiveMatrixRebuildIfNeeded(double meritBefore, double meritAfter) {
+    if ( !nonlinearAdaptiveMatrixUpdate ) {
+        return;
+    }
+    if ( nonlinearRebuildOnSmallAlpha > 0. && lastNonlinearAlpha > 0. && lastNonlinearAlpha < nonlinearRebuildOnSmallAlpha ) {
+        nonlinearForceMatrixRebuild = true;
+        if ( nonlinearCutbackReason.empty() ) {
+            nonlinearCutbackReason = "matrix_rebuild_small_alpha";
+        }
+    }
+    if ( nonlinearRebuildOnMeritGrowth && std :: isfinite(meritBefore) && meritBefore > 0. && std :: isfinite(meritAfter) && meritAfter > meritBefore ) {
+        nonlinearForceMatrixRebuild = true;
+        if ( nonlinearCutbackReason.empty() ) {
+            nonlinearCutbackReason = "matrix_rebuild_merit_growth";
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -1023,6 +1828,7 @@ void SteadyStateNonLinearSolver :: solve() {
     //JE: no, these are recomputed
     restarts = 0;
     while ( !converged ) {
+        resetNonlinearGlobalizationAttempt();
         //setup loading
 
         if ( !idc ) {
@@ -1037,10 +1843,32 @@ void SteadyStateNonLinearSolver :: solve() {
 
         it = 0;
         while ( !converged && it < maxIt ) {
-            if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, false) ) {
+            lastNonlinearMatrixRebuild = false;
+            const bool forceMatrixRebuild = nonlinearForceMatrixRebuild;
+            if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, forceMatrixRebuild) ) {
                 computeKeff();                                    //only if required
+                lastNonlinearMatrixRebuild = true;
             }
+            nonlinearForceMatrixRebuild = false;
             nodes->giveReducedForceArray(residuals, f);
+
+            const bool useNonlinearGlobalization = ( !idc ) && nonlinearGlobalizationActive();
+            NonlinearStateSnapshot incrementBaseState;
+            double meritBefore = lastNonlinearMeritBefore;
+            if ( useNonlinearGlobalization ) {
+                evaluateErrors();
+                if ( it == 0 ) {
+                    disErr = 0;
+                }
+                meritBefore = currentNonlinearGlobalizationMerit();
+                incrementBaseState = saveNonlinearState();
+                lastNonlinearMeritBefore = meritBefore;
+                lastNonlinearConvergenceMerit = currentNonlinearConvergenceMerit();
+                nonlinearCutbackReason.clear();
+            } else if ( idc && nonlinearGlobalizationActive() && !warnedGlobalizationWithIDC ) {
+                std :: cerr << "nonlinear globalization controls are not applied with indirect control; using legacy indirect-control update" << endl;
+                warnedGlobalizationWithIDC = true;
+            }
 
             if ( idc ) {      //indirect displacement control
                 Vector trial_r_last_iter = trial_r;
@@ -1094,20 +1922,155 @@ void SteadyStateNonLinearSolver :: solve() {
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
                 }
             } else {         //direct controll
-                  const bool directSolveSuccess = linalgsolver->solve(ddr, f);
-                  collectLinearDeflationVector(ddr, directSolveSuccess);
+                const bool directSolveSuccess = linalgsolver->solve(ddr, f);
+                Vector ddrNewton = ddr;
+                collectLinearDeflationVector(ddrNewton, directSolveSuccess);
+                if ( maybeRunNonlinearTangentCheck(ddrNewton) && nonlinearTangentCheckStopAfter ) {
+                    terminated = true;
+                    return;
+                }
+
+                if ( useNonlinearGlobalization ) {
+                    if ( nonlinearLineSearchType == NonlinearLineSearchType :: Backtracking || nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) {
+                        NonlinearTrialResult lineSearchResult;
+                        if ( nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) {
+                            lineSearchResult = performBisectionLineSearch(incrementBaseState, ddrNewton, meritBefore);
+                        } else {
+                            lineSearchResult = performBacktrackingLineSearch(incrementBaseState, ddrNewton, meritBefore);
+                        }
+                        lastNonlinearAlpha = lineSearchResult.alpha;
+                        lastNonlinearLineSearchTrials = lineSearchResult.trials;
+                        lastNonlinearMeritAfter = lineSearchResult.meritAfter;
+                        if ( !lineSearchResult.accepted ) {
+                            nonlinearCutbackReason = "line_search_failed";
+                            if ( nonlinearLineSearchCutbackOnFail ) {
+                                restart_now = true;
+                                break;
+                            }
+                            applyScaledIncrementAndEvaluate(incrementBaseState, ddrNewton, 1., false);
+                            lastNonlinearAlpha = 1.;
+                            lastNonlinearMeritAfter = currentNonlinearGlobalizationMerit();
+                            nonlinearCutbackReason.clear();
+                        }
+                    } else if ( nonlinearTrustRegionType == NonlinearTrustRegionType :: StepNorm ) {
+                        const NonlinearTrialResult trustRegionResult = performStepNormTrustRegion(incrementBaseState, ddrNewton, meritBefore);
+                        lastNonlinearAlpha = trustRegionResult.alpha;
+                        lastNonlinearLineSearchTrials = trustRegionResult.trials;
+                        lastNonlinearMeritAfter = trustRegionResult.meritAfter;
+                        if ( !trustRegionResult.accepted ) {
+                            nonlinearCutbackReason = "trust_region_failed";
+                            restart_now = true;
+                            break;
+                        }
+                    } else {
+                        const double alpha = currentNonlinearDampingAlpha();
+                        const double previousAcceptedMerit = lastNonlinearMeritAfter;
+                        applyScaledIncrementAndEvaluate(incrementBaseState, ddrNewton, alpha, false, false);
+                        lastNonlinearAlpha = alpha;
+                        lastNonlinearLineSearchTrials = 0;
+                        lastNonlinearMeritAfter = currentNonlinearGlobalizationMerit();
+                        if ( nonlinearDampingType == NonlinearDampingType :: RollbackAdaptive && it > nonlinearRollbackIgnoreInitialIterations && std :: isfinite(previousAcceptedMerit) && previousAcceptedMerit > 0. ) {
+                            if ( lastNonlinearMeritAfter > nonlinearRollbackGrowthRatio * previousAcceptedMerit ) {
+                                const double newAlpha = std :: max(nonlinearDampingMin, alpha * nonlinearDampingDecrease);
+                                const bool canDecrease = nonlinearRollbackGrowthDecreaseCounter < nonlinearRollbackMaxGrowthDecreases
+                                                         && newAlpha < alpha * ( 1. - 1e-12 );
+                                if ( nonlinearRollbackEnable && canDecrease ) {
+                                    if ( !silent ) {
+                                        std :: cout << "NONLINEAR_DAMPING_ROLLBACK"
+                                                    << " it " << it
+                                                    << " alpha " << alpha
+                                                    << " new_alpha " << newAlpha
+                                                    << " previous_merit " << previousAcceptedMerit
+                                                    << " trial_merit " << lastNonlinearMeritAfter
+                                                    << std :: endl;
+                                    }
+                                    restoreNonlinearState(incrementBaseState, true);
+                                    currentNonlinearDampingFactor = newAlpha;
+                                    nonlinearRollbackGrowthDecreaseCounter++;
+                                    lastNonlinearMeritAfter = previousAcceptedMerit;
+                                    nonlinearCutbackReason = "damping_rollback";
+                                    continue;
+                                }
+                                if ( canDecrease ) {
+                                    currentNonlinearDampingFactor = newAlpha;
+                                    nonlinearRollbackGrowthDecreaseCounter++;
+                                    nonlinearCutbackReason = "damping_growth_decrease";
+                                    if ( !silent ) {
+                                        std :: cout << "NONLINEAR_DAMPING_GROWTH_DECREASE"
+                                                    << " it " << it
+                                                    << " alpha " << alpha
+                                                    << " new_alpha " << newAlpha
+                                                    << " previous_merit " << previousAcceptedMerit
+                                                    << " trial_merit " << lastNonlinearMeritAfter
+                                                    << std :: endl;
+                                    }
+                                }
+                                if ( !canDecrease ) {
+                                    if ( !silent ) {
+                                        std :: cout << "NONLINEAR_DAMPING_GROWTH_LIMIT"
+                                                    << " it " << it
+                                                    << " alpha " << alpha
+                                                    << " previous_merit " << previousAcceptedMerit
+                                                    << " trial_merit " << lastNonlinearMeritAfter
+                                                    << std :: endl;
+                                    }
+                                    currentNonlinearDampingFactor = alpha;
+                                    nonlinearCutbackReason = "damping_growth_limit";
+                                }
+                            } else if ( nonlinearRollbackDecreaseOnAnyIncrease && lastNonlinearMeritAfter > nonlinearRollbackIncreaseRatio * previousAcceptedMerit ) {
+                                if ( nonlinearRollbackGrowthDecreaseCounter < nonlinearRollbackMaxGrowthDecreases ) {
+                                    const double newAlpha = std :: max(nonlinearDampingMin, alpha * nonlinearDampingDecrease);
+                                    currentNonlinearDampingFactor = newAlpha;
+                                    nonlinearRollbackGrowthDecreaseCounter++;
+                                    nonlinearCutbackReason = "damping_increase_decrease";
+                                    if ( !silent ) {
+                                        std :: cout << "NONLINEAR_DAMPING_ALPHA_DECREASE"
+                                                    << " it " << it
+                                                    << " alpha " << alpha
+                                                    << " new_alpha " << newAlpha
+                                                    << " previous_merit " << previousAcceptedMerit
+                                                    << " trial_merit " << lastNonlinearMeritAfter
+                                                    << std :: endl;
+                                    }
+                                }
+                            } else if ( lastNonlinearMeritAfter < previousAcceptedMerit && lastNonlinearMeritAfter > 0. ) {
+                                const double progressFactor = std :: min(1.5, previousAcceptedMerit / lastNonlinearMeritAfter);
+                                const double newAlpha = std :: min(nonlinearDampingMax, alpha * progressFactor);
+                                currentNonlinearDampingFactor = newAlpha;
+                                if ( newAlpha > alpha * ( 1. + 1e-12 ) && !silent ) {
+                                    std :: cout << "NONLINEAR_DAMPING_ALPHA_INCREASE"
+                                                << " it " << it
+                                                << " alpha " << alpha
+                                                << " new_alpha " << newAlpha
+                                                << " previous_merit " << previousAcceptedMerit
+                                                << " trial_merit " << lastNonlinearMeritAfter
+                                                << std :: endl;
+                                }
+                            }
+                        }
+                    }
+                    updateAdaptiveNonlinearDamping(meritBefore, lastNonlinearMeritAfter);
+                    lastNonlinearConvergenceMerit = currentNonlinearConvergenceMerit();
+                }
             }
 
-            //update DoFs
-            updateFieldVariables();
-            //compute residuals
-            computeForcesAtIntegrationTime(false); //to obtain the actual stress, fluxes, ...
+            if ( !useNonlinearGlobalization ) {
+                //update DoFs
+                updateFieldVariables();
+                //compute residuals
+                computeForcesAtIntegrationTime(false); //to obtain the actual stress, fluxes, ...
 
-            //compute and print errors
-            evaluateErrors();
-            if ( it == 0 ) {
-                disErr = 0;                        //error in displacement change, only from second iteration
+                //compute errors
+                evaluateErrors();
+                if ( it == 0 ) {
+                    disErr = 0;                        //error in displacement change, only from second iteration
+                }
             }
+
+            if ( useNonlinearGlobalization ) {
+                requestAdaptiveMatrixRebuildIfNeeded(meritBefore, lastNonlinearMeritAfter);
+            }
+
             if ( not silent ) {
                 cout << setw(6) << it << setw(15) << resErr;
             }
@@ -1121,7 +2084,17 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
             }
             if ( not silent ) {
-                cout << setw(15) << eneErr << endl;
+                cout << setw(15) << eneErr;
+                if ( nonlinearGlobalizationActive() ) {
+                    cout << setw(15) << lastNonlinearAlpha
+                         << setw(15) << lastNonlinearLineSearchTrials
+                         << setw(15) << lastNonlinearMeritAfter
+                         << setw(15) << lastNonlinearConvergenceMerit
+                         << setw(15) << ( nonlinearCutbackReason.empty() ? "-" : nonlinearCutbackReason )
+                         << setw(15) << ( lastNonlinearMatrixRebuild ? 1 : 0 )
+                         << setw(15) << lastNonlinearTrustRadius;
+                }
+                cout << endl;
             }
 
             //if (not silent) checkAllVectorsForNaNs();
@@ -1144,12 +2117,18 @@ void SteadyStateNonLinearSolver :: solve() {
                 break;
             }
 
+            const double meritAfter = useNonlinearGlobalization ? currentNonlinearGlobalizationMerit() : 0.;
             it++;
             cumul_it++;
-            if ( disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr && it >= minIt ) {
+            if ( nonlinearConvergenceCriteriaSatisfied() && it >= minIt ) {
                 converged = true;
             } else {
                 converged = false;
+            }
+
+            if ( useNonlinearGlobalization && !converged && shouldCutbackForNonlinearProgress(meritBefore, meritAfter) ) {
+                restart_now = true;
+                break;
             }
 
             exporters->exportData(step, it, time, 0); //to export data during iterations
@@ -1179,15 +2158,19 @@ void SteadyStateNonLinearSolver :: solve() {
 
             time += dt;
             if ( not silent ) {
+                if ( !nonlinearCutbackReason.empty() ) {
+                    std :: cout << "Nonlinear cutback reason: " << nonlinearCutbackReason << endl;
+                }
                 std :: cout << "Restarting step, timestep = " << dt << ", time = " << time << endl;
             }
             restarts++;
             restarted = true;
             restart_now = false;
+            nonlinearCutbackReason.clear();
         } else if ( !converged ) {
             if ( disErr < limitDisErr && resErr < limitResErr && eneErr < limitEneErr ) {
                 if ( not silent ) {
-                    std :: cout << "tolerance increased in this step" << '\n';
+                    std :: cout << "tolerance increased in this step (fallback acceptance, not full convergence)" << '\n';
                 }
                 converged = true;
                 this->fully_converged = false;
@@ -1239,6 +2222,9 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
         cout <<  scientific; //cout << setprecision(8);
         cout << "----------------------------------------------------" << endl;
         cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
+        if ( nonlinearGlobalizationActive() ) {
+            cout << setw(6) << " " << setw(15) << "alpha" << setw(15) << "ls_trials" << setw(15) << "glob_merit" << setw(15) << "conv_merit" << setw(15) << "cutback" << setw(15) << "K_rebuild" << setw(15) << "trust_radius" << endl;
+        }
         cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;
         cout << "----------------------------------------------------" << endl;
     }

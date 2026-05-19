@@ -2,6 +2,7 @@
 #define _SOLVER_IMPLICIT_H
 
 #include "solver.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////
 class SteadyStateLinearSolver : public Solver
@@ -20,6 +21,7 @@ protected:
     int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
     int stiffnessMatrixStepUpdate; //update matrices every X step
     std :: string stiffMatType, stiffMatTypeFirstIT;
+    double stiffMatElasticBlendBeta = 0.;
 
     virtual bool updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce);
 
@@ -49,6 +51,42 @@ public:
 class SteadyStateNonLinearSolver : public SteadyStateLinearSolver
 {
 protected:
+    enum class NonlinearDampingType { Off, Fixed, Adaptive, RollbackAdaptive };
+    enum class NonlinearLineSearchType { Off, Backtracking, Bisection };
+    enum class NonlinearMeritType { Residual, Energy, Mixed };
+    enum class NonlinearLineSearchEvaluationMode { Frozen, Actual, FrozenThenActual };
+    enum class NonlinearTrustRegionType { Off, StepNorm };
+
+    struct NonlinearStateSnapshot {
+        Vector trial_r;
+        Vector ddr;
+        Vector full_ddr;
+        Vector f;
+        Vector f_int;
+        Vector f_ext;
+        Vector f_dam;
+        Vector f_acc;
+        Vector residuals;
+        Vector load;
+        Vector W_int;
+        Vector W_ext;
+        Vector W_kin;
+        double disErr = 0.;
+        double resErr = 0.;
+        double eneErr = 0.;
+        std :: shared_ptr< ElementContainer :: MaterialStatusSnapshot > materialStatuses;
+        std :: uint64_t materialStatusHash = 0;
+        bool materialStatusHashValid = false;
+    };
+
+    struct NonlinearTrialResult {
+        bool accepted = false;
+        double alpha = 1.;
+        unsigned trials = 0;
+        double meritBefore = 0.;
+        double meritAfter = 0.;
+    };
+
     unsigned it, restarts, cumul_it; //number of iterations, number of restarts
     double dtmax, dtmin;  // for adaptive step
     Vector EPS2;
@@ -68,9 +106,94 @@ protected:
     Vector eigen_trial_rPF, eigen_f_extPF, eigen_WextPF; //RVE fields to transfer macroscopic data to error evaluation
     double idc_time, idc_dt, idc_time_converged; //time in which load advancements are measured
     double init_idc_time = 0.0;  ///> when starting from previously calculated results
+    NonlinearDampingType nonlinearDampingType = NonlinearDampingType :: Off;
+    NonlinearLineSearchType nonlinearLineSearchType = NonlinearLineSearchType :: Off;
+    NonlinearMeritType nonlinearMeritType = NonlinearMeritType :: Mixed;
+    double nonlinearDampingFactor = 1.;
+    double nonlinearDampingMin = 0.03125;
+    double nonlinearDampingMax = 1.;
+    double nonlinearDampingIncrease = 1.25;
+    double nonlinearDampingDecrease = 0.5;
+    double currentNonlinearDampingFactor = 1.;
+    double nonlinearLineSearchReduction = 0.5;
+    double nonlinearLineSearchMinAlpha = 0.03125;
+    double nonlinearLineSearchMaxAlpha = 1.0;
+    double nonlinearLineSearchBisectionTolerance = 1e-3;
+    unsigned nonlinearLineSearchMaxTrials = 6;
+    double nonlinearLineSearchArmijo = 0.;
+    bool nonlinearLineSearchAcceptAnyDecrease = true;
+    bool nonlinearLineSearchFreezeMaterial = true;
+    bool nonlinearLineSearchCutbackOnFail = true;
+    bool nonlinearLineSearchReportTrials = false;
+    NonlinearLineSearchEvaluationMode nonlinearLineSearchEvaluationMode = NonlinearLineSearchEvaluationMode :: Frozen;
+    bool nonlinearStagnationCutback = false;
+    unsigned nonlinearStagnationIterations = 8;
+    double nonlinearStagnationRatio = 0.95;
+    double nonlinearGrowthCutback = 1.25;
+    bool nonlinearAdaptiveMatrixUpdate = false;
+    double nonlinearRebuildOnSmallAlpha = 0.;
+    bool nonlinearRebuildOnMeritGrowth = false;
+    bool nonlinearRebuildOnStagnation = false;
+    bool nonlinearForceMatrixRebuild = false;
+    bool lastNonlinearMatrixRebuild = false;
+    NonlinearTrustRegionType nonlinearTrustRegionType = NonlinearTrustRegionType :: Off;
+    double nonlinearTrustRadiusInitial = 0.;
+    double nonlinearTrustRadiusMin = 1e-12;
+    double nonlinearTrustRadiusMax = 1e100;
+    double nonlinearTrustShrink = 0.5;
+    double nonlinearTrustExpand = 1.5;
+    unsigned nonlinearTrustMaxTrials = 8;
+    double currentNonlinearTrustRadius = 0.;
+    double lastNonlinearTrustRadius = 0.;
+    double nonlinearRollbackGrowthRatio = 1.10;
+    double nonlinearRollbackIncreaseRatio = 1.00;
+    double nonlinearRollbackGoodReductionRatio = 0.50;
+    unsigned nonlinearRollbackIgnoreInitialIterations = 0;
+    bool nonlinearRollbackEnable = true;
+    bool nonlinearRollbackDecreaseOnAnyIncrease = true;
+    unsigned nonlinearRollbackMaxGrowthDecreases = 1000000000;
+    unsigned nonlinearRollbackGrowthDecreaseCounter = 0;
+    bool nonlinearMaterialSnapshotRollback = false;
+    bool nonlinearMaterialSnapshotVerify = false;
+    bool nonlinearTangentCheck = false;
+    unsigned nonlinearTangentCheckStep = 0;
+    unsigned nonlinearTangentCheckIteration = 0;
+    double nonlinearTangentCheckEps = 1e-6;
+    unsigned nonlinearTangentCheckRandomVectors = 0;
+    bool nonlinearTangentCheckIncludeNewton = true;
+    bool nonlinearTangentCheckStopAfter = false;
+    std :: string nonlinearTangentCheckOutput = "tangent_check.tsv";
+    bool nonlinearTangentCheckDone = false;
+    double nonlinearBestMerit = 0.;
+    unsigned nonlinearStagnationCounter = 0;
+    double lastNonlinearAlpha = 1.;
+    unsigned lastNonlinearLineSearchTrials = 0;
+    double lastNonlinearMeritBefore = 0.;
+    double lastNonlinearMeritAfter = 0.;
+    double lastNonlinearConvergenceMerit = 0.;
+    std :: string nonlinearCutbackReason;
+    bool warnedGlobalizationWithIDC = false;
     void printAllVectors();
     void checkAllVectorsForNaNs();
     void evaluateErrors();
+    bool nonlinearGlobalizationActive() const;
+    bool nonlinearConvergenceCriteriaSatisfied() const;
+    double currentNonlinearMerit() const;
+    double currentNonlinearGlobalizationMerit() const;
+    double currentNonlinearConvergenceMerit() const;
+    bool nonlinearMeritAccepted(double trialMerit, double baseMerit, double alpha) const;
+    NonlinearStateSnapshot saveNonlinearState() const;
+    void restoreNonlinearState(const NonlinearStateSnapshot &snapshot, bool resetMaterialStatuses);
+    void resetNonlinearGlobalizationAttempt();
+    bool applyScaledIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double alpha, bool frozen, bool resetMaterialStatuses = true);
+    NonlinearTrialResult performBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
+    NonlinearTrialResult performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
+    NonlinearTrialResult performStepNormTrustRegion(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
+    double currentNonlinearDampingAlpha() const;
+    void updateAdaptiveNonlinearDamping(double meritBefore, double meritAfter);
+    bool shouldCutbackForNonlinearProgress(double meritBefore, double meritAfter);
+    void requestAdaptiveMatrixRebuildIfNeeded(double meritBefore, double meritAfter);
+    bool maybeRunNonlinearTangentCheck(const Vector &newtonIncrement);
     virtual void reset();
     virtual void giveValues(std :: string code, Vector &result) const;
 
