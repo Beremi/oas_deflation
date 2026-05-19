@@ -19,6 +19,7 @@ SteadyStateLinearSolver :: SteadyStateLinearSolver() {
     isTimeReal = false;
     stiffMatType = "elastic";
     stiffMatTypeFirstIT = "void";
+    lastStiffMatType = stiffMatType;
 }
 
 //////////////////////////////////////////////////////////
@@ -502,6 +503,7 @@ bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigne
         if ( iteration == 0 && stiffMatTypeFirstIT.compare("void") != 0 ) {
             matrixType = stiffMatTypeFirstIT;
         }
+        lastStiffMatType = matrixType;
         elems->updateStiffnessMatrix(K, matrixType);
         if ( stiffMatElasticBlendBeta > 0. && matrixType.compare("elastic") != 0 ) {
             CoordinateIndexedSparseMatrix elasticK(K);
@@ -626,6 +628,7 @@ SteadyStateNonLinearSolver :: SteadyStateNonLinearSolver() {
     restarts = 0;
     cumul_it = 0;
     stiffMatType = "secant";
+    lastStiffMatType = stiffMatType;
 
     //eigen error fields
     eigen_trial_rPF = Vector :: Zero(numPhysicalFields);
@@ -933,6 +936,23 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 nonlinearTangentCheckStopAfter = ( value != 0 );
             } else if ( param.compare("nonlinear_tangent_check_output") == 0 ) {
                 iss >> nonlinearTangentCheckOutput;
+            } else if ( param.compare("nonlinear_tangent_check_scope") == 0 ) {
+                std :: string value;
+                iss >> value;
+                if ( value.compare("global") == 0 ) {
+                    nonlinearTangentCheckScope = NonlinearTangentCheckScope :: Global;
+                } else if ( value.compare("element_top") == 0 ) {
+                    nonlinearTangentCheckScope = NonlinearTangentCheckScope :: ElementTop;
+                } else {
+                    std :: cerr << "unknown nonlinear_tangent_check_scope '" << value << "', using global" << '\n';
+                    nonlinearTangentCheckScope = NonlinearTangentCheckScope :: Global;
+                }
+            } else if ( param.compare("nonlinear_tangent_check_top_elements") == 0 ) {
+                iss >> nonlinearTangentCheckTopElements;
+            } else if ( param.compare("nonlinear_tangent_check_element_output") == 0 ) {
+                iss >> nonlinearTangentCheckElementOutput;
+            } else if ( param.compare("nonlinear_tangent_check_matrix_type") == 0 ) {
+                iss >> nonlinearTangentCheckMatrixType;
             } else if ( param.compare("indirect_displacement_control") == 0 || param.compare("indirect_control") == 0 ) {
                 iss >> helpuint;
                 if ( !idc ) {
@@ -1075,6 +1095,21 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     }
     if ( nonlinearTangentCheckOutput.empty() ) {
         nonlinearTangentCheckOutput = "tangent_check.tsv";
+    }
+    if ( nonlinearTangentCheckElementOutput.empty() ) {
+        nonlinearTangentCheckElementOutput = "tangent_check_elements.tsv";
+    }
+    if ( nonlinearTangentCheckTopElements < 1 ) {
+        std :: cerr << "nonlinear_tangent_check_top_elements must be at least 1, setting to 1" << '\n';
+        nonlinearTangentCheckTopElements = 1;
+    }
+    if ( nonlinearTangentCheckMatrixType.compare("current") != 0 &&
+         nonlinearTangentCheckMatrixType.compare("elastic") != 0 &&
+         nonlinearTangentCheckMatrixType.compare("secant") != 0 &&
+         nonlinearTangentCheckMatrixType.compare("tangent") != 0 &&
+         nonlinearTangentCheckMatrixType.compare("consistent") != 0 ) {
+        std :: cerr << "nonlinear_tangent_check_matrix_type must be current, elastic, secant, tangent, or consistent; using current" << '\n';
+        nonlinearTangentCheckMatrixType = "current";
     }
     if ( !ben ) {
         enlargeIt = maxIt / 3;
@@ -1404,12 +1439,129 @@ bool SteadyStateNonLinearSolver :: maybeRunNonlinearTangentCheck(const Vector &n
                         << " fd_norm " << fdNorm
                         << std :: endl;
         }
+
+        if ( nonlinearTangentCheckScope == NonlinearTangentCheckScope :: ElementTop ) {
+            writeElementTangentAttribution(direction.first, direction.second, baseState, materialSnapshot);
+        }
     }
     output.close();
 
     restoreNonlinearState(baseState, false);
     elems->restoreMaterialStatusSnapshot(materialSnapshot);
     return true;
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: writeElementTangentAttribution(const std :: string &directionName, const Vector &direction, const NonlinearStateSnapshot &baseState, const ElementContainer :: MaterialStatusSnapshot &materialSnapshot) {
+    struct ElementTangentAttribution {
+        unsigned elementId = 0;
+        std :: string elementName;
+        double relativeError = 0.;
+        double cosine = 0.;
+        double kpNorm = 0.;
+        double fdNorm = 0.;
+        double mismatchNorm = 0.;
+    };
+
+    std :: string matrixType = nonlinearTangentCheckMatrixType;
+    if ( matrixType.compare("current") == 0 ) {
+        matrixType = lastStiffMatType.empty() ? stiffMatType : lastStiffMatType;
+    }
+
+    std :: string matrixTypeLabel = matrixType;
+    const bool useElasticBlend = stiffMatElasticBlendBeta > 0. && matrixType.compare("elastic") != 0;
+    if ( useElasticBlend ) {
+        matrixTypeLabel += "+elastic_blend_" + std :: to_string(stiffMatElasticBlendBeta);
+    }
+
+    Vector fullDirection = Vector :: Zero( trial_r.size() );
+    nodes->giveFullDoFArray(direction, fullDirection);
+
+    restoreNonlinearState(baseState, false);
+    elems->restoreMaterialStatusSnapshot(materialSnapshot);
+
+    std :: vector< ElementTangentAttribution > rows;
+    rows.reserve(elems->giveSize() );
+
+    for ( auto elemIt = elems->begin(); elemIt != elems->end(); ++elemIt ) {
+        Element *elem = *elemIt;
+        Element :: MaterialStatusSnapshot elementSnapshot = elem->createMaterialStatusSnapshot();
+
+        std :: vector< unsigned >elDoFs = elem->giveDoFs();
+        Vector baseElementDoFs = Vector :: Zero(elDoFs.size() );
+        Vector elementDirection = Vector :: Zero(elDoFs.size() );
+        for ( unsigned i = 0; i < elDoFs.size(); i++ ) {
+            baseElementDoFs [ i ] = baseState.trial_r [ elDoFs [ i ] ];
+            elementDirection [ i ] = fullDirection [ elDoFs [ i ] ];
+        }
+
+        Matrix elementK = elem->giveStiffnessMatrix(matrixType);
+        if ( useElasticBlend ) {
+            Matrix elasticK = elem->giveStiffnessMatrix("elastic");
+            elementK = ( 1. - stiffMatElasticBlendBeta ) * elementK + stiffMatElasticBlendBeta * elasticK;
+        }
+        Vector kp = elementK * elementDirection;
+
+        elem->restoreMaterialStatusSnapshot(elementSnapshot);
+        elem->evaluateStrains(baseElementDoFs);
+        elem->evaluateStresses(false, -1.);
+        Vector baseForces = elem->giveInternalForces();
+
+        elem->restoreMaterialStatusSnapshot(elementSnapshot);
+        Vector perturbedElementDoFs = baseElementDoFs + nonlinearTangentCheckEps * elementDirection;
+        elem->evaluateStrains(perturbedElementDoFs);
+        elem->evaluateStresses(false, -1.);
+        Vector perturbedForces = elem->giveInternalForces();
+        elem->restoreMaterialStatusSnapshot(elementSnapshot);
+
+        Vector fd = ( perturbedForces - baseForces ) / nonlinearTangentCheckEps;
+        const double kpNorm = kp.norm();
+        const double fdNorm = fd.norm();
+        const double mismatchNorm = ( kp - fd ).norm();
+
+        ElementTangentAttribution row;
+        row.elementId = elem->giveID();
+        row.elementName = elem->giveName();
+        row.relativeError = mismatchNorm / std :: max(fdNorm, 1e-300);
+        row.cosine = kp.dot(fd) / std :: max(kpNorm * fdNorm, 1e-300);
+        row.kpNorm = kpNorm;
+        row.fdNorm = fdNorm;
+        row.mismatchNorm = mismatchNorm;
+        rows.push_back(row);
+    }
+
+    std :: sort(rows.begin(), rows.end(), [](const ElementTangentAttribution &a, const ElementTangentAttribution &b) {
+        return a.mismatchNorm > b.mismatchNorm;
+    } );
+
+    std :: ifstream input(nonlinearTangentCheckElementOutput);
+    const bool writeHeader = !input.good() || input.peek() == std :: ifstream :: traits_type :: eof();
+    input.close();
+    std :: ofstream output(nonlinearTangentCheckElementOutput, std :: ios :: app);
+    if ( writeHeader ) {
+        output << "step\titeration\teps\tdirection\telement_id\telement_name\tmatrix_type\trelative_error\tcosine\tkp_norm\tfd_norm\tmismatch_norm\n";
+    }
+
+    const unsigned numRows = std :: min<unsigned>(nonlinearTangentCheckTopElements, rows.size() );
+    for ( unsigned i = 0; i < numRows; i++ ) {
+        const ElementTangentAttribution &row = rows [ i ];
+        output << step << '\t'
+               << it << '\t'
+               << nonlinearTangentCheckEps << '\t'
+               << directionName << '\t'
+               << row.elementId << '\t'
+               << row.elementName << '\t'
+               << matrixTypeLabel << '\t'
+               << row.relativeError << '\t'
+               << row.cosine << '\t'
+               << row.kpNorm << '\t'
+               << row.fdNorm << '\t'
+               << row.mismatchNorm << '\n';
+    }
+    output.close();
+
+    restoreNonlinearState(baseState, false);
+    elems->restoreMaterialStatusSnapshot(materialSnapshot);
 }
 
 //////////////////////////////////////////////////////////

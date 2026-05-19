@@ -21,6 +21,7 @@ protected:
     int stiffnessMatrixCumulIterUpdate; //update matrices every X iteration cumulatively
     int stiffnessMatrixStepUpdate; //update matrices every X step
     std :: string stiffMatType, stiffMatTypeFirstIT;
+    std :: string lastStiffMatType;
     double stiffMatElasticBlendBeta = 0.;
 
     virtual bool updateSystemMatrices(unsigned iteration, unsigned cumul_iteration, bool enforce);
@@ -56,6 +57,7 @@ protected:
     enum class NonlinearMeritType { Residual, Energy, Mixed };
     enum class NonlinearLineSearchEvaluationMode { Frozen, Actual, FrozenThenActual };
     enum class NonlinearTrustRegionType { Off, StepNorm };
+    enum class NonlinearTangentCheckScope { Global, ElementTop };
 
     struct NonlinearStateSnapshot {
         Vector trial_r;
@@ -162,7 +164,11 @@ protected:
     unsigned nonlinearTangentCheckRandomVectors = 0;
     bool nonlinearTangentCheckIncludeNewton = true;
     bool nonlinearTangentCheckStopAfter = false;
+    NonlinearTangentCheckScope nonlinearTangentCheckScope = NonlinearTangentCheckScope :: Global;
+    unsigned nonlinearTangentCheckTopElements = 20;
     std :: string nonlinearTangentCheckOutput = "tangent_check.tsv";
+    std :: string nonlinearTangentCheckElementOutput = "tangent_check_elements.tsv";
+    std :: string nonlinearTangentCheckMatrixType = "current";
     bool nonlinearTangentCheckDone = false;
     double nonlinearBestMerit = 0.;
     unsigned nonlinearStagnationCounter = 0;
@@ -194,6 +200,7 @@ protected:
     bool shouldCutbackForNonlinearProgress(double meritBefore, double meritAfter);
     void requestAdaptiveMatrixRebuildIfNeeded(double meritBefore, double meritAfter);
     bool maybeRunNonlinearTangentCheck(const Vector &newtonIncrement);
+    void writeElementTangentAttribution(const std :: string &directionName, const Vector &direction, const NonlinearStateSnapshot &baseState, const ElementContainer :: MaterialStatusSnapshot &materialSnapshot);
     virtual void reset();
     virtual void giveValues(std :: string code, Vector &result) const;
 

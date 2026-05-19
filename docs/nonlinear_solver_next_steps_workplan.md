@@ -26,6 +26,13 @@ dfgmres_deflation_vectors = 20
 
 All Newton globalization controls remain disabled for points 1 and 2.
 
+Mandatory phase closure benchmark:
+
+- Every diagnostic or implementation phase must finish with the full strict 8 quarter-step TS-N65 run.
+- Compare one-to-one against the current best local baseline: `stiff_matrix_type tangent`, `stiffness_matrix_iter_update 10`, strict convergence `8/8`, total nonlinear iterations `585`, total OAS duration `26:53`.
+- If a phase only adds diagnostics and should not alter solver behavior, the strict run must either match this baseline within normal runtime noise or clearly explain any overhead from enabled diagnostics.
+- A phase is not considered finished until the report includes the 8-step table, total iterations, total wall time, convergence count, final errors, and a short baseline delta.
+
 ## Result location
 
 Primary report:
@@ -40,6 +47,7 @@ Machine-readable files:
 results/nonlinear-solver-next-steps-<timestamp>/stiffness_sweep.tsv
 results/nonlinear-solver-next-steps-<timestamp>/matrix_type_sweep.tsv
 results/nonlinear-solver-next-steps-<timestamp>/tangent_check.tsv
+results/nonlinear-solver-next-steps-<timestamp>/tangent_check_elements.tsv
 ```
 
 ## Point 1: stiffness rebuild cadence sweep
@@ -103,6 +111,10 @@ nonlinear_tangent_check_random_vectors <int>
 nonlinear_tangent_check_include_newton 0|1
 nonlinear_tangent_check_stop_after 0|1
 nonlinear_tangent_check_output tangent_check.tsv
+nonlinear_tangent_check_scope global|element_top
+nonlinear_tangent_check_top_elements 20
+nonlinear_tangent_check_element_output tangent_check_elements.tsv
+nonlinear_tangent_check_matrix_type current
 ```
 
 At the selected nonlinear state, compare:
@@ -147,6 +159,11 @@ Report:
 | step | iteration | eps | direction | relative error | cosine | ||Kp|| | ||fd|| |
 |---:|---:|---:|---|---:|---:|---:|---:|
 
+For `nonlinear_tangent_check_scope element_top`, also report the top local contributors:
+
+| step | iteration | eps | direction | element id | element name | matrix type | relative error | cosine | ||Kp|| | ||fd|| | mismatch |
+|---:|---:|---:|---|---:|---|---|---:|---:|---:|---:|---:|
+
 ## Point 4: material-status snapshot and rollback
 
 Add snapshot/restore infrastructure:
@@ -189,3 +206,9 @@ The final report must state:
 - Whether current `Keff` is a good derivative of the residual at hard states.
 - Whether safe material snapshot/rollback is available for future globalization work.
 - Which remaining blockers are local solver issues versus constitutive/path-following issues.
+
+## Packet 1 execution note
+
+- Every future checkpoint remains incomplete until it has a strict 8 quarter-step TS-N65 phase-closure run with diagnostics disabled and a table against the saved baseline target (`8/8`, `585` nonlinear iterations, `26:53` total duration).
+- Element-level tangent attribution is diagnostic-only. If it is run at a hard state, prefer `nonlinear_tangent_check_stop_after 1` unless a separate non-intrusiveness audit proves that continuing after the local element FD sweep leaves all material and element-side state unchanged.
+- If a diagnostic-enabled run is needed at a hard state, pair it with a separate diagnostic-disabled phase-closure run. The diagnostic run identifies the tangent mismatch source; the disabled run verifies production behavior.
