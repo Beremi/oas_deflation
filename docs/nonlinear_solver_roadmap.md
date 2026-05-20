@@ -27,7 +27,7 @@ the primary replication criteria.
 | --- | --- | --- | --- |
 | CP0 | complete | Parser, roadmap, report harness | Existing replicated baseline log |
 | CP1 | partial | Existing globalization sweep on legacy `tangent` | Strict fixed-step baseline |
-| CP2 | pending | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
+| CP2 | complete-negative | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
 | CP3 | pending | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
 | CP4 | pending | Arc-length prototype on a small benchmark | Legacy load-control regression |
 | CP5 | pending | TS-N65 arc-length application | Strict baseline and load-displacement curve |
@@ -102,6 +102,20 @@ Pass criteria:
 - No NaNs.
 - Report minimum accepted `dt`, cutback count, accepted-step count, and final
   load/displacement gauges.
+
+Current checkpoint result:
+
+- Report: `results/tsn65-adaptive-cutback-20260520-cp2/report.md`.
+- Executed variants: `G2-stagnation-only`, `G2-backtracking-actual`.
+- Both variants failed before `total_time = 1e-2` after reaching
+  `min_time_step = 1.25e-5`.
+- No NaNs and no fallback acceptance were observed.
+- `G2-stagnation-only` reached furthest accepted time `7.421875e-3`.
+- `G2-backtracking-actual` reached furthest accepted time `7.8125e-3`, with
+  minimum line-search alpha `0.125`.
+- Verdict: adaptive cutback and line search reduce the local row burn, but are
+  not sufficient to pass TS-N65 load control. Proceed to CP3 indirect
+  displacement control before arc-length.
 
 ## CP3: Indirect Displacement Control Before Arc-Length
 

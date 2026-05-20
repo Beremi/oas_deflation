@@ -33,11 +33,15 @@ ITER_RE = re.compile(
 DURATION_RE = re.compile(r"^step duration:\s*(?P<duration>\S+)")
 TOTAL_DURATION_RE = re.compile(r"^#+ total duration:\s*(?P<duration>\S+)")
 SETUP_RE = re.compile(r"DeflatedFGMRES setup complete: (?P<body>.*)$")
+STEP_SIZE_CHANGE_RE = re.compile(
+    r"^(?P<action>restarting|shortening|enlarging) step,\s*timestep\s*=\s*(?P<dt>\S+)"
+)
 
 
 def as_float(value: str | None) -> float | None:
     if value is None or value == "---":
         return None
+    value = value.rstrip(",;")
     try:
         return float(value)
     except ValueError:
@@ -107,6 +111,10 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
     restart_count = 0
     shortening_count = 0
     enlargement_count = 0
+    reported_dt_values: list[float] = []
+    restart_dt_values: list[float] = []
+    shortening_dt_values: list[float] = []
+    enlargement_dt_values: list[float] = []
 
     with path.open("r", errors="replace") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
@@ -116,11 +124,14 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
 
             step_match = STEP_RE.match(stripped)
             if step_match:
+                step_dt = as_float(step_match.group("dt"))
                 current = new_step(
                     int(step_match.group("step")),
                     as_float(step_match.group("time")),
-                    as_float(step_match.group("dt")),
+                    step_dt,
                 )
+                if step_dt is not None:
+                    reported_dt_values.append(step_dt)
                 steps.append(current)
                 continue
 
@@ -140,12 +151,24 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
             if "factorizing system matrix" in lower:
                 factorization_count += 1
 
-            if "enlarging step" in lower:
-                enlargement_count += 1
-            if "shortening step" in lower:
-                shortening_count += 1
-            if "restarting step" in lower:
-                restart_count += 1
+            step_size_match = STEP_SIZE_CHANGE_RE.match(lower)
+            if step_size_match:
+                action = step_size_match.group("action")
+                changed_dt = as_float(step_size_match.group("dt"))
+                if changed_dt is not None:
+                    reported_dt_values.append(changed_dt)
+                if action == "enlarging":
+                    enlargement_count += 1
+                    if changed_dt is not None:
+                        enlargement_dt_values.append(changed_dt)
+                elif action == "shortening":
+                    shortening_count += 1
+                    if changed_dt is not None:
+                        shortening_dt_values.append(changed_dt)
+                elif action == "restarting":
+                    restart_count += 1
+                    if changed_dt is not None:
+                        restart_dt_values.append(changed_dt)
 
             setup = parse_setup(stripped)
             if setup:
@@ -243,6 +266,10 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
         "restart_count": restart_count,
         "shortening_count": shortening_count,
         "enlargement_count": enlargement_count,
+        "min_reported_dt": min(reported_dt_values) if reported_dt_values else None,
+        "restart_dt_values": restart_dt_values,
+        "shortening_dt_values": shortening_dt_values,
+        "enlargement_dt_values": enlargement_dt_values,
         "first_setup": setup_lines[0] if setup_lines else {},
         "last_setup": setup_lines[-1] if setup_lines else {},
     }
@@ -311,6 +338,7 @@ def format_markdown(summary: dict[str, Any]) -> str:
         f"- Warnings: `{summary['warning_count']}`",
         f"- NaN lines: `{summary['nan_count']}`",
         f"- Cutbacks: `{summary['cutback_count']}`",
+        f"- Min reported dt: `{summary['min_reported_dt']}`",
         f"- Fallback accepts: `{summary['fallback_acceptance_count']}`",
         "",
         "| step | time | dt | rows | target | match | duration | conv | residual | displacement | energy | alpha | ls trials | K rows | cutbacks |",
@@ -359,6 +387,7 @@ def format_text(summary: dict[str, Any]) -> str:
         f"warnings: {summary['warning_count']}",
         f"nan_lines: {summary['nan_count']}",
         f"cutbacks: {summary['cutback_count']}",
+        f"min_reported_dt: {summary['min_reported_dt']}",
         f"fallback_acceptance_count: {summary['fallback_acceptance_count']}",
     ]
     return "\n".join(lines) + "\n"
