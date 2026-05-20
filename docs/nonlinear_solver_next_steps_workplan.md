@@ -161,8 +161,8 @@ Report:
 
 For `nonlinear_tangent_check_scope element_top`, also report the top local contributors:
 
-| step | iteration | eps | direction | element id | element name | matrix type | relative error | cosine | ||Kp|| | ||fd|| | mismatch |
-|---:|---:|---:|---|---:|---|---|---:|---:|---:|---:|---:|
+| step | iteration | eps | direction | element id | element name | material id | material name | material status names | matrix type | relative error | cosine | ||Kp|| | ||fd|| | mismatch |
+|---:|---:|---:|---|---:|---|---:|---|---|---|---:|---:|---:|---:|---:|
 
 ## Point 4: material-status snapshot and rollback
 
@@ -212,3 +212,26 @@ The final report must state:
 - Every future checkpoint remains incomplete until it has a strict 8 quarter-step TS-N65 phase-closure run with diagnostics disabled and a table against the saved baseline target (`8/8`, `585` nonlinear iterations, `26:53` total duration).
 - Element-level tangent attribution is diagnostic-only. If it is run at a hard state, prefer `nonlinear_tangent_check_stop_after 1` unless a separate non-intrusiveness audit proves that continuing after the local element FD sweep leaves all material and element-side state unchanged.
 - If a diagnostic-enabled run is needed at a hard state, pair it with a separate diagnostic-disabled phase-closure run. The diagnostic run identifies the tangent mismatch source; the disabled run verifies production behavior.
+
+## Packet 2 execution note
+
+- `OAS_material_tangent_audit` now provides local one-point CSL/LDPM stress-update finite differences and is registered as `MaterialTangentAudit`.
+- The local audit currently passes expected elastic/frozen checks and shows that numerical `consistent` branches close the selected active CSL and LDPM probes while the existing CSL `tangent`/`secant` and LDPM `secant` branches do not in those paths. Do not claim TS-N65 improvement until a hard-state `element_top` rerun with material/status columns and a diagnostic-disabled phase closure are complete.
+
+## Packet 3 execution note
+
+- The newly added `TS-N_65.zip` and `Dogbone.zip` archives were inspected. `TS-N_65` is the large target deck and `Dogbone` is a smaller deck with archived result files.
+- The original TS-N65 deck requests `solver_type PardisoLDLT`, which is not implemented in the current build, so strict `DeflatedFGMRES` settings were used for the diagnostic run.
+- The TS-N65 step-6/iteration-10 `element_top` rerun now ties the previous top `LDPMTetra` rows to `CSL material` with `CSL mat. statusx12`.
+- At that hard state, the top-50 element-local `tangent` rows have mean relative error `3.75268`, mean cosine `-0.308147`, and max mismatch norm `358831`.
+- Running the same element-top diagnostic with `nonlinear_tangent_check_matrix_type consistent` drops the top-50 mean relative error to `0.133558`, raises mean cosine to `0.986366`, and drops max mismatch norm to `10748.7`.
+- A production smoke run with global `stiff_matrix_type consistent` assembled but the first DFGMRES solve hit 500 iterations with true relative residual `0.843808`; it was stopped after reaching about 27 GB RSS. Treat numerical `consistent` as the reference for deriving a cheaper CSL active-damage tangent, not as a production global matrix option yet.
+
+## Packet 4 execution note
+
+- An analytical CSL active-damage derivative was tested by temporarily wiring it into the `tangent` branch. It adds the rank-one damage term `-(D_elastic * strain) outer d_damage/d_strain` when CSL damage grows.
+- That derivative is now archived as `archived_csl_damage_tangent`; the default CSL `tangent` branch is back to the legacy degraded elastic stiffness.
+- Local `OAS_material_tangent_audit` shows CSL `damage_growth` / `archived_csl_damage_tangent` closes with relative error `2.37694e-5` and cosine approximately `1`, matching the numerical `consistent` reference. The default `tangent` and `secant` rows remain bad with relative error `3.4089`.
+- TS-N65 hard-state `element_top` with the archived analytical branch reduces the top-50 mean relative error from `3.75268` to `0.0182187` and raises mean cosine from `-0.308147` to `0.995489`.
+- Strict phase closure still fails. With `stiffness_matrix_iter_update -1`, the diagnostic-disabled 8-quarter run converged steps 1-5 and failed at step 6 after 300 nonlinear iterations. With actual-state backtracking line search it converged through step 6 but stalled in step 7 and was stopped.
+- Therefore the analytical tangent is diagnostically valuable but not a standalone solver improvement. Future work should target path-following/globalization or tangent limiting/blending, and every candidate still must pass the strict `8/8`, `585 iteration`, `26:53` baseline comparison gate.

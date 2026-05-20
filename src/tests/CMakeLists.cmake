@@ -47,6 +47,11 @@ add_test(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/tests/check.py $<TARGET_FILE:OAS>
   )
 
+add_test(
+  NAME MaterialTangentAudit
+  COMMAND $<TARGET_FILE:OAS_material_tangent_audit>
+  )
+
 set_tests_properties(
   SpringMechElastic
   SpringMechElastic_3D
@@ -55,6 +60,13 @@ set_tests_properties(
     LABELS "tests"
     TIMEOUT 10
     FIXTURES_REQUIRED my-fixture
+  )
+
+set_tests_properties(
+  MaterialTangentAudit
+  PROPERTIES
+    LABELS "tests;material_tangent"
+    TIMEOUT 10
   )
 
 # add_test(

@@ -13,6 +13,9 @@ Read this file first when picking up the nonlinear solver work. It summarizes wh
 5. `results/nonlinear-solver-stabilization-20260518-093732/report.md`
 6. `results/nonlinear-solver-next-steps-20260518-180841/report.md`
 7. `results/nonlinear-solver-tangent-attribution-20260519-113815/report.md`
+8. `results/nonlinear-solver-material-tangent-audit-20260519-143422/report.md`
+9. `results/tsn65-zip-runs-20260519-190000/report.md`
+10. `results/tsn65-csl-analytic-tangent-20260519-230004/report.md`
 
 The `results/` directory is mostly ignored because it contains copied TS-N65 decks and large runtime files. The important Markdown reports should be kept or explicitly copied/force-added when making checkpoint commits.
 
@@ -158,6 +161,109 @@ Element attribution result:
 
 The next useful work is therefore a targeted LDPM/CSL tangent audit.
 
+## Latest checkpoint: LDPM/CSL material tangent audit
+
+Checkpoint 2 is partially implemented:
+
+- `OAS_material_tangent_audit` runs local one-point CSL and LDPM stress/tangent finite differences.
+- `MaterialTangentAudit` is registered with CTest and passes expected linear/frozen checks.
+- LDPM-family and coupled CSL material statuses now have typed snapshot/restore/hash support.
+- Element attribution output now includes `material_id`, `material_name`, and `material_status_names`.
+- CSL and LDPM now support explicit `consistent` branches backed by state-restored numerical material derivatives.
+
+Key local audit result:
+
+- CSL elastic, frozen, and damaged-unloading tangent paths close to finite differences.
+- CSL active `damage_growth` with actual state update does not close: secant/tangent relative error is about `3.4089` with cosine about `-0.9963`.
+- CSL active `damage_growth` with `consistent` closes: relative error is about `3.01e-5` with cosine near `1`.
+- LDPM `damage_growth` and unloading paths close in the local one-point path with `secant`.
+- The selected LDPM `elastic_loading` probe shows a large `secant` mismatch, while LDPM `consistent` closes it with relative error about `2.32e-6`.
+
+Strict TS-N65 phase closure was not rerun during this material-audit checkpoint because the existing CSL `tangent`/`secant` and LDPM `secant` branches still had selected active-path mismatches, and the TS-N65 hard-state deck/state was not yet present in this checkout. The later zip benchmark checkpoint below completed the hard-state `element_top` rerun with material/status columns.
+
+## Latest checkpoint: TS-N65 benchmark zip run
+
+The newly added `TS-N_65.zip` and `Dogbone.zip` benchmark archives were inspected and extracted under:
+
+```text
+results/tsn65-zip-runs-20260519-190000/input/
+```
+
+`Dogbone` is a small deck with previous archived outputs. `TS-N_65` is the current large nonlinear target deck and was run for this checkpoint.
+
+The original TS-N65 deck cannot be run as-is in this build because its `solver.inp` requests:
+
+```text
+solver_type PardisoLDLT
+```
+
+and the local executable reports:
+
+```text
+Solver type PardisoLDLT is not implemented
+```
+
+The strict TS-N65 hard-state rerun with `DeflatedFGMRES`, `stiff_matrix_type tangent`, and `stiffness_matrix_iter_update 10` reached step 6, iteration 10 and reproduced the global Newton-direction tangent mismatch:
+
+```text
+relative_error = 5.320964
+cosine = 0.707442
+```
+
+The new material/status columns identify the top element-local mismatch rows as:
+
+```text
+element_name = LDPMTetra
+material_id = 0
+material_name = CSL material
+material_status_names = CSL mat. statusx12
+```
+
+Top-50 element-local comparison at the same hard state:
+
+| matrix type | mean relative error | max relative error | mean cosine | mean mismatch norm | max mismatch norm |
+|---|---:|---:|---:|---:|---:|
+| `tangent` | 3.75268 | 7.00578 | -0.308147 | 213602 | 358831 |
+| diagnostic `consistent` | 0.133558 | 0.466171 | 0.986366 | 939.346 | 10748.7 |
+
+This ties the benchmark hard-state mismatch to CSL active damage tangent behavior. However, a production smoke run with global `stiff_matrix_type consistent` did not complete the first quarter step: the first DFGMRES solve hit 500 iterations with true relative residual `0.843808` against the requested `0.1`, and the process was stopped after reaching about 27 GB RSS.
+
+Current implication: use the numerical `consistent` branch as a reference for deriving a cheaper analytical CSL active-damage tangent, but do not switch TS-N65 production runs globally to `consistent` yet.
+
+## Latest checkpoint: archived analytical CSL active-damage tangent
+
+An analytical CSL active-damage tangent was tested by temporarily wiring it into the CSL `tangent` branch:
+
+```text
+D_tangent = (1 - damage) * D_elastic - (D_elastic * strain) outer d_damage/d_strain
+```
+
+It improved the local diagnostics, but it did not close the strict TS-N65 phase benchmark. The code is now archived behind the explicit branch name `archived_csl_damage_tangent`; the default CSL `tangent` path is back to the legacy degraded elastic stiffness.
+
+Local audit result:
+
+| CSL damage-growth branch | relative error | cosine |
+|---|---:|---:|
+| `secant` | 3.4089098751 | -0.9963323184 |
+| `tangent` | 3.4089098751 | -0.9963323184 |
+| `archived_csl_damage_tangent` | 2.3769400931e-5 | 0.99999999997 |
+| `consistent` | 3.0108885587e-5 | 0.99999999955 |
+
+TS-N65 hard-state element-top result with step-start quasi-Newton matrix updates:
+
+| matrix type | mean relative error | max relative error | mean cosine | mean mismatch norm | max mismatch norm |
+|---|---:|---:|---:|---:|---:|
+| legacy `tangent` | 3.75268 | 7.00578 | -0.308147 | 213602 | 358831 |
+| archived analytical branch | 0.0182187 | 0.638459 | 0.995489 | 563.047 | 22422.7 |
+
+The archived branch fixes the local and element-local CSL active-damage tangent mismatch. The strict phase closure is not fixed:
+
+- `stiffness_matrix_iter_update 10` with the analytical tangent destabilized step 3 after the iteration-10 matrix rebuild.
+- Step-start analytical tangent with diagnostics disabled converged 5/8 steps and failed at step 6 after 300 nonlinear iterations.
+- Step-start analytical tangent plus actual-state backtracking converged 6/8 steps, including step 6, but stalled in step 7 and was stopped.
+
+Do not claim solver improvement from the analytical tangent alone. It is now an archived reproduction branch, not mainline behavior. The current evidence says the defect moved from a local CSL tangent mismatch to a global softening/load-control/path-following problem.
+
 ## Latest checkpoint: element/material tangent attribution
 
 New input keywords:
@@ -238,24 +344,12 @@ These are disabled by default and should not be treated as proven TS-N65 improve
 
 ## Next checkpoint
 
-Checkpoint 2: targeted LDPM/CSL material tangent audit tests.
+The local CSL tangent defect is understood and the analytical fix is archived. The next useful work should test solver/model strategies that can handle the softening path rather than simply replacing the default tangent:
 
-Tasks:
-
-1. Identify the material/status classes used by the top `LDPMTetra` mismatch rows.
-2. Add local material-level finite-difference tests for the stress update and tangent tensor.
-3. Test loading, unloading, damage growth, frozen-state evaluation, and actual-state evaluation.
-4. Compare tangent branches:
-   - `tangent`,
-   - `consistent`,
-   - secant-like fallback if available.
-5. Determine whether the mismatch is due to:
-   - missing damage derivative,
-   - wrong branch,
-   - sign/scaling error,
-   - state mutation during tangent/stress evaluation,
-   - mismatch between residual update and stiffness update.
-6. Only after local material tests pass, rerun strict 8 quarter steps and compare to the saved baseline.
+1. Try path-following or indirect displacement control on the strict 8-quarter TS-N65 phase run.
+2. Try a controlled positive-definite tangent blend/limiter using the archived branch as a diagnostic reference.
+3. Consider material-level softening regularization or substepping if solver controls alone do not close the phase.
+4. Keep every experiment gated by the diagnostic-disabled strict `8/8`, `585 iteration`, `26:53` baseline comparison.
 
 ## Practical warnings for next agent
 

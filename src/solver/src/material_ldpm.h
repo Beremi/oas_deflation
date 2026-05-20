@@ -35,6 +35,9 @@ public:
     virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual void update();
     virtual void resetTemporaryVariables();
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
+    virtual std :: uint64_t stateHash() const;
     virtual Matrix giveStiffnessTensor(std :: string type) const;
     virtual std :: string giveLineToSave() const;
     virtual void setParameterValue(std :: string code, double value);
@@ -97,6 +100,9 @@ private:
 public:
     LDPMCoupledMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum);
     ~LDPMCoupledMaterialStatus() {};
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
+    virtual std :: uint64_t stateHash() const;
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;

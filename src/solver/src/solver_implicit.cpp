@@ -5,9 +5,30 @@
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <sstream>
 #define numPhysicalFields 4
 
 using namespace std;
+
+namespace {
+
+bool isStiffnessMatrixType(const std :: string &type) {
+    return type.compare("elastic") == 0 ||
+           type.compare("secant") == 0 ||
+           type.compare("tangent") == 0 ||
+           type.compare("consistent") == 0 ||
+           type.compare("archived_csl_damage_tangent") == 0;
+}
+
+bool isTangentCheckMatrixType(const std :: string &type) {
+    return type.compare("current") == 0 || isStiffnessMatrixType(type);
+}
+
+const char *stiffnessMatrixTypeMessage() {
+    return "'elastic', 'secant', 'tangent', 'consistent', or 'archived_csl_damage_tangent'";
+}
+
+} // namespace
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -967,16 +988,16 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 idc->readFromStream(helpuint, inputfile);
             } else if ( param.compare("stiff_matrix_type") == 0 ) {
                 iss >> stiffMatType;
-                if ( stiffMatType.compare("elastic") != 0 && stiffMatType.compare("secant") != 0  && stiffMatType.compare("tangent") != 0  && stiffMatType.compare("consistent") != 0 ) {
-                    cerr << "Error: stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatType << endl;
+                if ( !isStiffnessMatrixType(stiffMatType) ) {
+                    cerr << "Error: stiff_matrix_type must be " << stiffnessMatrixTypeMessage() << ", entered value is " << stiffMatType << endl;
                     exit(1);
                 }
             } else if ( param.compare("stiff_matrix_elastic_blend_beta") == 0 ) {
                 iss >> stiffMatElasticBlendBeta;
             } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
                 iss >> stiffMatTypeFirstIT;
-                if ( stiffMatTypeFirstIT.compare("elastic") != 0 && stiffMatTypeFirstIT.compare("secant") != 0  && stiffMatTypeFirstIT.compare("tangent") != 0  && stiffMatTypeFirstIT.compare("consistent") != 0 ) {
-                    cerr << "Error: first_iteration_stiff_matrix_type must be 'elastic', 'secant', 'tangent', or 'consistent', entered value is " << stiffMatTypeFirstIT << endl;
+                if ( !isStiffnessMatrixType(stiffMatTypeFirstIT) ) {
+                    cerr << "Error: first_iteration_stiff_matrix_type must be " << stiffnessMatrixTypeMessage() << ", entered value is " << stiffMatTypeFirstIT << endl;
                     exit(1);
                 }
             }
@@ -1103,12 +1124,8 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
         std :: cerr << "nonlinear_tangent_check_top_elements must be at least 1, setting to 1" << '\n';
         nonlinearTangentCheckTopElements = 1;
     }
-    if ( nonlinearTangentCheckMatrixType.compare("current") != 0 &&
-         nonlinearTangentCheckMatrixType.compare("elastic") != 0 &&
-         nonlinearTangentCheckMatrixType.compare("secant") != 0 &&
-         nonlinearTangentCheckMatrixType.compare("tangent") != 0 &&
-         nonlinearTangentCheckMatrixType.compare("consistent") != 0 ) {
-        std :: cerr << "nonlinear_tangent_check_matrix_type must be current, elastic, secant, tangent, or consistent; using current" << '\n';
+    if ( !isTangentCheckMatrixType(nonlinearTangentCheckMatrixType) ) {
+        std :: cerr << "nonlinear_tangent_check_matrix_type must be current, elastic, secant, tangent, consistent, or archived_csl_damage_tangent; using current" << '\n';
         nonlinearTangentCheckMatrixType = "current";
     }
     if ( !ben ) {
@@ -1456,11 +1473,58 @@ void SteadyStateNonLinearSolver :: writeElementTangentAttribution(const std :: s
     struct ElementTangentAttribution {
         unsigned elementId = 0;
         std :: string elementName;
+        std :: string materialId;
+        std :: string materialName;
+        std :: string materialStatusNames;
         double relativeError = 0.;
         double cosine = 0.;
         double kpNorm = 0.;
         double fdNorm = 0.;
         double mismatchNorm = 0.;
+    };
+
+    auto describeMaterialStatus = [](MaterialStatus *status) -> std :: string {
+        if ( !status ) {
+            return "none";
+        }
+        std :: string statusLabel = status->giveName();
+        MaterialStatus *mechanicalStatus = status->giveMechanicalMaterialStatus();
+        if ( mechanicalStatus && mechanicalStatus != status ) {
+            statusLabel += "->" + mechanicalStatus->giveName();
+        }
+        return statusLabel;
+    };
+
+    auto describeElementMaterialStatuses = [&describeMaterialStatus](Element *elem) -> std :: string {
+        std :: vector< std :: pair< std :: string, unsigned > >counts;
+        for ( MaterialStatus *status : elem->giveMaterialStats() ) {
+            const std :: string statusName = describeMaterialStatus(status);
+            bool counted = false;
+            for ( auto &entry : counts ) {
+                if ( entry.first.compare(statusName) == 0 ) {
+                    entry.second++;
+                    counted = true;
+                    break;
+                }
+            }
+            if ( !counted ) {
+                counts.push_back(std :: make_pair(statusName, 1) );
+            }
+        }
+        if ( counts.empty() ) {
+            return "none";
+        }
+        std :: ostringstream os;
+        for ( unsigned i = 0; i < counts.size(); i++ ) {
+            if ( i > 0 ) {
+                os << '|';
+            }
+            os << counts [ i ].first;
+            if ( counts [ i ].second > 1 ) {
+                os << "x" << counts [ i ].second;
+            }
+        }
+        return os.str();
     };
 
     std :: string matrixType = nonlinearTangentCheckMatrixType;
@@ -1522,6 +1586,15 @@ void SteadyStateNonLinearSolver :: writeElementTangentAttribution(const std :: s
         ElementTangentAttribution row;
         row.elementId = elem->giveID();
         row.elementName = elem->giveName();
+        Material *material = elem->giveMaterial();
+        if ( material ) {
+            row.materialId = std :: to_string(material->giveId() );
+            row.materialName = material->giveName();
+        } else {
+            row.materialId = "none";
+            row.materialName = "none";
+        }
+        row.materialStatusNames = describeElementMaterialStatuses(elem);
         row.relativeError = mismatchNorm / std :: max(fdNorm, 1e-300);
         row.cosine = kp.dot(fd) / std :: max(kpNorm * fdNorm, 1e-300);
         row.kpNorm = kpNorm;
@@ -1539,7 +1612,7 @@ void SteadyStateNonLinearSolver :: writeElementTangentAttribution(const std :: s
     input.close();
     std :: ofstream output(nonlinearTangentCheckElementOutput, std :: ios :: app);
     if ( writeHeader ) {
-        output << "step\titeration\teps\tdirection\telement_id\telement_name\tmatrix_type\trelative_error\tcosine\tkp_norm\tfd_norm\tmismatch_norm\n";
+        output << "step\titeration\teps\tdirection\telement_id\telement_name\tmaterial_id\tmaterial_name\tmaterial_status_names\tmatrix_type\trelative_error\tcosine\tkp_norm\tfd_norm\tmismatch_norm\n";
     }
 
     const unsigned numRows = std :: min<unsigned>(nonlinearTangentCheckTopElements, rows.size() );
@@ -1551,6 +1624,9 @@ void SteadyStateNonLinearSolver :: writeElementTangentAttribution(const std :: s
                << directionName << '\t'
                << row.elementId << '\t'
                << row.elementName << '\t'
+               << row.materialId << '\t'
+               << row.materialName << '\t'
+               << row.materialStatusNames << '\t'
                << matrixTypeLabel << '\t'
                << row.relativeError << '\t'
                << row.cosine << '\t'

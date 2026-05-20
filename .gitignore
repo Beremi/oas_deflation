@@ -118,6 +118,12 @@ dmypy.json
 
 # Cuda
 *.i
+
+# Local nonlinear-solver benchmark payloads and heavyweight run dumps.
+Dogbone.zip
+TS-N_65.zip
+results/*/input/
+results/*/runs/
 *.ii
 *.gpu
 *.ptx

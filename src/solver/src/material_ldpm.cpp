@@ -1,8 +1,26 @@
 #include "material_ldpm.h"
 #include "element_discrete.h"
 #include "element_ldpm.h"
+#include <cstring>
 
 using namespace std;
+
+namespace {
+void hashDoubleLDPM(std :: uint64_t &hash, double value) {
+    std :: uint64_t bits = 0;
+    std :: memcpy(&bits, &value, sizeof(double) );
+    hash ^= bits;
+    hash *= 1099511628211ULL;
+}
+
+void hashVectorLDPM(std :: uint64_t &hash, const Vector &values) {
+    hash ^= static_cast< std :: uint64_t >( values.size() );
+    hash *= 1099511628211ULL;
+    for ( int i = 0; i < values.size(); i++ ) {
+        hashDoubleLDPM(hash, values [ i ] );
+    }
+}
+}
 
 //////////////////////////////////////////////////////////
 // LDPM MATERIAL STATUS
@@ -24,12 +42,15 @@ void LDPMMaterialStatus :: init() {
 
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
+    MaterialTestElement *mte = dynamic_cast< MaterialTestElement * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
     } else if ( tet ) {
         L = tet->giveLength(idx);
+    } else if ( mte ) {
+        L = 1.;
     } else {
-        cerr << "Material " << name << " can be used only for RigidBodyContact or LDMPTetra elements" << endl;
+        cerr << "Material " << name << " can be used only for RigidBodyContact, LDPMTetra, or MaterialTestElement elements" << endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -508,6 +529,54 @@ void LDPMMaterialStatus :: resetTemporaryVariables() {
     temp_maxEpsN = maxEpsN;
     temp_maxEpsT = maxEpsT;
     temp_crackOpening = crackOpening;
+    temp_mech_stress = updt_mech_stress;
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > LDPMMaterialStatus :: cloneState() const {
+    std :: unique_ptr< LDPMMaterialStatus > copy = std :: make_unique< LDPMMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void LDPMMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const LDPMMaterialStatus *otherLDPM = dynamic_cast< const LDPMMaterialStatus * >( &other );
+    if ( !otherLDPM ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherLDPM;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t LDPMMaterialStatus :: stateHash() const {
+    std :: uint64_t hash = MaterialStatus :: stateHash();
+    hashDoubleLDPM(hash, normalEnergyDensity);
+    hashDoubleLDPM(hash, shearEnergyDensity);
+    hashDoubleLDPM(hash, eigenVolumetricStrain);
+    hashDoubleLDPM(hash, temp_volumetricStrain);
+    hashDoubleLDPM(hash, volumetricStrain);
+    hashDoubleLDPM(hash, temp_volumetricStrain_total);
+    hashDoubleLDPM(hash, volumetricStrain_total);
+    hashDoubleLDPM(hash, maxEpsT);
+    hashDoubleLDPM(hash, maxEpsN);
+    hashDoubleLDPM(hash, temp_maxEpsT);
+    hashDoubleLDPM(hash, temp_maxEpsN);
+    hashDoubleLDPM(hash, Kt);
+    hashDoubleLDPM(hash, Ks);
+    hashDoubleLDPM(hash, L);
+    hashDoubleLDPM(hash, nt);
+    hashDoubleLDPM(hash, RAND_H);
+    hashDoubleLDPM(hash, crackOpening);
+    hashDoubleLDPM(hash, temp_crackOpening);
+    hashDoubleLDPM(hash, deVdt);
+    hashDoubleLDPM(hash, deNdt);
+    hashDoubleLDPM(hash, virtual_damage);
+    hashVectorLDPM(hash, updt_mech_stress);
+    hashVectorLDPM(hash, temp_mech_stress);
+    return hash;
 }
 
 //////////////////////////////////////////////////////////
@@ -533,6 +602,21 @@ Matrix LDPMMaterialStatus :: giveStiffnessTensor(string type) const {
         //LDPMMaterial *m = static_cast< LDPMMaterial * >( mat );
         //stiff(0,0) *= max( 1 - virtual_damage, m->giveDamageResiduum() );
         return stiff;
+    } else if ( type.compare("consistent") == 0 ) {
+        // Reference actual-state tangent for rate-form LDPM diagnostics.
+        const double eps = 1e-8;
+        Matrix consistent = Matrix :: Zero(stiff.rows(), stiff.cols() );
+        const Vector baseStress = temp_stress;
+        const Vector baseStrain = temp_strain_total;
+        for ( unsigned i = 0; i < static_cast< unsigned >( baseStrain.size() ); i++ ) {
+            std :: unique_ptr< MaterialStatus > perturbed = cloneState();
+            Vector perturbedStrain = baseStrain;
+            perturbedStrain [ i ] += eps;
+            perturbed->setTotalTempStrain(perturbedStrain);
+            perturbed->computeStress(1.);
+            consistent.col(i) = ( perturbed->giveTempStress() - baseStress ) / eps;
+        }
+        return consistent;
     } else {
         cerr << "Error: LDPMMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
@@ -743,6 +827,31 @@ void LDPMMaterial :: init(MaterialContainer *matcont) {
 //////////////////////////////////////////////////////////
 LDPMCoupledMaterialStatus :: LDPMCoupledMaterialStatus(LDPMMaterial *m, Element *e, unsigned ipnum)  : LDPMMaterialStatus(m, e, ipnum) {
     name = "Coupled LDPM mat. status";
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > LDPMCoupledMaterialStatus :: cloneState() const {
+    std :: unique_ptr< LDPMCoupledMaterialStatus > copy = std :: make_unique< LDPMCoupledMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void LDPMCoupledMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const LDPMCoupledMaterialStatus *otherLDPM = dynamic_cast< const LDPMCoupledMaterialStatus * >( &other );
+    if ( !otherLDPM ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherLDPM;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t LDPMCoupledMaterialStatus :: stateHash() const {
+    std :: uint64_t hash = LDPMMaterialStatus :: stateHash();
+    hashDoubleLDPM(hash, avgPressure);
+    return hash;
 }
 
 //////////////////////////////////////////////////////////

@@ -2,10 +2,27 @@
 #include "element_discrete.h"
 #include "element_ldpm.h"
 #include "element_container.h"
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 
 
 using namespace std;
+
+namespace {
+constexpr double CSL_TINY = 1e-14;
+
+void hashDoubleCSL(std :: uint64_t &hash, double value) {
+    std :: uint64_t bits = 0;
+    std :: memcpy(&bits, &value, sizeof(double) );
+    hash ^= bits;
+    hash *= 1099511628211ULL;
+}
+
+double clampOmegaForCSL(double omega) {
+    return std :: max(-0.5 * M_PI + 1e-10, std :: min(0.5 * M_PI - 1e-10, omega) );
+}
+}
 
 //////////////////////////////////////////////////////////
 // CSL MATERIAL STATUS
@@ -87,12 +104,15 @@ void CSLMaterialStatus :: init() {
 
     RigidBodyContact *rbc = dynamic_cast< RigidBodyContact * >( element );
     LDPMTetra *tet = dynamic_cast< LDPMTetra * >( element );
+    MaterialTestElement *mte = dynamic_cast< MaterialTestElement * >( element );
     if ( rbc ) {
         L = rbc->giveLength();
     } else if ( tet ) {
         L = tet->giveLength(idx);
+    } else if ( mte ) {
+        L = 1.;
     } else {
-        cerr << "Material " << name << " can be used only for RigidBodyContact or LDPMTetra elements" << endl;
+        cerr << "Material " << name << " can be used only for RigidBodyContact, LDPMTetra, or MaterialTestElement elements" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -243,6 +263,161 @@ void CSLMaterialStatus :: computeDamage(Vector strain) {
 }
 
 //////////////////////////////////////////////////////////
+Vector CSLMaterialStatus :: computeDamageGradient(Vector strain) const {
+    Vector gradient = Vector :: Zero(strain.size() );
+    CSLMaterial *m = static_cast< CSLMaterial * >( mat );
+
+    const double epsN = strain [ 0 ];
+    double epsT2 = 0.;
+    for ( unsigned i = 1; i < strain.size(); i++ ) {
+        epsT2 += strain [ i ] * strain [ i ];
+    }
+    const double epsT = sqrt(epsT2);
+    const double alpha = m->giveAlphaForDamage();
+    const double sqrtAlpha = sqrt(alpha);
+    const double epsEQ = sqrt(epsN * epsN + alpha * epsT2);
+
+    if ( epsEQ <= CSL_TINY || damage >= 1.0 ) {
+        return gradient;
+    }
+
+    Vector depsEQ = Vector :: Zero(strain.size() );
+    depsEQ [ 0 ] = epsN / epsEQ;
+    for ( unsigned i = 1; i < strain.size(); i++ ) {
+        depsEQ [ i ] = alpha * strain [ i ] / epsEQ;
+    }
+
+    double omega;
+    Vector domega = Vector :: Zero(strain.size() );
+    if ( epsT > CSL_TINY ) {
+        omega = atan(epsN / ( sqrtAlpha * epsT ) );
+        const double epsEQ2 = epsEQ * epsEQ;
+        domega [ 0 ] = sqrtAlpha * epsT / epsEQ2;
+        for ( unsigned i = 1; i < strain.size(); i++ ) {
+            domega [ i ] = -sqrtAlpha * epsN * strain [ i ] / ( epsEQ2 * epsT );
+        }
+    } else if ( epsN > 0 ) {
+        omega = 0.5 * M_PI;
+    } else {
+        omega = -0.5 * M_PI;
+    }
+
+    auto omegaDerivative = [] (auto fn, double x) {
+        const double h = 1e-7;
+        const double xMinus = clampOmegaForCSL(x - h);
+        const double xPlus = clampOmegaForCSL(x + h);
+        if ( fabs(xPlus - xMinus) <= CSL_TINY ) {
+            return 0.;
+        }
+        return ( fn(xPlus) - fn(xMinus) ) / ( xPlus - xMinus );
+    };
+
+    double S0 = 0.;
+    double K0 = 0.;
+    double chi = 0.;
+    Vector dS0 = Vector :: Zero(strain.size() );
+    Vector dK0 = Vector :: Zero(strain.size() );
+    Vector dchi = Vector :: Zero(strain.size() );
+
+    if ( omega < omega0 ) { // compression
+        S0 = giveS0compression(omega);
+        const double dS0dOmega = omegaDerivative([this] (double x) { return giveS0compression(x); }, omega);
+        dS0 = dS0dOmega * domega;
+
+        chi = epsEQ;
+        dchi = depsEQ;
+
+        const double denom = omega0 + 0.5 * M_PI;
+        const double ratio = ( omega + 0.5 * M_PI ) / denom;
+        const double ratioPow = pow(std :: max(ratio, 0.), m->giveNc() );
+        K0 = m->giveKc() * ( 1. - ratioPow );
+        double dK0dOmega = 0.;
+        if ( ratio > CSL_TINY ) {
+            dK0dOmega = -m->giveKc() * m->giveNc() * pow(ratio, m->giveNc() - 1.) / denom;
+        }
+        dK0 = dK0dOmega * domega;
+    } else { // tension-shear
+        S0 = giveS0tension(omega);
+        const double dS0dOmega = omegaDerivative([this] (double x) { return giveS0tension(x); }, omega);
+        dS0 = dS0dOmega * domega;
+
+        const double trialMaxEpsN = std :: max(maxEpsN, epsN);
+        const double trialMaxEpsT = std :: max(maxEpsT, epsT);
+        const double emax = sqrt(trialMaxEpsN * trialMaxEpsN + alpha * trialMaxEpsT * trialMaxEpsT);
+        Vector demax = Vector :: Zero(strain.size() );
+        if ( emax > CSL_TINY ) {
+            if ( epsN > maxEpsN ) {
+                demax [ 0 ] = trialMaxEpsN / emax;
+            }
+            if ( epsT > maxEpsT && epsT > CSL_TINY ) {
+                for ( unsigned i = 1; i < strain.size(); i++ ) {
+                    demax [ i ] = alpha * trialMaxEpsT * strain [ i ] / ( emax * epsT );
+                }
+            }
+        }
+
+        double flam = 1.;
+        Vector dflam = Vector :: Zero(strain.size() );
+        if ( m->giveLam0() > 0 ) {
+            const unsigned dim = element->giveDimension();
+            const double tempVolumetricStrain = addEigenVolumetricStrain(temp_volumetricStrain_total);
+            const double confinement = ( epsN - tempVolumetricStrain * dim ) / ( dim * m->giveLam0() );
+            if ( confinement > 0. ) {
+                flam = 1. / ( 1. + confinement );
+                dflam [ 0 ] = -1. / ( dim * m->giveLam0() * pow(1. + confinement, 2) );
+            }
+        }
+
+        const double denom = omega0 - 0.5 * M_PI;
+        const double ratio = ( omega - 0.5 * M_PI ) / denom;
+        const double safeRatio = std :: max(ratio, 0.);
+        const double ratioPow = pow(safeRatio, nt);
+        K0 = -flam * Kt * ( 1. - ratioPow );
+        double dK0dOmega = 0.;
+        if ( safeRatio > CSL_TINY ) {
+            dK0dOmega = flam * Kt * nt * pow(safeRatio, nt - 1.) / denom;
+        }
+        dK0 = dK0dOmega * domega - Kt * ( 1. - ratioPow ) * dflam;
+
+        if ( omega < 0. ) {
+            chi = epsEQ * omega / omega0 + emax * ( 1. - omega / omega0 );
+            dchi = ( omega / omega0 ) * depsEQ
+                    + ( ( epsEQ - emax ) / omega0 ) * domega
+                    + ( 1. - omega / omega0 ) * demax;
+        } else {
+            chi = emax;
+            dchi = demax;
+        }
+    }
+
+    if ( S0 <= CSL_TINY || epsEQ <= CSL_TINY ) {
+        return gradient;
+    }
+
+    double strEQ = S0;
+    Vector dStrEQ = dS0;
+    if ( chi - S0 / m->giveE0() > 0 ) {
+        const double exponent = K0 / S0 * ( chi - S0 / m->giveE0() );
+        strEQ = S0 * exp(exponent);
+        dStrEQ = strEQ * (
+                      dS0 / S0
+                      + ( chi / S0 - 1. / m->giveE0() ) * dK0
+                      + ( K0 / S0 ) * dchi
+                      - ( K0 * chi / ( S0 * S0 ) ) * dS0
+                  );
+    }
+
+    const double rawDamage = 1. - strEQ / ( m->giveE0() * epsEQ );
+    if ( rawDamage <= damage ) {
+        return gradient;
+    }
+
+    gradient = -dStrEQ / ( m->giveE0() * epsEQ )
+               + ( strEQ / ( m->giveE0() * epsEQ * epsEQ ) ) * depsEQ;
+    return gradient;
+}
+
+//////////////////////////////////////////////////////////
 double CSLMaterialStatus :: giveEnergyDissipationIncrement() const {
     return ( updt_stress.dot(temp_strain) - temp_stress.dot(updt_strain) ) / 2;
 }
@@ -293,27 +468,28 @@ void CSLMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
 
 //////////////////////////////////////////////////////////
 std :: uint64_t CSLMaterialStatus :: stateHash() const {
-    auto combineDouble = [](std :: uint64_t &hash, double value) {
-        std :: uint64_t bits = 0;
-        std :: memcpy(&bits, &value, sizeof(double) );
-        hash ^= bits;
-        hash *= 1099511628211ULL;
-    };
     std :: uint64_t hash = MaterialStatus :: stateHash();
-    combineDouble(hash, omega0);
-    combineDouble(hash, maxEpsT);
-    combineDouble(hash, maxEpsN);
-    combineDouble(hash, temp_maxEpsT);
-    combineDouble(hash, temp_maxEpsN);
-    combineDouble(hash, damage);
-    combineDouble(hash, temp_damage);
-    combineDouble(hash, Kt);
-    combineDouble(hash, Ks);
-    combineDouble(hash, L);
-    combineDouble(hash, nt);
-    combineDouble(hash, RAND_H);
-    combineDouble(hash, crackOpening);
-    combineDouble(hash, temp_crackOpening);
+    hashDoubleCSL(hash, normalEnergyDensity);
+    hashDoubleCSL(hash, shearEnergyDensity);
+    hashDoubleCSL(hash, eigenVolumetricStrain);
+    hashDoubleCSL(hash, temp_volumetricStrain);
+    hashDoubleCSL(hash, volumetricStrain);
+    hashDoubleCSL(hash, temp_volumetricStrain_total);
+    hashDoubleCSL(hash, volumetricStrain_total);
+    hashDoubleCSL(hash, omega0);
+    hashDoubleCSL(hash, maxEpsT);
+    hashDoubleCSL(hash, maxEpsN);
+    hashDoubleCSL(hash, temp_maxEpsT);
+    hashDoubleCSL(hash, temp_maxEpsN);
+    hashDoubleCSL(hash, damage);
+    hashDoubleCSL(hash, temp_damage);
+    hashDoubleCSL(hash, Kt);
+    hashDoubleCSL(hash, Ks);
+    hashDoubleCSL(hash, L);
+    hashDoubleCSL(hash, nt);
+    hashDoubleCSL(hash, RAND_H);
+    hashDoubleCSL(hash, crackOpening);
+    hashDoubleCSL(hash, temp_crackOpening);
     return hash;
 }
 
@@ -359,6 +535,31 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
         return stiff * ( 1 - temp_damage );
     } else if ( type.compare("tangent") == 0 ) {
         return stiff * ( 1 - temp_damage );                                   //not implemented, used unloading
+    } else if ( type.compare("archived_csl_damage_tangent") == 0 ) {
+        // Archived experiment: locally consistent CSL active-damage tangent.
+        // It closes finite-difference diagnostics but failed TS-N65 strict phase closure.
+        Matrix tangent = stiff * ( 1 - temp_damage );
+        if ( temp_damage > damage ) {
+            const Vector elasticStress = stiff * temp_strain;
+            const Vector damageGradient = computeDamageGradient(temp_strain);
+            tangent -= elasticStress * damageGradient.transpose();
+        }
+        return tangent;
+    } else if ( type.compare("consistent") == 0 ) {
+        // Reference actual-state tangent for damage-growth diagnostics.
+        const double eps = 1e-8;
+        Matrix consistent = Matrix :: Zero(stiff.rows(), stiff.cols() );
+        const Vector baseStress = temp_stress;
+        const Vector baseStrain = temp_strain_total;
+        for ( unsigned i = 0; i < static_cast< unsigned >( baseStrain.size() ); i++ ) {
+            std :: unique_ptr< MaterialStatus > perturbed = cloneState();
+            Vector perturbedStrain = baseStrain;
+            perturbedStrain [ i ] += eps;
+            perturbed->setTotalTempStrain(perturbedStrain);
+            perturbed->computeStress(1.);
+            consistent.col(i) = ( perturbed->giveTempStress() - baseStress ) / eps;
+        }
+        return consistent;
     } else {
         cerr << "Error: CSLMaterialStatus does not provide '" << type << "' stiffness";
         exit(1);
@@ -517,6 +718,24 @@ CSLMaterialWithTensorialStressUpdateStatus :: CSLMaterialWithTensorialStressUpda
 }
 
 //////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > CSLMaterialWithTensorialStressUpdateStatus :: cloneState() const {
+    std :: unique_ptr< CSLMaterialWithTensorialStressUpdateStatus > copy = std :: make_unique< CSLMaterialWithTensorialStressUpdateStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterialWithTensorialStressUpdateStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const CSLMaterialWithTensorialStressUpdateStatus *otherCSL = dynamic_cast< const CSLMaterialWithTensorialStressUpdateStatus * >( &other );
+    if ( !otherCSL ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherCSL;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
 bool CSLMaterialWithTensorialStressUpdateStatus :: giveValues(string code, Vector &result) const {
     //if ( code.compare("tempCrackOpening") == 0 || code.compare("crack_opening") == 0 ) {
     return CSLMaterialStatus :: giveValues(code, result);
@@ -645,6 +864,31 @@ void CSLMaterialWithTensorialStressUpdate :: init(MaterialContainer *matcont) {
 //////////////////////////////////////////////////////////
 CoupledCSLMaterialStatus :: CoupledCSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum) : CSLMaterialStatus(m, e, ipnum) {
     name = "Coupled CSL mat. status";
+}
+
+//////////////////////////////////////////////////////////
+std :: unique_ptr< MaterialStatus > CoupledCSLMaterialStatus :: cloneState() const {
+    std :: unique_ptr< CoupledCSLMaterialStatus > copy = std :: make_unique< CoupledCSLMaterialStatus >( *this );
+    copy->clearSnapshotComponentPointers();
+    return copy;
+}
+
+//////////////////////////////////////////////////////////
+void CoupledCSLMaterialStatus :: restoreStateFrom(const MaterialStatus &other) {
+    const CoupledCSLMaterialStatus *otherCSL = dynamic_cast< const CoupledCSLMaterialStatus * >( &other );
+    if ( !otherCSL ) {
+        std :: cerr << "Material status snapshot restore type mismatch for " << name << std :: endl;
+        exit(1);
+    }
+    *this = *otherCSL;
+    clearSnapshotComponentPointers();
+}
+
+//////////////////////////////////////////////////////////
+std :: uint64_t CoupledCSLMaterialStatus :: stateHash() const {
+    std :: uint64_t hash = CSLMaterialStatus :: stateHash();
+    hashDoubleCSL(hash, avgPressure);
+    return hash;
 }
 
 //////////////////////////////////////////////////////////

@@ -19,6 +19,7 @@ protected:
 
     double giveS0tension(double omega) const;
     double giveS0compression(double omega) const;
+    Vector computeDamageGradient(Vector strain) const;
     void computeOmega0();
     void computeDamage(Vector strain);
     void computeKsAnsKt();
@@ -89,6 +90,8 @@ class CSLMaterialWithTensorialStressUpdateStatus : public CSLMaterialStatus
 public:
     CSLMaterialWithTensorialStressUpdateStatus(CSLMaterialWithTensorialStressUpdate *m, Element *e, unsigned ipnum);
     virtual ~CSLMaterialWithTensorialStressUpdateStatus() {};
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
     virtual bool giveValues(std :: string code, Vector &result) const;
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);
@@ -129,6 +132,9 @@ private:
 public:
     CoupledCSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum);
     ~CoupledCSLMaterialStatus() {};
+    virtual std :: unique_ptr< MaterialStatus > cloneState() const;
+    virtual void restoreStateFrom(const MaterialStatus &other);
+    virtual std :: uint64_t stateHash() const;
     virtual void computeStress(double timeStep);
     virtual void computeStressWithFrozenIntVars(double timeStep);
     virtual bool giveValues(std :: string code, Vector &result) const;

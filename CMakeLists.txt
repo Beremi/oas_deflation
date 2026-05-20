@@ -665,6 +665,50 @@ endif()
 if(USE_HYPRE)
     target_link_libraries(${TARGETNAME} PRIVATE HYPRE::HYPRE MPI::MPI_CXX)
 endif()
+
+add_executable(OAS_material_tangent_audit
+               ${OAS_SOURCE_DIR}/src/solver/src/material_tangent_audit_main.cpp
+               )
+target_include_directories(OAS_material_tangent_audit
+                           SYSTEM PRIVATE
+                           ${spectra_SOURCE_DIR}/include)
+target_link_libraries(OAS_material_tangent_audit
+                      PRIVATE
+                      solver
+                      Eigen3::Eigen
+                      ${CXX_FILESYSTEM_LIBRARIES}
+                      ${EXT_LIBS}
+                     )
+target_compile_options(OAS_material_tangent_audit
+                       PRIVATE
+                       ${_CXX_FLAGS}
+                      )
+set_target_properties(
+  OAS_material_tangent_audit
+  PROPERTIES
+    COMPILE_FLAGS
+      ${OpenMP_CXX_FLAGS}
+    LINK_FLAGS
+      ${OpenMP_CXX_FLAGS}
+  )
+if(SuperLU_FOUND)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE ${SUPERLU_LIBS})
+endif()
+if(Pardiso_FOUND)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE ${PARDISO_LIBS})
+endif()
+if(USE_CHOLMOD AND CHOLMOD_FOUND)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE ${CHOLMOD_LIBS})
+endif()
+if (USE_PYBIND)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE pybind11::embed ${Python_LIBRARIES})
+endif()
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE OpenMP::OpenMP_CXX)
+endif()
+if(USE_HYPRE)
+  target_link_libraries(OAS_material_tangent_audit PRIVATE HYPRE::HYPRE MPI::MPI_CXX)
+endif()
 target_compile_options(${TARGETNAME}
   PRIVATE
     ${_CXX_FLAGS}
