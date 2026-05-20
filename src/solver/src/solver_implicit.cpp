@@ -683,6 +683,13 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
             idc_time = idc_time_converged;
         }
     }
+    if ( initial ) {
+        arcLengthLambda = this->init_time;
+        arcLengthLambdaConverged = this->init_time;
+        arcLengthStepStartLambda = this->init_time;
+        arcLengthCurrentRadius = arcLengthRadiusInitial;
+        arcLengthPreviousDeltaLambda = 1.;
+    }
 
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
 }
@@ -772,6 +779,38 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 } else {
                     critical_step_decrease = valueIN;
                 }
+            } else if ( param.compare("nonlinear_control") == 0 ) {
+                iss >> param;
+                if ( param.compare("load") == 0 ) {
+                    nonlinearControlType = NonlinearControlType :: Load;
+                } else if ( param.compare("indirect") == 0 || param.compare("indirect_control") == 0 ) {
+                    nonlinearControlType = NonlinearControlType :: Indirect;
+                } else if ( param.compare("arc_length") == 0 || param.compare("arc-length") == 0 || param.compare("arclength") == 0 ) {
+                    nonlinearControlType = NonlinearControlType :: ArcLength;
+                } else {
+                    std :: cerr << "unknown nonlinear_control '" << param << "', using load" << '\n';
+                    nonlinearControlType = NonlinearControlType :: Load;
+                }
+            } else if ( param.compare("arc_length_radius_initial") == 0 ) {
+                iss >> arcLengthRadiusInitial;
+            } else if ( param.compare("arc_length_radius_min") == 0 ) {
+                iss >> arcLengthRadiusMin;
+            } else if ( param.compare("arc_length_radius_max") == 0 ) {
+                iss >> arcLengthRadiusMax;
+            } else if ( param.compare("arc_length_psi") == 0 ) {
+                iss >> arcLengthPsi;
+            } else if ( param.compare("arc_length_shrink") == 0 ) {
+                iss >> arcLengthShrink;
+            } else if ( param.compare("arc_length_expand") == 0 ) {
+                iss >> arcLengthExpand;
+            } else if ( param.compare("arc_length_target_iterations") == 0 ) {
+                iss >> arcLengthTargetIterations;
+            } else if ( param.compare("arc_length_max_iterations") == 0 ) {
+                iss >> arcLengthMaxIterations;
+            } else if ( param.compare("arc_length_constraint") == 0 ) {
+                iss >> arcLengthConstraint;
+            } else if ( param.compare("arc_length_sign_strategy") == 0 ) {
+                iss >> arcLengthSignStrategy;
             } else if ( param.compare("nonlinear_damping_type") == 0 ) {
                 iss >> param;
                 if ( param.compare("off") == 0 ) {
@@ -1110,6 +1149,54 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
         std :: cerr << "nonlinear_trust_max_trials must be at least 1, setting to 1" << '\n';
         nonlinearTrustMaxTrials = 1;
     }
+    if ( nonlinearControlType == NonlinearControlType :: Indirect && !idc ) {
+        std :: cerr << "nonlinear_control indirect requested without indirect_control block; using load" << '\n';
+        nonlinearControlType = NonlinearControlType :: Load;
+    }
+    if ( nonlinearControlType == NonlinearControlType :: ArcLength && idc ) {
+        std :: cerr << "nonlinear_control arc_length cannot be combined with indirect_control in this prototype; using indirect control" << '\n';
+        nonlinearControlType = NonlinearControlType :: Indirect;
+    }
+    if ( arcLengthRadiusInitial <= 0. ) {
+        std :: cerr << "arc_length_radius_initial must be positive, setting to 0.1" << '\n';
+        arcLengthRadiusInitial = 0.1;
+    }
+    if ( arcLengthRadiusMin <= 0. ) {
+        std :: cerr << "arc_length_radius_min must be positive, setting to 1e-8" << '\n';
+        arcLengthRadiusMin = 1e-8;
+    }
+    if ( arcLengthRadiusMax < arcLengthRadiusMin ) {
+        std :: cerr << "arc_length_radius_max smaller than arc_length_radius_min, setting max to min" << '\n';
+        arcLengthRadiusMax = arcLengthRadiusMin;
+    }
+    if ( arcLengthPsi <= 0. ) {
+        std :: cerr << "arc_length_psi must be positive, setting to 1" << '\n';
+        arcLengthPsi = 1.;
+    }
+    if ( arcLengthShrink <= 0. || arcLengthShrink >= 1. ) {
+        std :: cerr << "arc_length_shrink must be in (0, 1), setting to 0.5" << '\n';
+        arcLengthShrink = 0.5;
+    }
+    if ( arcLengthExpand < 1. ) {
+        std :: cerr << "arc_length_expand must be at least 1, setting to 1" << '\n';
+        arcLengthExpand = 1.;
+    }
+    if ( arcLengthTargetIterations < 1 ) {
+        std :: cerr << "arc_length_target_iterations must be at least 1, setting to 1" << '\n';
+        arcLengthTargetIterations = 1;
+    }
+    if ( arcLengthMaxIterations < 1 ) {
+        std :: cerr << "arc_length_max_iterations must be at least 1, setting to 1" << '\n';
+        arcLengthMaxIterations = 1;
+    }
+    if ( arcLengthConstraint.compare("spherical") != 0 ) {
+        std :: cerr << "arc_length_constraint prototype supports only spherical; using spherical" << '\n';
+        arcLengthConstraint = "spherical";
+    }
+    if ( arcLengthSignStrategy.compare("previous_increment") != 0 && arcLengthSignStrategy.compare("positive_load") != 0 ) {
+        std :: cerr << "unknown arc_length_sign_strategy '" << arcLengthSignStrategy << "', using previous_increment" << '\n';
+        arcLengthSignStrategy = "previous_increment";
+    }
     if ( nonlinearTangentCheckEps <= 0. ) {
         std :: cerr << "nonlinear_tangent_check_eps must be positive, setting to 1e-6" << '\n';
         nonlinearTangentCheckEps = 1e-6;
@@ -1159,6 +1246,15 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
     } else if ( code.compare("idc_time") == 0 ) {
         result.resize(1);
         result [ 0 ] = idc_time;
+    } else if ( code.compare("arc_length_lambda") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthLambda;
+    } else if ( code.compare("arc_length_radius") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthCurrentRadius;
+    } else if ( code.compare("arc_length_dlambda") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthLastDeltaLambda;
     } else if ( code.compare("converged") == 0 ) {
         result.resize(1);
         result [ 0 ] = fully_converged;
@@ -1306,6 +1402,8 @@ SteadyStateNonLinearSolver :: NonlinearStateSnapshot SteadyStateNonLinearSolver 
     snapshot.disErr = disErr;
     snapshot.resErr = resErr;
     snapshot.eneErr = eneErr;
+    snapshot.arcLengthLambda = arcLengthLambda;
+    snapshot.arcLengthRadius = arcLengthCurrentRadius;
     if ( nonlinearMaterialSnapshotRollback ) {
         snapshot.materialStatuses = std :: make_shared< ElementContainer :: MaterialStatusSnapshot >( elems->createMaterialStatusSnapshot() );
         if ( nonlinearMaterialSnapshotVerify ) {
@@ -1334,6 +1432,8 @@ void SteadyStateNonLinearSolver :: restoreNonlinearState(const NonlinearStateSna
     disErr = snapshot.disErr;
     resErr = snapshot.resErr;
     eneErr = snapshot.eneErr;
+    arcLengthLambda = snapshot.arcLengthLambda;
+    arcLengthCurrentRadius = snapshot.arcLengthRadius;
     if ( resetMaterialStatuses ) {
         if ( snapshot.materialStatuses ) {
             elems->restoreMaterialStatusSnapshot( *snapshot.materialStatuses );
@@ -1651,6 +1751,125 @@ bool SteadyStateNonLinearSolver :: applyScaledIncrementAndEvaluate(const Nonline
         disErr = 0;                        //error in displacement change, only from second iteration
     }
     return std :: isfinite(resErr) && std :: isfinite(disErr) && std :: isfinite(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+Vector SteadyStateNonLinearSolver :: computeArcLengthReducedReferenceLoad() {
+    Vector load0 = Vector :: Zero(totalDoFnum);
+    Vector load1 = Vector :: Zero(totalDoFnum);
+    nodes->addRHS_nodalLoad(load0, 0.);
+    // Boundary conditions are active on [begin, end), so use the left limit at
+    // one for the proportional reference load.
+    nodes->addRHS_nodalLoad(load1, std :: nextafter(1., 0.) );
+
+    Vector fullReference = load1 - load0;
+    Vector reducedReference = Vector :: Zero(freeDoFnum);
+    nodes->giveReducedForceArray(fullReference, reducedReference);
+    return reducedReference;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: applyArcLengthIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double alpha, bool frozen, bool resetMaterialStatuses) {
+    restoreNonlinearState(baseState, resetMaterialStatuses);
+    arcLengthLambda = baseState.arcLengthLambda + alpha * lambdaIncrement;
+    load.setZero();
+    nodes->addRHS_nodalLoad(load, arcLengthLambda);
+    nodes->updateDirrichletBC(trial_r, arcLengthLambda);
+    ddr = alpha * increment;
+    updateFieldVariables();
+    computeForcesAtIntegrationTime(frozen);
+    evaluateErrors();
+    arcLengthLastDeltaLambda = alpha * lambdaIncrement;
+    if ( it == 0 ) {
+        disErr = 0;                        //error in displacement change, only from second iteration
+    }
+    return std :: isfinite(resErr) && std :: isfinite(disErr) && std :: isfinite(eneErr);
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver :: performArcLengthBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double meritBefore) {
+    NonlinearTrialResult result;
+    result.meritBefore = meritBefore;
+    double alpha = nonlinearLineSearchMaxAlpha;
+
+    for ( unsigned trial = 0; trial < nonlinearLineSearchMaxTrials && alpha >= nonlinearLineSearchMinAlpha * ( 1. - 1e-12 ); trial++ ) {
+        const bool useFrozenTrial = nonlinearLineSearchEvaluationMode != NonlinearLineSearchEvaluationMode :: Actual;
+        const bool requireActualAcceptance = nonlinearLineSearchEvaluationMode == NonlinearLineSearchEvaluationMode :: FrozenThenActual;
+        const bool finiteFirstTrial = applyArcLengthIncrementAndEvaluate(baseState, increment, lambdaIncrement, alpha, useFrozenTrial);
+        double trialMerit = currentNonlinearGlobalizationMerit();
+        const bool acceptedFirstTrial = finiteFirstTrial && nonlinearMeritAccepted(trialMerit, meritBefore, alpha);
+
+        if ( !silent && nonlinearLineSearchReportTrials ) {
+            std :: cout << "LS_TRIAL"
+                        << " it " << it
+                        << " trial " << trial + 1
+                        << " alpha " << alpha
+                        << " mode " << ( useFrozenTrial ? "frozen" : "actual" )
+                        << " finite " << finiteFirstTrial
+                        << " accepted " << acceptedFirstTrial
+                        << " merit_before " << meritBefore
+                        << " merit_trial " << trialMerit
+                        << " arc_lambda " << arcLengthLambda
+                        << " arc_dlambda " << alpha * lambdaIncrement
+                        << " res " << resErr
+                        << " disp " << disErr
+                        << " energy " << eneErr
+                        << std :: endl;
+        }
+
+        if ( acceptedFirstTrial ) {
+            if ( useFrozenTrial ) {
+                const bool finiteActualTrial = applyArcLengthIncrementAndEvaluate(baseState, increment, lambdaIncrement, alpha, false);
+                trialMerit = currentNonlinearGlobalizationMerit();
+                const bool acceptedActualTrial = finiteActualTrial && ( !requireActualAcceptance || nonlinearMeritAccepted(trialMerit, meritBefore, alpha) );
+                if ( !silent && nonlinearLineSearchReportTrials ) {
+                    std :: cout << "LS_ACTUAL"
+                                << " it " << it
+                                << " alpha " << alpha
+                                << " finite " << finiteActualTrial
+                                << " accepted " << acceptedActualTrial
+                                << " merit_actual " << trialMerit
+                                << " arc_lambda " << arcLengthLambda
+                                << " arc_dlambda " << alpha * lambdaIncrement
+                                << " res " << resErr
+                                << " disp " << disErr
+                                << " energy " << eneErr
+                                << std :: endl;
+                }
+                if ( !acceptedActualTrial ) {
+                    restoreNonlinearState(baseState, true);
+                    result.alpha = alpha;
+                    result.trials = trial + 1;
+                    result.meritAfter = trialMerit;
+                    alpha *= nonlinearLineSearchReduction;
+                    continue;
+                }
+            }
+            result.accepted = true;
+            result.alpha = alpha;
+            result.trials = trial + 1;
+            result.meritAfter = trialMerit;
+            return result;
+        }
+
+        restoreNonlinearState(baseState, true);
+        alpha *= nonlinearLineSearchReduction;
+    }
+
+    restoreNonlinearState(baseState, true);
+    if ( !silent && nonlinearLineSearchReportTrials ) {
+        std :: cout << "LS_FAIL"
+                    << " it " << it
+                    << " trials " << nonlinearLineSearchMaxTrials
+                    << " merit_before " << meritBefore
+                    << " arc_lambda " << arcLengthLambda
+                    << " cutback_on_fail " << nonlinearLineSearchCutbackOnFail
+                    << std :: endl;
+    }
+    result.alpha = alpha;
+    result.trials = nonlinearLineSearchMaxTrials;
+    result.meritAfter = currentNonlinearMerit();
+    return result;
 }
 
 //////////////////////////////////////////////////////////
@@ -2051,6 +2270,21 @@ void SteadyStateNonLinearSolver :: solve() {
     bool restarted = false;
     bool restart_now = false;
     Vector help_idc_r, help_idc_f;
+    const bool useArcLengthControl = nonlinearControlType == NonlinearControlType :: ArcLength;
+
+    if ( useArcLengthControl ) {
+        if ( arcLengthCurrentRadius <= 0. || !std :: isfinite(arcLengthCurrentRadius) ) {
+            arcLengthCurrentRadius = arcLengthRadiusInitial;
+        }
+        if ( arcLengthReferenceLoad.size() != static_cast< int >( freeDoFnum ) ) {
+            arcLengthReferenceLoad = computeArcLengthReducedReferenceLoad();
+        }
+        if ( arcLengthReferenceLoad.norm() <= 0. || !std :: isfinite(arcLengthReferenceLoad.norm() ) ) {
+            std :: cerr << "Error: arc-length control requires a nonzero proportional reference load f_ext(load=1)-f_ext(load=0)" << endl;
+            terminated = true;
+            return;
+        }
+    }
 
     //MyVector reset_residuals = residuals;   ///> if step restarted when IDC applied, residuals need to be reset to stage before the step start
     //JE: no, these are recomputed
@@ -2059,7 +2293,17 @@ void SteadyStateNonLinearSolver :: solve() {
         resetNonlinearGlobalizationAttempt();
         //setup loading
 
-        if ( !idc ) {
+        if ( useArcLengthControl ) {
+            arcLengthStepStartLambda = arcLengthLambdaConverged;
+            arcLengthLambda = arcLengthStepStartLambda;
+            arcLengthLastDeltaLambda = 0.;
+            time = arcLengthLambda;
+            load.setZero();
+            nodes->addRHS_nodalLoad(load, arcLengthLambda);
+            nodes->updateDirrichletBC(trial_r, arcLengthLambda);
+            updateFieldVariables();      //with ddr=0
+            computeForcesAtIntegrationTime(true);
+        } else if ( !idc ) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
             updateFieldVariables();      //with ddr=0
@@ -2070,7 +2314,8 @@ void SteadyStateNonLinearSolver :: solve() {
         }
 
         it = 0;
-        while ( !converged && it < maxIt ) {
+        const unsigned nonlinearIterationLimit = useArcLengthControl ? arcLengthMaxIterations : maxIt;
+        while ( !converged && it < nonlinearIterationLimit ) {
             lastNonlinearMatrixRebuild = false;
             const bool forceMatrixRebuild = nonlinearForceMatrixRebuild;
             if ( ( step > 0 || it > 0 ) && updateSystemMatrices(it, cumul_it, forceMatrixRebuild) ) {
@@ -2080,10 +2325,10 @@ void SteadyStateNonLinearSolver :: solve() {
             nonlinearForceMatrixRebuild = false;
             nodes->giveReducedForceArray(residuals, f);
 
-            const bool useNonlinearGlobalization = ( !idc ) && nonlinearGlobalizationActive();
+            const bool useNonlinearGlobalization = ( !idc ) && !useArcLengthControl && nonlinearGlobalizationActive();
             NonlinearStateSnapshot incrementBaseState;
             double meritBefore = lastNonlinearMeritBefore;
-            if ( useNonlinearGlobalization ) {
+            if ( useNonlinearGlobalization || useArcLengthControl ) {
                 evaluateErrors();
                 if ( it == 0 ) {
                     disErr = 0;
@@ -2148,6 +2393,100 @@ void SteadyStateNonLinearSolver :: solve() {
                     load.setZero();
                     nodes->addRHS_nodalLoad(load, idc_time); //add nodal load
                     nodes->updateDirrichletBC(trial_r, idc_time); //give prescribed DoFs
+                }
+            } else if ( useArcLengthControl ) {
+                Vector fixedLoadCorrection = Vector :: Zero(freeDoFnum);
+                bool fixedLoadSolveSuccess = true;
+                if ( it > 0 ) {
+                    fixedLoadSolveSuccess = linalgsolver->solve(fixedLoadCorrection, f);
+                }
+
+                Vector loadDirection = Vector :: Zero(freeDoFnum);
+                const bool loadDirectionSolveSuccess = linalgsolver->solve(loadDirection, arcLengthReferenceLoad);
+                collectLinearDeflationVector(loadDirection, loadDirectionSolveSuccess);
+
+                Vector fullFixedLoadCorrection = Vector :: Zero(totalDoFnum);
+                Vector fullLoadDirection = Vector :: Zero(totalDoFnum);
+                nodes->giveFullDoFArray(fixedLoadCorrection, fullFixedLoadCorrection);
+                nodes->giveFullDoFArray(loadDirection, fullLoadDirection);
+
+                double lambdaIncrement = 0.;
+                Vector arcIncrement = Vector :: Zero(freeDoFnum);
+                if ( it == 0 ) {
+                    const double directionNorm = std :: sqrt(fullLoadDirection.squaredNorm() + arcLengthPsi * arcLengthPsi);
+                    if ( directionNorm <= 0. || !std :: isfinite(directionNorm) ) {
+                        std :: cerr << "Error: arc-length predictor direction has zero norm" << endl;
+                        terminated = true;
+                        return;
+                    }
+                    double predictorSign = 1.;
+                    if ( arcLengthSignStrategy.compare("previous_increment") == 0 && arcLengthPreviousDeltaLambda < 0. ) {
+                        predictorSign = -1.;
+                    }
+                    lambdaIncrement = predictorSign * arcLengthCurrentRadius / directionNorm;
+                    if ( predictorSign > 0. && arcLengthStepStartLambda < termination_time && arcLengthStepStartLambda + lambdaIncrement > termination_time ) {
+                        lambdaIncrement = termination_time - arcLengthStepStartLambda;
+                    }
+                    arcIncrement = lambdaIncrement * loadDirection;
+                } else {
+                    const Vector totalDisplacementIncrement = trial_r - r;
+                    const double totalLambdaIncrement = arcLengthLambda - arcLengthStepStartLambda;
+                    const double constraintValue = totalDisplacementIncrement.squaredNorm()
+                                                   + arcLengthPsi * arcLengthPsi * totalLambdaIncrement * totalLambdaIncrement
+                                                   - arcLengthCurrentRadius * arcLengthCurrentRadius;
+                    const double numerator = -constraintValue - 2. * totalDisplacementIncrement.dot(fullFixedLoadCorrection);
+                    const double denominator = 2. * totalDisplacementIncrement.dot(fullLoadDirection)
+                                               + 2. * arcLengthPsi * arcLengthPsi * totalLambdaIncrement;
+                    if ( std :: abs(denominator) <= 1e-300 || !std :: isfinite(denominator) ) {
+                        nonlinearCutbackReason = "arc_length_singular_constraint";
+                        restart_now = true;
+                        break;
+                    }
+                    lambdaIncrement = numerator / denominator;
+                    arcIncrement = fixedLoadCorrection + lambdaIncrement * loadDirection;
+                }
+
+                if ( maybeRunNonlinearTangentCheck(arcIncrement) && nonlinearTangentCheckStopAfter ) {
+                    terminated = true;
+                    return;
+                }
+
+                if ( nonlinearLineSearchType == NonlinearLineSearchType :: Backtracking ) {
+                    const NonlinearTrialResult lineSearchResult = performArcLengthBacktrackingLineSearch(incrementBaseState, arcIncrement, lambdaIncrement, meritBefore);
+                    lastNonlinearAlpha = lineSearchResult.alpha;
+                    lastNonlinearLineSearchTrials = lineSearchResult.trials;
+                    lastNonlinearMeritAfter = lineSearchResult.meritAfter;
+                    if ( !lineSearchResult.accepted ) {
+                        nonlinearCutbackReason = "arc_length_line_search_failed";
+                        if ( nonlinearLineSearchCutbackOnFail ) {
+                            restart_now = true;
+                            break;
+                        }
+                        applyArcLengthIncrementAndEvaluate(incrementBaseState, arcIncrement, lambdaIncrement, 1., false);
+                        lastNonlinearAlpha = 1.;
+                        lastNonlinearMeritAfter = currentNonlinearGlobalizationMerit();
+                        nonlinearCutbackReason.clear();
+                    }
+                } else {
+                    const double alpha = currentNonlinearDampingAlpha();
+                    applyArcLengthIncrementAndEvaluate(incrementBaseState, arcIncrement, lambdaIncrement, alpha, false, false);
+                    lastNonlinearAlpha = alpha;
+                    lastNonlinearLineSearchTrials = 0;
+                    lastNonlinearMeritAfter = currentNonlinearGlobalizationMerit();
+                }
+                lastNonlinearConvergenceMerit = currentNonlinearConvergenceMerit();
+                time = arcLengthLambda;
+
+                if ( !silent ) {
+                    std :: cout << "ARC_LENGTH"
+                                << " step " << step
+                                << " it " << it
+                                << " lambda " << arcLengthLambda
+                                << " dlambda " << arcLengthLastDeltaLambda
+                                << " radius " << arcLengthCurrentRadius
+                                << " fixed_solve " << fixedLoadSolveSuccess
+                                << " load_solve " << loadDirectionSolveSuccess
+                                << std :: endl;
                 }
             } else {         //direct controll
                 const bool directSolveSuccess = linalgsolver->solve(ddr, f);
@@ -2282,7 +2621,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
             }
 
-            if ( !useNonlinearGlobalization ) {
+            if ( !useNonlinearGlobalization && !useArcLengthControl ) {
                 //update DoFs
                 updateFieldVariables();
                 //compute residuals
@@ -2295,7 +2634,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
             }
 
-            if ( useNonlinearGlobalization ) {
+            if ( useNonlinearGlobalization || useArcLengthControl ) {
                 requestAdaptiveMatrixRebuildIfNeeded(meritBefore, lastNonlinearMeritAfter);
             }
 
@@ -2313,7 +2652,7 @@ void SteadyStateNonLinearSolver :: solve() {
             }
             if ( not silent ) {
                 cout << setw(15) << eneErr;
-                if ( nonlinearGlobalizationActive() ) {
+                if ( nonlinearGlobalizationActive() || useArcLengthControl ) {
                     cout << setw(15) << lastNonlinearAlpha
                          << setw(15) << lastNonlinearLineSearchTrials
                          << setw(15) << lastNonlinearMeritAfter
@@ -2321,6 +2660,11 @@ void SteadyStateNonLinearSolver :: solve() {
                          << setw(15) << ( nonlinearCutbackReason.empty() ? "-" : nonlinearCutbackReason )
                          << setw(15) << ( lastNonlinearMatrixRebuild ? 1 : 0 )
                          << setw(15) << lastNonlinearTrustRadius;
+                    if ( useArcLengthControl ) {
+                        cout << setw(15) << arcLengthLambda
+                             << setw(15) << arcLengthLastDeltaLambda
+                             << setw(15) << arcLengthCurrentRadius;
+                    }
                 }
                 cout << endl;
             }
@@ -2345,7 +2689,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 break;
             }
 
-            const double meritAfter = useNonlinearGlobalization ? currentNonlinearGlobalizationMerit() : 0.;
+            const double meritAfter = ( useNonlinearGlobalization || useArcLengthControl ) ? currentNonlinearGlobalizationMerit() : 0.;
             it++;
             cumul_it++;
             if ( nonlinearConvergenceCriteriaSatisfied() && it >= minIt ) {
@@ -2354,7 +2698,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 converged = false;
             }
 
-            if ( useNonlinearGlobalization && !converged && shouldCutbackForNonlinearProgress(meritBefore, meritAfter) ) {
+            if ( ( useNonlinearGlobalization || useArcLengthControl ) && !converged && shouldCutbackForNonlinearProgress(meritBefore, meritAfter) ) {
                 restart_now = true;
                 break;
             }
@@ -2364,10 +2708,39 @@ void SteadyStateNonLinearSolver :: solve() {
 
         if ( converged ) {
             this->fully_converged = true;
+            if ( useArcLengthControl ) {
+                time = arcLengthLambda;
+                arcLengthPreviousDeltaLambda = arcLengthLambda - arcLengthStepStartLambda;
+                if ( arcLengthPreviousDeltaLambda >= 0. && std :: abs(termination_time - arcLengthLambda) < 1e-10 ) {
+                    arcLengthLambda = termination_time;
+                    time = termination_time;
+                }
+            }
             computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
         }
 
-        if ( !converged && dt > dtmin * 1.00001 ) {
+        if ( !converged && useArcLengthControl && arcLengthCurrentRadius > arcLengthRadiusMin * 1.00001 ) {
+            arcLengthCurrentRadius = std :: max(arcLengthRadiusMin, arcLengthCurrentRadius * arcLengthShrink);
+            trial_r = r;
+            f_int = f_int_old;
+            f_ext = f_ext_old;
+            load.setZero();
+            ddr.setZero();
+            elems->resetMaterialStatuses();
+            arcLengthLambda = arcLengthLambdaConverged;
+            time = arcLengthLambda;
+            if ( not silent ) {
+                if ( !nonlinearCutbackReason.empty() ) {
+                    std :: cout << "Nonlinear cutback reason: " << nonlinearCutbackReason << endl;
+                }
+                std :: cout << "Restarting arc-length step, radius = " << arcLengthCurrentRadius
+                            << ", lambda = " << arcLengthLambda << endl;
+            }
+            restarts++;
+            restarted = true;
+            restart_now = false;
+            nonlinearCutbackReason.clear();
+        } else if ( !converged && !useArcLengthControl && dt > dtmin * 1.00001 ) {
             time -= dt;
             dt = fmax(dt * critical_step_decrease, dtmin);
             trial_r = r;
@@ -2408,6 +2781,16 @@ void SteadyStateNonLinearSolver :: solve() {
                 terminated = true;
                 return;
             }
+        } else if ( ( !restarted ) && converged && useArcLengthControl && it <= arcLengthTargetIterations ) {
+            arcLengthCurrentRadius = std :: min(arcLengthRadiusMax, arcLengthCurrentRadius * arcLengthExpand);
+            if ( not silent ) {
+                std :: cout << "enlarging arc-length radius = " << arcLengthCurrentRadius << '\n';
+            }
+        } else if ( converged && useArcLengthControl && it > arcLengthTargetIterations ) {
+            arcLengthCurrentRadius = std :: max(arcLengthRadiusMin, arcLengthCurrentRadius * arcLengthShrink);
+            if ( not silent ) {
+                std :: cout << "shortening arc-length radius = " << arcLengthCurrentRadius << '\n';
+            }
         } else if ( ( !restarted ) && converged && it < enlargeIt ) {
             dt = fmin(dt * step_increase, dtmax);
             if ( not silent ) {
@@ -2419,13 +2802,13 @@ void SteadyStateNonLinearSolver :: solve() {
                 std :: cout << "shortening step, timestep = " << dt << '\n';
             }
         }
-        if  ( dt > dtmax ) {
+        if  ( !useArcLengthControl && dt > dtmax ) {
             dt = dtmax;
             if ( not silent ) {
                 std :: cout << "shortening step to the maximum one: " << dt << '\n';
             }
         }
-        if  ( dt < dtmin ) {
+        if  ( !useArcLengthControl && dt < dtmin ) {
             dt = dtmin;
             if ( not silent ) {
                 std :: cout << "enlarging step to the minimum one: " << dt << '\n';
@@ -2450,8 +2833,11 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
         cout <<  scientific; //cout << setprecision(8);
         cout << "----------------------------------------------------" << endl;
         cout << setw(6) << "iter." << setw(15) << "residual" << setw(15) << "displacement" << setw(15) << "energy error" << endl;
-        if ( nonlinearGlobalizationActive() ) {
+        if ( nonlinearGlobalizationActive() || nonlinearControlType == NonlinearControlType :: ArcLength ) {
             cout << setw(6) << " " << setw(15) << "alpha" << setw(15) << "ls_trials" << setw(15) << "glob_merit" << setw(15) << "conv_merit" << setw(15) << "cutback" << setw(15) << "K_rebuild" << setw(15) << "trust_radius" << endl;
+            if ( nonlinearControlType == NonlinearControlType :: ArcLength ) {
+                cout << setw(6) << " " << setw(15) << "arc_lambda" << setw(15) << "arc_dlambda" << setw(15) << "arc_radius" << endl;
+            }
         }
         cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;
         cout << "----------------------------------------------------" << endl;
@@ -2534,6 +2920,9 @@ void SteadyStateNonLinearSolver :: runAfterEachStep() {
 
         if ( idc ) {
             idc_time_converged = idc_time;
+        }
+        if ( nonlinearControlType == NonlinearControlType :: ArcLength ) {
+            arcLengthLambdaConverged = arcLengthLambda;
         }
     }
 }

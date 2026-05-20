@@ -58,6 +58,7 @@ protected:
     enum class NonlinearLineSearchEvaluationMode { Frozen, Actual, FrozenThenActual };
     enum class NonlinearTrustRegionType { Off, StepNorm };
     enum class NonlinearTangentCheckScope { Global, ElementTop };
+    enum class NonlinearControlType { Load, Indirect, ArcLength };
 
     struct NonlinearStateSnapshot {
         Vector trial_r;
@@ -76,6 +77,8 @@ protected:
         double disErr = 0.;
         double resErr = 0.;
         double eneErr = 0.;
+        double arcLengthLambda = 0.;
+        double arcLengthRadius = 0.;
         std :: shared_ptr< ElementContainer :: MaterialStatusSnapshot > materialStatuses;
         std :: uint64_t materialStatusHash = 0;
         bool materialStatusHashValid = false;
@@ -157,6 +160,24 @@ protected:
     unsigned nonlinearRollbackGrowthDecreaseCounter = 0;
     bool nonlinearMaterialSnapshotRollback = false;
     bool nonlinearMaterialSnapshotVerify = false;
+    NonlinearControlType nonlinearControlType = NonlinearControlType :: Load;
+    double arcLengthRadiusInitial = 0.1;
+    double arcLengthRadiusMin = 1e-8;
+    double arcLengthRadiusMax = 1e100;
+    double arcLengthPsi = 1.;
+    double arcLengthShrink = 0.5;
+    double arcLengthExpand = 1.2;
+    unsigned arcLengthTargetIterations = 8;
+    unsigned arcLengthMaxIterations = 40;
+    std :: string arcLengthConstraint = "spherical";
+    std :: string arcLengthSignStrategy = "previous_increment";
+    double arcLengthLambda = 0.;
+    double arcLengthLambdaConverged = 0.;
+    double arcLengthStepStartLambda = 0.;
+    double arcLengthCurrentRadius = 0.;
+    double arcLengthLastDeltaLambda = 0.;
+    double arcLengthPreviousDeltaLambda = 1.;
+    Vector arcLengthReferenceLoad;
     bool nonlinearTangentCheck = false;
     unsigned nonlinearTangentCheckStep = 0;
     unsigned nonlinearTangentCheckIteration = 0;
@@ -195,6 +216,9 @@ protected:
     NonlinearTrialResult performBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performStepNormTrustRegion(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
+    Vector computeArcLengthReducedReferenceLoad();
+    bool applyArcLengthIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double alpha, bool frozen, bool resetMaterialStatuses = true);
+    NonlinearTrialResult performArcLengthBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double meritBefore);
     double currentNonlinearDampingAlpha() const;
     void updateAdaptiveNonlinearDamping(double meritBefore, double meritAfter);
     bool shouldCutbackForNonlinearProgress(double meritBefore, double meritAfter);

@@ -1,0 +1,5 @@
+variant	verdict	steps	rows	final_lambda	arc_rows	exit_status	elapsed_seconds	min_alpha	max_ls_trials
+CP4-legacy-load-default	passed	3	6	0.3	0	0	0.064		0
+CP4-load-control-regression	passed	3	6	0.3	0	0	0.064		0
+CP4-arc-length-prototype	passed	3	6	0.3	6	0	0.064	1	0
+CP4-arc-length-line-search	passed	4	18	0.3	18	0	0.064	0.5	2

@@ -29,7 +29,7 @@ the primary replication criteria.
 | CP1 | partial | Existing globalization sweep on legacy `tangent` | Strict fixed-step baseline |
 | CP2 | complete-negative | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
 | CP3 | complete-negative | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
-| CP4 | pending | Arc-length prototype on a small benchmark | Legacy load-control regression |
+| CP4 | complete | Arc-length prototype on a small benchmark | Legacy load-control regression and TS-N65 strict baseline gate |
 | CP5 | pending | TS-N65 arc-length application | Strict baseline and load-displacement curve |
 | CP6 | pending | Model-level stabilization if needed | Sensitivity data, physics-change note |
 
@@ -208,6 +208,34 @@ Pass criteria:
 - Small benchmark runs with arc-length and writes `lambda`, radius, iterations,
   and controlled displacement.
 - Rejected arc-length trials restore solver and material state.
+
+Current checkpoint result:
+
+- Report: `results/arc-length-cp4-20260521-cp4/report.md`.
+- Summary TSV: `results/arc-length-cp4-20260521-cp4/cp4_arc_length.tsv`.
+- Script: `scripts/run_arc_length_checkpoint.py`.
+- Implemented disabled-by-default controls:
+  - `nonlinear_control load|indirect|arc_length`;
+  - `arc_length_radius_initial`, `arc_length_radius_min`,
+    `arc_length_radius_max`, `arc_length_psi`, `arc_length_shrink`,
+    `arc_length_expand`, `arc_length_target_iterations`,
+    `arc_length_max_iterations`, `arc_length_constraint`,
+    `arc_length_sign_strategy`.
+- V1 arc-length is limited to proportional nodal loading with reference load
+  `f_ext(load=1)-f_ext(load=0)`. Because OAS boundary conditions are active on
+  `[begin, end)`, the implementation samples the left limit at `1.0`.
+- Small proportional-load Timoshenko benchmark results:
+  - no-keyword legacy load-control: passed, `3` steps, `6` nonlinear rows;
+  - explicit `nonlinear_control load`: passed, `3` steps, `6` rows;
+  - arc-length prototype: passed, `3` steps, `6` rows, final lambda `0.3`;
+  - arc-length with line-search/snapshot rollback: passed, `4` steps, `18`
+    rows, final lambda `0.3`, minimum alpha `0.5`, rejected alpha trials logged
+    and restored.
+- Strict TS-N65 baseline gate after the CP4 code change:
+  - Report: `results/tsn65-cp4-baseline-gate-20260521-0058/report.md`.
+  - Exact sequence matched: `6, 6, 10, 13, 17, 183, 187, 163`.
+  - Total nonlinear rows: `585`.
+  - Verdict: neutral/no regression, no fallback acceptance, no NaNs, no cutbacks.
 
 ## CP5: TS-N65 Arc-Length Application
 

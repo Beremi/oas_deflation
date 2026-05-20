@@ -1,0 +1,6 @@
+created_at=2026-05-21T01:23:12+02:00
+repo=/home/beremi/repos/oas_deflation
+branch=nonlinear_solver_testing
+commit=dd80cb8ea89b3f1ea73266ccdd2a9dd90e5f35cd
+executable=/tmp/oas_tsn65_full_baseline_build/bin/OAS
+source_benchmark=src/benchmark/Timoshenko_beam3D
