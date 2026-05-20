@@ -28,7 +28,7 @@ the primary replication criteria.
 | CP0 | complete | Parser, roadmap, report harness | Existing replicated baseline log |
 | CP1 | partial | Existing globalization sweep on legacy `tangent` | Strict fixed-step baseline |
 | CP2 | complete-negative | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
-| CP3 | pending | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
+| CP3 | complete-negative | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
 | CP4 | pending | Arc-length prototype on a small benchmark | Legacy load-control regression |
 | CP5 | pending | TS-N65 arc-length application | Strict baseline and load-displacement curve |
 | CP6 | pending | Model-level stabilization if needed | Sensitivity data, physics-change note |
@@ -130,11 +130,15 @@ ic_zcoords 0 -0.4
 ic_directions 2 2
 ic_displ_weights -1 1
 ic_force_weights 0 0
-ic_function 2
+ic_function 4
 ```
 
 Also run the flipped sign. Select the sign whose first increment matches the
 baseline load/displacement direction.
+
+Note: OAS function indices are zero-based. In the TS-N65 deck, index `2` is the
+steel material envelope, so the CP3 runner appends a local displacement-target
+function and uses `ic_function 4`.
 
 Pass criteria:
 
@@ -143,6 +147,28 @@ Pass criteria:
   baseline.
 - Report `idc_time`, controlled displacement, load gauge, rows, cutbacks, and
   curve comparability.
+
+Current checkpoint result:
+
+- Report: `results/tsn65-indirect-control-20260520-cp3/report.md`.
+- Script: `scripts/run_tsn65_indirect_control.py`.
+- The historical `src/benchmark/Indirect_Control` benchmark did not pass on the
+  current checkpoint tree: it exited nonzero after `146` steps, `21910`
+  nonlinear rows, and `138` fallback acceptances under its legacy benchmark
+  tolerance setup.
+- TS-N65 sign calibration selected `ic_displ_weights -1 1`; the flipped sign
+  failed immediately by driving the function query below the time range.
+- Raw strict TS-N65 IDC completed `8/8` fixed quarter steps with no fallback,
+  no NaNs, and no cutbacks, but undershot the physical target: final `v01 =
+  1.233328e-5`, `18.84%` below the strict baseline `1.519697e-5`.
+- A final-v01 calibrated IDC target, scaled by `1.23219208515`, was tried to
+  reach the same physical `v01` target. It stalled in step `7`; it was stopped
+  at iteration `69` with residual `2.352053e-3`, displacement `4.419994e-4`,
+  and energy `4.186416e-3`.
+- Verdict: existing IDC is not a baseline replacement for TS-N65. It can follow
+  a lower-amplitude controlled path, but reaching the strict baseline gauge
+  target still exposes late-step nonlinear instability. Proceed to CP4
+  arc-length on a small benchmark before applying continuation to TS-N65.
 
 ## CP4: Arc-Length Prototype On A Small Benchmark
 
