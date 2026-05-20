@@ -26,7 +26,7 @@ the primary replication criteria.
 | checkpoint | status | purpose | required comparison |
 | --- | --- | --- | --- |
 | CP0 | complete | Parser, roadmap, report harness | Existing replicated baseline log |
-| CP1 | pending | Existing globalization sweep on legacy `tangent` | Strict fixed-step baseline |
+| CP1 | partial | Existing globalization sweep on legacy `tangent` | Strict fixed-step baseline |
 | CP2 | pending | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
 | CP3 | pending | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
 | CP4 | pending | Arc-length prototype on a small benchmark | Legacy load-control regression |

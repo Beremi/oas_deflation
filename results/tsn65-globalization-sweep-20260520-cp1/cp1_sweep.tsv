@@ -1,0 +1,4 @@
+variant	exit_status	verdict	steps	total_iters	tail_6_8_iters	duration	warnings	nans	cutbacks	fallback_accepts	min_alpha	max_ls_trials
+G1-baseline	0	neutral	8	585	533	00:22:58.080	0	0	0	0		0
+G1-backtracking-frozen-actual	124	failed	8	495	443		0	0	0	0	0.0625	6
+G1-backtracking-actual	manual_stop	partial_worse	7	161	109_partial		0	0	0	0	0.125	6
