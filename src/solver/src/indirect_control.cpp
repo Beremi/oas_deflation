@@ -169,11 +169,38 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
 }
 
 //////////////////////////////////////////////////////////
-double IndirectControl :: givePrescribedValue(double time) {
+double IndirectControl :: givePrescribedValue(double time) const {
     if ( func ) {
         return func->giveY(time);
     }
     return time;
+}
+
+//////////////////////////////////////////////////////////
+double IndirectControl :: giveTargetValue(double time) const {
+    return givePrescribedValue(time);
+}
+
+//////////////////////////////////////////////////////////
+double IndirectControl :: giveControlValue(const Vector &displ, const Vector &force, unsigned unit) const {
+    if ( unit >= nummaxunit ) {
+        return 0.;
+    }
+    double value = 0.;
+    for ( unsigned i = 0; i < r_weights [ unit ].size(); i++ ) {
+        value += displ [ DoFs [ unit ] [ i ] ] * r_weights [ unit ] [ i ];
+    }
+    if ( requireForces() ) {
+        for ( unsigned i = 0; i < f_weights [ unit ].size(); i++ ) {
+            value += force [ DoFs [ unit ] [ i ] ] * f_weights [ unit ] [ i ];
+        }
+    }
+    return value;
+}
+
+//////////////////////////////////////////////////////////
+double IndirectControl :: giveControlDifference(const Vector &diff_displ, const Vector &diff_force, unsigned unit) const {
+    return giveControlValue(diff_displ, diff_force, unit);
 }
 
 //////////////////////////////////////////////////////////

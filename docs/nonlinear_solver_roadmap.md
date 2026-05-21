@@ -31,6 +31,7 @@ the primary replication criteria.
 | CP3 | complete-negative | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
 | CP4 | complete | Arc-length prototype on a small benchmark | Legacy load-control regression and TS-N65 strict baseline gate |
 | CP5 | complete-negative | TS-N65 arc-length application | Strict baseline and load-displacement curve |
+| CP5b | complete-negative | Gauge-constrained arc-length continuation | Strict baseline gate and TS-N65 gauge/row comparison |
 | CP6 | pending | Model-level stabilization if needed | Sensitivity data, physics-change note |
 
 ## CP0: Experiment Harness
@@ -285,6 +286,73 @@ Current checkpoint result:
   formulation is improved, likely by adding a monotone displacement-control
   constraint or a better scaled corrector instead of the current spherical norm
   on the full displacement field.
+
+## CP5b: Gauge-Constrained Arc-Length Continuation
+
+CP5b adds a TS-N65-specific arc-length continuation mode that keeps the
+arc-length load factor as the equilibrium load parameter but replaces the
+spherical corrector constraint with an indirect-control displacement gauge:
+
+```text
+nonlinear_control arc_length
+arc_length_constraint gauge
+arc_length_reference finite_difference
+arc_length_sign_strategy monotone_lambda
+arc_length_auto_radius 1
+arc_length_gauge_tolerance 1e-3
+indirect_control 2
+ic_xcoords 2.1 2.1
+ic_ycoords 0 0
+ic_zcoords 0 -0.4
+ic_directions 2 2
+ic_displ_weights -1 1
+ic_force_weights 0 0
+```
+
+New disabled-by-default controls added in this checkpoint:
+
+- `arc_length_constraint gauge`;
+- `arc_length_sign_strategy monotone_lambda`;
+- `arc_length_auto_radius`;
+- `arc_length_gauge_tolerance`.
+
+The gauge constraint currently supports displacement-only indirect-control
+blocks. It rejects force-weighted IDC blocks because the arc corrector does not
+yet consistently linearize reaction-force gauges.
+
+Current checkpoint result:
+
+- Report: `results/tsn65-gauge-arc-cp5b-20260521-094117/report.md`.
+- Strict baseline gate after CP5b code:
+  `results/tsn65-cp5b-baseline-gate-20260521/report.md`.
+- Summary TSV:
+  `results/tsn65-gauge-arc-cp5b-20260521-094117/cp5b_gauge_arc_length.tsv`.
+- Script: `scripts/run_tsn65_gauge_arc_cp5b.py`.
+- First-quarter uncalibrated gauge arc-length completed, but the internal IDC
+  gauge and exported `LD.out` interpolation gauge differ. The run hit the
+  internal target exactly, while exported `v01` was `17.07%` low.
+- First-quarter calibrated gauge arc-length matched the exported strict
+  baseline `v01 = 2.613423e-6`, with no fallback acceptance or NaNs. It needed
+  `25` nonlinear rows and about `4:08`, compared with strict baseline step 1:
+  `6` rows and about `0:35`. The existing line-search option was neutral for
+  rows and slightly slower in wall time.
+- A full calibrated gauge-arc run was attempted. It reached reported step `7`
+  and `235` nonlinear rows before being manually stopped because step `7`
+  drifted away from convergence. The last parsed row was step `7`, iteration
+  `89`, with residual `3.963647e-3`, displacement `2.671126e-3`, and energy
+  `4.556947e-3`.
+- The strict baseline gate still matches exactly after the CP5b code changes:
+  `8/8` steps, sequence `6,6,10,13,17,183,187,163`, total `585` rows, no
+  warnings, no NaNs, no cutbacks, and no fallback acceptance.
+- The full calibrated run followed a softer linear gauge path than the strict
+  baseline until the final target. It is therefore a continuation experiment,
+  not an exact loading-history replacement.
+- Verdict: gauge-constrained arc-length is now mechanically usable enough to
+  hit prescribed displacement gauges, but it is not a strict-baseline speed
+  replacement. The next usable direction is either a baseline-gauge PWL control
+  path with stagnation cutback/adaptive matrix rebuild, or a deeper
+  path-following formulation that constrains the same interpolated exporter
+  gauge rather than nearest-node IDC coordinates.
 
 ## CP6: Model-Level Stabilization
 

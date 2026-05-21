@@ -1,0 +1,17 @@
+created_at=2026-05-21T10:29:34+02:00
+repo=/home/beremi/repos/oas_deflation
+branch=nonlinear_solver_testing
+commit=6d390bf5cdff4a16a1bdf146f07f7b37e52cab88
+git_status_short<<EOF
+M src/solver/src/indirect_control.cpp
+ M src/solver/src/indirect_control.h
+ M src/solver/src/solver_implicit.cpp
+ M src/solver/src/solver_implicit.h
+?? results/tsn65-full-baseline-replication-20260520-123252/
+?? results/tsn65-gauge-arc-cp5b-20260521-094117/
+?? results/tsn65-local-baseline-20260520-100925/
+?? scripts/run_tsn65_gauge_arc_cp5b.py
+EOF
+executable=/tmp/oas_tsn65_full_baseline_build/bin/OAS
+deck=/home/beremi/repos/oas_deflation/results/tsn65-zip-runs-20260519-190000/input/TS-N_65
+variants=CP5b-gauge-first-quarter,CP5b-gauge-first-quarter-line-search,CP5b-gauge-first-quarter-calibrated,CP5b-gauge-first-quarter-calibrated-line-search,CP5b-gauge-full-calibrated

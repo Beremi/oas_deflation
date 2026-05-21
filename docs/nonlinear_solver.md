@@ -1768,9 +1768,16 @@ arc_length_shrink 0.5
 arc_length_expand 1.2
 arc_length_target_iterations 8
 arc_length_max_iterations 40
-arc_length_sign_strategy previous_increment|positive_load|control_dof
-arc_length_constraint spherical|cylindrical|updated_normal_plane
+arc_length_sign_strategy previous_increment|positive_load|control_dof|monotone_lambda
+arc_length_constraint spherical|gauge|cylindrical|updated_normal_plane
+arc_length_auto_radius 0|1
+arc_length_gauge_tolerance 1e-3
 ```
+
+Current implementation note: `spherical` is the generic CP4 prototype.
+`gauge` is a TS-N65/IDC continuation experiment that uses a displacement-only
+`indirect_control` block as the corrector constraint and keeps defaults at
+legacy load control unless explicitly enabled.
 
 ## Implementation plan
 

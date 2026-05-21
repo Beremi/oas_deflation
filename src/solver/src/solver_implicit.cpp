@@ -823,6 +823,12 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 }
             } else if ( param.compare("arc_length_reference_delta") == 0 ) {
                 iss >> arcLengthReferenceDelta;
+            } else if ( param.compare("arc_length_auto_radius") == 0 ) {
+                int value = 0;
+                iss >> value;
+                arcLengthAutoRadius = ( value != 0 );
+            } else if ( param.compare("arc_length_gauge_tolerance") == 0 ) {
+                iss >> arcLengthGaugeTolerance;
             } else if ( param.compare("nonlinear_damping_type") == 0 ) {
                 iss >> param;
                 if ( param.compare("off") == 0 ) {
@@ -1165,9 +1171,13 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
         std :: cerr << "nonlinear_control indirect requested without indirect_control block; using load" << '\n';
         nonlinearControlType = NonlinearControlType :: Load;
     }
-    if ( nonlinearControlType == NonlinearControlType :: ArcLength && idc ) {
-        std :: cerr << "nonlinear_control arc_length cannot be combined with indirect_control in this prototype; using indirect control" << '\n';
+    if ( nonlinearControlType == NonlinearControlType :: ArcLength && idc && arcLengthConstraint.compare("gauge") != 0 ) {
+        std :: cerr << "nonlinear_control arc_length with indirect_control requires arc_length_constraint gauge; using indirect control" << '\n';
         nonlinearControlType = NonlinearControlType :: Indirect;
+    }
+    if ( nonlinearControlType == NonlinearControlType :: ArcLength && arcLengthConstraint.compare("gauge") == 0 && !idc ) {
+        std :: cerr << "arc_length_constraint gauge requires an indirect_control block; using load" << '\n';
+        nonlinearControlType = NonlinearControlType :: Load;
     }
     if ( arcLengthRadiusInitial <= 0. ) {
         std :: cerr << "arc_length_radius_initial must be positive, setting to 0.1" << '\n';
@@ -1201,17 +1211,21 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
         std :: cerr << "arc_length_max_iterations must be at least 1, setting to 1" << '\n';
         arcLengthMaxIterations = 1;
     }
-    if ( arcLengthConstraint.compare("spherical") != 0 ) {
-        std :: cerr << "arc_length_constraint prototype supports only spherical; using spherical" << '\n';
+    if ( arcLengthConstraint.compare("spherical") != 0 && arcLengthConstraint.compare("gauge") != 0 ) {
+        std :: cerr << "arc_length_constraint prototype supports spherical or gauge; using spherical" << '\n';
         arcLengthConstraint = "spherical";
     }
-    if ( arcLengthSignStrategy.compare("previous_increment") != 0 && arcLengthSignStrategy.compare("positive_load") != 0 ) {
+    if ( arcLengthSignStrategy.compare("previous_increment") != 0 && arcLengthSignStrategy.compare("positive_load") != 0 && arcLengthSignStrategy.compare("monotone_lambda") != 0 ) {
         std :: cerr << "unknown arc_length_sign_strategy '" << arcLengthSignStrategy << "', using previous_increment" << '\n';
         arcLengthSignStrategy = "previous_increment";
     }
     if ( arcLengthReferenceDelta <= 0. || !std :: isfinite(arcLengthReferenceDelta) ) {
         std :: cerr << "arc_length_reference_delta must be positive, setting to 1" << '\n';
         arcLengthReferenceDelta = 1.;
+    }
+    if ( arcLengthGaugeTolerance <= 0. || !std :: isfinite(arcLengthGaugeTolerance) ) {
+        std :: cerr << "arc_length_gauge_tolerance must be positive, setting to 1e-3" << '\n';
+        arcLengthGaugeTolerance = 1e-3;
     }
     if ( nonlinearTangentCheckEps <= 0. ) {
         std :: cerr << "nonlinear_tangent_check_eps must be positive, setting to 1e-6" << '\n';
@@ -1271,6 +1285,18 @@ void SteadyStateNonLinearSolver :: giveValues(string code, Vector &result) const
     } else if ( code.compare("arc_length_dlambda") == 0 ) {
         result.resize(1);
         result [ 0 ] = arcLengthLastDeltaLambda;
+    } else if ( code.compare("arc_length_control_time") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthControlTime;
+    } else if ( code.compare("arc_length_gauge_value") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthGaugeValue;
+    } else if ( code.compare("arc_length_gauge_target") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthGaugeTarget;
+    } else if ( code.compare("arc_length_gauge_error") == 0 ) {
+        result.resize(1);
+        result [ 0 ] = arcLengthGaugeErr;
     } else if ( code.compare("converged") == 0 ) {
         result.resize(1);
         result [ 0 ] = fully_converged;
@@ -1331,8 +1357,32 @@ bool SteadyStateNonLinearSolver :: nonlinearGlobalizationActive() const {
 }
 
 //////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: useArcLengthGaugeConstraint() const {
+    return nonlinearControlType == NonlinearControlType :: ArcLength && arcLengthConstraint.compare("gauge") == 0 && idc;
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: computeArcLengthGaugeError() {
+    if ( !useArcLengthGaugeConstraint() ) {
+        arcLengthGaugeValue = 0.;
+        arcLengthGaugeErr = 0.;
+        return arcLengthGaugeErr;
+    }
+    arcLengthGaugeValue = idc->giveControlValue(trial_r, f_ext);
+    arcLengthGaugeErr = std :: abs(arcLengthGaugeValue - arcLengthGaugeTarget) / std :: max(std :: abs(arcLengthGaugeTarget), 1e-30);
+    if ( !std :: isfinite(arcLengthGaugeErr) ) {
+        arcLengthGaugeErr = std :: numeric_limits< double > :: infinity();
+    }
+    return arcLengthGaugeErr;
+}
+
+//////////////////////////////////////////////////////////
 bool SteadyStateNonLinearSolver :: nonlinearConvergenceCriteriaSatisfied() const {
-    return disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr;
+    const bool mainConverged = disErr <= maxDisErr && resErr <= maxResErr && eneErr <= maxEneErr;
+    if ( useArcLengthGaugeConstraint() ) {
+        return mainConverged && arcLengthGaugeErr <= arcLengthGaugeTolerance;
+    }
+    return mainConverged;
 }
 
 //////////////////////////////////////////////////////////
@@ -1374,7 +1424,10 @@ double SteadyStateNonLinearSolver :: currentNonlinearConvergenceMerit() const {
     const double residualMerit = resErr / std :: max(maxResErr, 1e-300);
     const double displacementMerit = disErr / std :: max(maxDisErr, 1e-300);
     const double energyMerit = eneErr / std :: max(maxEneErr, 1e-300);
-    const double merit = std :: max(residualMerit, std :: max(displacementMerit, energyMerit) );
+    double merit = std :: max(residualMerit, std :: max(displacementMerit, energyMerit) );
+    if ( useArcLengthGaugeConstraint() ) {
+        merit = std :: max(merit, arcLengthGaugeErr / std :: max(arcLengthGaugeTolerance, 1e-300) );
+    }
     if ( !std :: isfinite(merit) ) {
         return std :: numeric_limits< double > :: infinity();
     }
@@ -1420,6 +1473,8 @@ SteadyStateNonLinearSolver :: NonlinearStateSnapshot SteadyStateNonLinearSolver 
     snapshot.eneErr = eneErr;
     snapshot.arcLengthLambda = arcLengthLambda;
     snapshot.arcLengthRadius = arcLengthCurrentRadius;
+    snapshot.arcLengthGaugeValue = arcLengthGaugeValue;
+    snapshot.arcLengthGaugeErr = arcLengthGaugeErr;
     if ( nonlinearMaterialSnapshotRollback ) {
         snapshot.materialStatuses = std :: make_shared< ElementContainer :: MaterialStatusSnapshot >( elems->createMaterialStatusSnapshot() );
         if ( nonlinearMaterialSnapshotVerify ) {
@@ -1450,6 +1505,8 @@ void SteadyStateNonLinearSolver :: restoreNonlinearState(const NonlinearStateSna
     eneErr = snapshot.eneErr;
     arcLengthLambda = snapshot.arcLengthLambda;
     arcLengthCurrentRadius = snapshot.arcLengthRadius;
+    arcLengthGaugeValue = snapshot.arcLengthGaugeValue;
+    arcLengthGaugeErr = snapshot.arcLengthGaugeErr;
     if ( resetMaterialStatuses ) {
         if ( snapshot.materialStatuses ) {
             elems->restoreMaterialStatusSnapshot( *snapshot.materialStatuses );
@@ -1824,6 +1881,7 @@ bool SteadyStateNonLinearSolver :: applyArcLengthIncrementAndEvaluate(const Nonl
     updateFieldVariables();
     computeForcesAtIntegrationTime(frozen);
     evaluateErrors();
+    computeArcLengthGaugeError();
     arcLengthLastDeltaLambda = alpha * lambdaIncrement;
     if ( it == 0 ) {
         disErr = 0;                        //error in displacement change, only from second iteration
@@ -2316,8 +2374,20 @@ void SteadyStateNonLinearSolver :: solve() {
     bool restart_now = false;
     Vector help_idc_r, help_idc_f;
     const bool useArcLengthControl = nonlinearControlType == NonlinearControlType :: ArcLength;
+    const bool useArcLengthGauge = useArcLengthGaugeConstraint();
+    const double arcLengthControlStepStartTime = time - dt;
+    double arcLengthControlTargetTime = time;
 
     if ( useArcLengthControl ) {
+        if ( useArcLengthGauge ) {
+            if ( idc->requireForces() ) {
+                std :: cerr << "Error: arc_length_constraint gauge currently supports displacement-only indirect_control blocks" << endl;
+                terminated = true;
+                return;
+            }
+            arcLengthControlTime = arcLengthControlTargetTime;
+            arcLengthGaugeTarget = idc->giveTargetValue(arcLengthControlTime);
+        }
         if ( arcLengthCurrentRadius <= 0. || !std :: isfinite(arcLengthCurrentRadius) ) {
             arcLengthCurrentRadius = arcLengthRadiusInitial;
         }
@@ -2348,6 +2418,7 @@ void SteadyStateNonLinearSolver :: solve() {
             nodes->updateDirrichletBC(trial_r, arcLengthLambda);
             updateFieldVariables();      //with ddr=0
             computeForcesAtIntegrationTime(true);
+            computeArcLengthGaugeError();
         } else if ( !idc ) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
@@ -2375,6 +2446,7 @@ void SteadyStateNonLinearSolver :: solve() {
             double meritBefore = lastNonlinearMeritBefore;
             if ( useNonlinearGlobalization || useArcLengthControl ) {
                 evaluateErrors();
+                computeArcLengthGaugeError();
                 if ( it == 0 ) {
                     disErr = 0;
                 }
@@ -2388,7 +2460,7 @@ void SteadyStateNonLinearSolver :: solve() {
                 warnedGlobalizationWithIDC = true;
             }
 
-            if ( idc ) {      //indirect displacement control
+            if ( idc && !useArcLengthControl ) {      //indirect displacement control
                 Vector trial_r_last_iter = trial_r;
                 f_last_iter = f;
 
@@ -2468,7 +2540,33 @@ void SteadyStateNonLinearSolver :: solve() {
 
                 double lambdaIncrement = 0.;
                 Vector arcIncrement = Vector :: Zero(freeDoFnum);
-                if ( it == 0 ) {
+                if ( useArcLengthGauge ) {
+                    const Vector zeroForceDiff = Vector :: Zero(totalDoFnum);
+                    const double gaugeValue = idc->giveControlValue(trial_r, f_ext);
+                    const double gaugeFixedCorrection = idc->giveControlDifference(fullFixedLoadCorrection, zeroForceDiff);
+                    const double gaugeLoadDirection = idc->giveControlDifference(fullLoadDirection, zeroForceDiff);
+                    if ( std :: abs(gaugeLoadDirection) <= 1e-300 || !std :: isfinite(gaugeLoadDirection) ) {
+                        nonlinearCutbackReason = "arc_length_gauge_singular_constraint";
+                        restart_now = true;
+                        break;
+                    }
+                    lambdaIncrement = ( arcLengthGaugeTarget - gaugeValue - gaugeFixedCorrection ) / gaugeLoadDirection;
+                    if ( arcLengthSignStrategy.compare("monotone_lambda") == 0 && arcLengthLambda + lambdaIncrement < arcLengthStepStartLambda - 1e-12 ) {
+                        nonlinearCutbackReason = "arc_length_gauge_negative_lambda";
+                        restart_now = true;
+                        break;
+                    }
+                    arcIncrement = fixedLoadCorrection + lambdaIncrement * loadDirection;
+                    if ( it == 0 && arcLengthAutoRadius ) {
+                        arcLengthCurrentRadius = std :: min(
+                                                     arcLengthRadiusMax,
+                                                     std :: max(
+                                                         arcLengthRadiusMin,
+                                                         std :: abs(lambdaIncrement) * std :: sqrt(fullLoadDirection.squaredNorm() + arcLengthPsi * arcLengthPsi)
+                                                     )
+                                                 );
+                    }
+                } else if ( it == 0 ) {
                     const double directionNorm = std :: sqrt(fullLoadDirection.squaredNorm() + arcLengthPsi * arcLengthPsi);
                     if ( directionNorm <= 0. || !std :: isfinite(directionNorm) ) {
                         std :: cerr << "Error: arc-length predictor direction has zero norm" << endl;
@@ -2541,8 +2639,14 @@ void SteadyStateNonLinearSolver :: solve() {
                                 << " dlambda " << arcLengthLastDeltaLambda
                                 << " radius " << arcLengthCurrentRadius
                                 << " fixed_solve " << fixedLoadSolveSuccess
-                                << " load_solve " << loadDirectionSolveSuccess
-                                << std :: endl;
+                                << " load_solve " << loadDirectionSolveSuccess;
+                    if ( useArcLengthGauge ) {
+                        std :: cout << " gauge " << arcLengthGaugeValue
+                                    << " gauge_target " << arcLengthGaugeTarget
+                                    << " gauge_error " << arcLengthGaugeErr
+                                    << " control_time " << arcLengthControlTime;
+                    }
+                    std :: cout << std :: endl;
                 }
             } else {         //direct controll
                 const bool directSolveSuccess = linalgsolver->solve(ddr, f);
@@ -2720,6 +2824,11 @@ void SteadyStateNonLinearSolver :: solve() {
                         cout << setw(15) << arcLengthLambda
                              << setw(15) << arcLengthLastDeltaLambda
                              << setw(15) << arcLengthCurrentRadius;
+                        if ( useArcLengthGauge ) {
+                            cout << setw(15) << arcLengthGaugeValue
+                                 << setw(15) << arcLengthGaugeTarget
+                                 << setw(15) << arcLengthGaugeErr;
+                        }
                     }
                 }
                 cout << endl;
@@ -2728,7 +2837,7 @@ void SteadyStateNonLinearSolver :: solve() {
             //if (not silent) checkAllVectorsForNaNs();
 
             // This check works only if flag "-ffast-math" is removed from CMake
-            if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) ) {
+            if ( std :: isnan(resErr) || std :: isnan(disErr) || std :: isnan(eneErr) || std :: isnan(arcLengthGaugeErr) ) {
                 std :: cerr << "calculating with NaN in ";
                 if ( std :: isnan(resErr) ) {
                     std :: cerr << "\tresiduals ";
@@ -2738,6 +2847,9 @@ void SteadyStateNonLinearSolver :: solve() {
                 }
                 if ( std :: isnan(eneErr) ) {
                     std :: cerr << "\tenergies ";
+                }
+                if ( std :: isnan(arcLengthGaugeErr) ) {
+                    std :: cerr << "\tarc-length gauge ";
                 }
                 std :: cerr << endl;
                 it = maxIt;
@@ -2767,15 +2879,45 @@ void SteadyStateNonLinearSolver :: solve() {
             if ( useArcLengthControl ) {
                 time = arcLengthLambda;
                 arcLengthPreviousDeltaLambda = arcLengthLambda - arcLengthStepStartLambda;
-                if ( arcLengthPreviousDeltaLambda >= 0. && std :: abs(termination_time - arcLengthLambda) < 1e-10 ) {
+                if ( !useArcLengthGauge && arcLengthPreviousDeltaLambda >= 0. && std :: abs(termination_time - arcLengthLambda) < 1e-10 ) {
                     arcLengthLambda = termination_time;
                     time = termination_time;
                 }
             }
             computeForcesAtStepEnd(false); //to obtain the actual stress, fluxes, ...
+            if ( useArcLengthGauge ) {
+                time = arcLengthControlTime;
+            }
         }
 
-        if ( !converged && useArcLengthControl && arcLengthCurrentRadius > arcLengthRadiusMin * 1.00001 ) {
+        if ( !converged && useArcLengthGauge && dt > dtmin * 1.00001 ) {
+            dt = fmax(dt * critical_step_decrease, dtmin);
+            arcLengthControlTargetTime = arcLengthControlStepStartTime + dt;
+            arcLengthControlTime = arcLengthControlTargetTime;
+            arcLengthGaugeTarget = idc->giveTargetValue(arcLengthControlTime);
+            arcLengthCurrentRadius = std :: max(arcLengthRadiusMin, arcLengthCurrentRadius * arcLengthShrink);
+            trial_r = r;
+            f_int = f_int_old;
+            f_ext = f_ext_old;
+            load.setZero();
+            ddr.setZero();
+            elems->resetMaterialStatuses();
+            arcLengthLambda = arcLengthLambdaConverged;
+            time = arcLengthLambda;
+            if ( not silent ) {
+                if ( !nonlinearCutbackReason.empty() ) {
+                    std :: cout << "Nonlinear cutback reason: " << nonlinearCutbackReason << endl;
+                }
+                std :: cout << "Restarting gauge arc-length step, timestep = " << dt
+                            << ", control_time = " << arcLengthControlTime
+                            << ", radius = " << arcLengthCurrentRadius
+                            << ", lambda = " << arcLengthLambda << endl;
+            }
+            restarts++;
+            restarted = true;
+            restart_now = false;
+            nonlinearCutbackReason.clear();
+        } else if ( !converged && useArcLengthControl && arcLengthCurrentRadius > arcLengthRadiusMin * 1.00001 ) {
             arcLengthCurrentRadius = std :: max(arcLengthRadiusMin, arcLengthCurrentRadius * arcLengthShrink);
             trial_r = r;
             f_int = f_int_old;
@@ -2837,6 +2979,16 @@ void SteadyStateNonLinearSolver :: solve() {
                 terminated = true;
                 return;
             }
+        } else if ( ( !restarted ) && converged && useArcLengthGauge && it < enlargeIt ) {
+            dt = fmin(dt * step_increase, dtmax);
+            if ( not silent ) {
+                std :: cout << "enlarging gauge arc-length timestep = " << dt << '\n';
+            }
+        } else if ( converged && useArcLengthGauge && it > shortenIt && dt > dtmin ) {
+            dt = fmax(dt * step_decrease, dtmin);
+            if ( not silent ) {
+                std :: cout << "shortening gauge arc-length timestep = " << dt << '\n';
+            }
         } else if ( ( !restarted ) && converged && useArcLengthControl && it <= arcLengthTargetIterations ) {
             arcLengthCurrentRadius = std :: min(arcLengthRadiusMax, arcLengthCurrentRadius * arcLengthExpand);
             if ( not silent ) {
@@ -2858,13 +3010,13 @@ void SteadyStateNonLinearSolver :: solve() {
                 std :: cout << "shortening step, timestep = " << dt << '\n';
             }
         }
-        if  ( !useArcLengthControl && dt > dtmax ) {
+        if  ( ( !useArcLengthControl || useArcLengthGauge ) && dt > dtmax ) {
             dt = dtmax;
             if ( not silent ) {
                 std :: cout << "shortening step to the maximum one: " << dt << '\n';
             }
         }
-        if  ( !useArcLengthControl && dt < dtmin ) {
+        if  ( ( !useArcLengthControl || useArcLengthGauge ) && dt < dtmin ) {
             dt = dtmin;
             if ( not silent ) {
                 std :: cout << "enlarging step to the minimum one: " << dt << '\n';
@@ -2893,6 +3045,9 @@ void SteadyStateNonLinearSolver :: runBeforeEachStep() {
             cout << setw(6) << " " << setw(15) << "alpha" << setw(15) << "ls_trials" << setw(15) << "glob_merit" << setw(15) << "conv_merit" << setw(15) << "cutback" << setw(15) << "K_rebuild" << setw(15) << "trust_radius" << endl;
             if ( nonlinearControlType == NonlinearControlType :: ArcLength ) {
                 cout << setw(6) << " " << setw(15) << "arc_lambda" << setw(15) << "arc_dlambda" << setw(15) << "arc_radius" << endl;
+                if ( useArcLengthGaugeConstraint() ) {
+                    cout << setw(6) << " " << setw(15) << "gauge" << setw(15) << "gauge_target" << setw(15) << "gauge_error" << endl;
+                }
             }
         }
         cout << setw(6) << " " << setw(15) << maxResErr << setw(15) << maxDisErr << setw(15) << maxEneErr << endl;

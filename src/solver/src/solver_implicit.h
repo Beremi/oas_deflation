@@ -80,6 +80,8 @@ protected:
         double eneErr = 0.;
         double arcLengthLambda = 0.;
         double arcLengthRadius = 0.;
+        double arcLengthGaugeValue = 0.;
+        double arcLengthGaugeErr = 0.;
         std :: shared_ptr< ElementContainer :: MaterialStatusSnapshot > materialStatuses;
         std :: uint64_t materialStatusHash = 0;
         bool materialStatusHashValid = false;
@@ -174,12 +176,18 @@ protected:
     std :: string arcLengthSignStrategy = "previous_increment";
     ArcLengthReferenceMode arcLengthReferenceMode = ArcLengthReferenceMode :: ProportionalLoad;
     double arcLengthReferenceDelta = 1.;
+    bool arcLengthAutoRadius = false;
+    double arcLengthGaugeTolerance = 1e-3;
     double arcLengthLambda = 0.;
     double arcLengthLambdaConverged = 0.;
     double arcLengthStepStartLambda = 0.;
     double arcLengthCurrentRadius = 0.;
     double arcLengthLastDeltaLambda = 0.;
     double arcLengthPreviousDeltaLambda = 1.;
+    double arcLengthControlTime = 0.;
+    double arcLengthGaugeTarget = 0.;
+    double arcLengthGaugeValue = 0.;
+    double arcLengthGaugeErr = 0.;
     Vector arcLengthReferenceLoad;
     bool nonlinearTangentCheck = false;
     unsigned nonlinearTangentCheckStep = 0;
@@ -215,6 +223,8 @@ protected:
     NonlinearStateSnapshot saveNonlinearState() const;
     void restoreNonlinearState(const NonlinearStateSnapshot &snapshot, bool resetMaterialStatuses);
     void resetNonlinearGlobalizationAttempt();
+    bool useArcLengthGaugeConstraint() const;
+    double computeArcLengthGaugeError();
     bool applyScaledIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double alpha, bool frozen, bool resetMaterialStatuses = true);
     NonlinearTrialResult performBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);

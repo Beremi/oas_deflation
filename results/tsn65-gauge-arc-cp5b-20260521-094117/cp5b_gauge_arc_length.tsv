@@ -1,0 +1,6 @@
+variant	exit_status	verdict	steps	rows	duration	elapsed_seconds	warnings	nans	fallback	cutbacks	arc_rows	final_time	final_lambda	final_dlambda	final_radius	final_gauge	target_gauge	gauge_rel_err	final_v01	target_v01
+CP5b-gauge-first-quarter	0	wrong_gauge	1	25	00:04:07.195	250.167	0	0	0	0	25	0.00125	0.001035815	2.526177e-07	0.001	2.613423e-06	2.613423e-06	0.1706516702424368	2.167438e-06	2.613423e-06
+CP5b-gauge-first-quarter-calibrated	0	worsens	1	25	00:04:07.583	250.639	0	0	0	0	25	0.00125	0.00124895	3.045978e-07	0.001	3.151177e-06	3.15117653973e-06	0.0	2.613423e-06	2.613423e-06
+CP5b-gauge-first-quarter-calibrated-line-search	0	worsens	1	25	00:04:25.795	268.805	0	0	0	0	25	0.00125	0.00124895	3.045978e-07	0.001	3.151177e-06	3.15117653973e-06	0.0	2.613423e-06	2.613423e-06
+CP5b-gauge-first-quarter-line-search	0	wrong_gauge	1	25	00:04:25.720	268.703	0	0	0	0	25	0.00125	0.001035815	2.526177e-07	0.001	2.613423e-06	2.613423e-06	0.1706516702424368	2.167438e-06	2.613423e-06
+CP5b-gauge-full-calibrated	130	failed	7	235		2121.000	0	0	0	0	235	0.0075	0.007355714	2.032285e-06	0.001	1.638489e-05	1.87255861523e-05	0.24681696417114724	1.14461e-05	1.519697e-05

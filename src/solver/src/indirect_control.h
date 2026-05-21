@@ -34,7 +34,7 @@ protected:
     std :: vector< std :: vector< double > >r_weights;
     std :: vector< std :: vector< double > >f_weights;
 
-    double givePrescribedValue(double time);
+    double givePrescribedValue(double time) const;
 
 public:
     IndirectControl();
@@ -42,6 +42,9 @@ public:
     void init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial = true);
     void readFromStream(unsigned num, std :: ifstream &inputfile);
     virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
+    double giveTargetValue(double time) const;
+    double giveControlValue(const Vector &displ, const Vector &force, unsigned unit = 0) const;
+    double giveControlDifference(const Vector &diff_displ, const Vector &diff_force, unsigned unit = 0) const;
     bool requireForces()const;
 };
 
