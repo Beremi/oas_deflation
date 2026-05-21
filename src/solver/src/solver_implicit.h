@@ -59,6 +59,7 @@ protected:
     enum class NonlinearTrustRegionType { Off, StepNorm };
     enum class NonlinearTangentCheckScope { Global, ElementTop };
     enum class NonlinearControlType { Load, Indirect, ArcLength };
+    enum class ArcLengthReferenceMode { ProportionalLoad, FiniteDifference };
 
     struct NonlinearStateSnapshot {
         Vector trial_r;
@@ -171,6 +172,8 @@ protected:
     unsigned arcLengthMaxIterations = 40;
     std :: string arcLengthConstraint = "spherical";
     std :: string arcLengthSignStrategy = "previous_increment";
+    ArcLengthReferenceMode arcLengthReferenceMode = ArcLengthReferenceMode :: ProportionalLoad;
+    double arcLengthReferenceDelta = 1.;
     double arcLengthLambda = 0.;
     double arcLengthLambdaConverged = 0.;
     double arcLengthStepStartLambda = 0.;
@@ -217,6 +220,7 @@ protected:
     NonlinearTrialResult performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performStepNormTrustRegion(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     Vector computeArcLengthReducedReferenceLoad();
+    Vector computeArcLengthReducedFiniteDifferenceReference(const NonlinearStateSnapshot &baseState);
     bool applyArcLengthIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double alpha, bool frozen, bool resetMaterialStatuses = true);
     NonlinearTrialResult performArcLengthBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double meritBefore);
     double currentNonlinearDampingAlpha() const;

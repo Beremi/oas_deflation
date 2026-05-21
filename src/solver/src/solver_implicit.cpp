@@ -811,6 +811,18 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 iss >> arcLengthConstraint;
             } else if ( param.compare("arc_length_sign_strategy") == 0 ) {
                 iss >> arcLengthSignStrategy;
+            } else if ( param.compare("arc_length_reference") == 0 ) {
+                iss >> param;
+                if ( param.compare("proportional_load") == 0 || param.compare("load") == 0 ) {
+                    arcLengthReferenceMode = ArcLengthReferenceMode :: ProportionalLoad;
+                } else if ( param.compare("finite_difference") == 0 || param.compare("finite-difference") == 0 || param.compare("fd") == 0 ) {
+                    arcLengthReferenceMode = ArcLengthReferenceMode :: FiniteDifference;
+                } else {
+                    std :: cerr << "unknown arc_length_reference '" << param << "', using proportional_load" << '\n';
+                    arcLengthReferenceMode = ArcLengthReferenceMode :: ProportionalLoad;
+                }
+            } else if ( param.compare("arc_length_reference_delta") == 0 ) {
+                iss >> arcLengthReferenceDelta;
             } else if ( param.compare("nonlinear_damping_type") == 0 ) {
                 iss >> param;
                 if ( param.compare("off") == 0 ) {
@@ -1196,6 +1208,10 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     if ( arcLengthSignStrategy.compare("previous_increment") != 0 && arcLengthSignStrategy.compare("positive_load") != 0 ) {
         std :: cerr << "unknown arc_length_sign_strategy '" << arcLengthSignStrategy << "', using previous_increment" << '\n';
         arcLengthSignStrategy = "previous_increment";
+    }
+    if ( arcLengthReferenceDelta <= 0. || !std :: isfinite(arcLengthReferenceDelta) ) {
+        std :: cerr << "arc_length_reference_delta must be positive, setting to 1" << '\n';
+        arcLengthReferenceDelta = 1.;
     }
     if ( nonlinearTangentCheckEps <= 0. ) {
         std :: cerr << "nonlinear_tangent_check_eps must be positive, setting to 1e-6" << '\n';
@@ -1769,9 +1785,38 @@ Vector SteadyStateNonLinearSolver :: computeArcLengthReducedReferenceLoad() {
 }
 
 //////////////////////////////////////////////////////////
+Vector SteadyStateNonLinearSolver :: computeArcLengthReducedFiniteDifferenceReference(const NonlinearStateSnapshot &baseState) {
+    const double delta = arcLengthReferenceDelta;
+    Vector baseResidual = baseState.f;
+    if ( baseResidual.size() != static_cast< int >( freeDoFnum ) ) {
+        Vector baseFullResidual = baseState.residuals;
+        baseResidual = Vector :: Zero(freeDoFnum);
+        nodes->giveReducedForceArray(baseFullResidual, baseResidual);
+    }
+
+    restoreNonlinearState(baseState, true);
+    const double probeLambda = baseState.arcLengthLambda + delta;
+    arcLengthLambda = probeLambda;
+    time = probeLambda;
+    load.setZero();
+    nodes->addRHS_nodalLoad(load, probeLambda);
+    nodes->updateDirrichletBC(trial_r, probeLambda);
+    computeForcesAtIntegrationTime(true);
+
+    Vector probeResidual = Vector :: Zero(freeDoFnum);
+    nodes->giveReducedForceArray(residuals, probeResidual);
+    Vector reference = ( probeResidual - baseResidual ) / delta;
+
+    restoreNonlinearState(baseState, true);
+    time = baseState.arcLengthLambda;
+    return reference;
+}
+
+//////////////////////////////////////////////////////////
 bool SteadyStateNonLinearSolver :: applyArcLengthIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double alpha, bool frozen, bool resetMaterialStatuses) {
     restoreNonlinearState(baseState, resetMaterialStatuses);
     arcLengthLambda = baseState.arcLengthLambda + alpha * lambdaIncrement;
+    time = arcLengthLambda;
     load.setZero();
     nodes->addRHS_nodalLoad(load, arcLengthLambda);
     nodes->updateDirrichletBC(trial_r, arcLengthLambda);
@@ -2276,10 +2321,10 @@ void SteadyStateNonLinearSolver :: solve() {
         if ( arcLengthCurrentRadius <= 0. || !std :: isfinite(arcLengthCurrentRadius) ) {
             arcLengthCurrentRadius = arcLengthRadiusInitial;
         }
-        if ( arcLengthReferenceLoad.size() != static_cast< int >( freeDoFnum ) ) {
+        if ( arcLengthReferenceMode == ArcLengthReferenceMode :: ProportionalLoad && arcLengthReferenceLoad.size() != static_cast< int >( freeDoFnum ) ) {
             arcLengthReferenceLoad = computeArcLengthReducedReferenceLoad();
         }
-        if ( arcLengthReferenceLoad.norm() <= 0. || !std :: isfinite(arcLengthReferenceLoad.norm() ) ) {
+        if ( arcLengthReferenceMode == ArcLengthReferenceMode :: ProportionalLoad && ( arcLengthReferenceLoad.norm() <= 0. || !std :: isfinite(arcLengthReferenceLoad.norm() ) ) ) {
             std :: cerr << "Error: arc-length control requires a nonzero proportional reference load f_ext(load=1)-f_ext(load=0)" << endl;
             terminated = true;
             return;
@@ -2401,8 +2446,19 @@ void SteadyStateNonLinearSolver :: solve() {
                     fixedLoadSolveSuccess = linalgsolver->solve(fixedLoadCorrection, f);
                 }
 
+                Vector referenceLoad = arcLengthReferenceLoad;
+                if ( arcLengthReferenceMode == ArcLengthReferenceMode :: FiniteDifference ) {
+                    referenceLoad = computeArcLengthReducedFiniteDifferenceReference(incrementBaseState);
+                    const double referenceNorm = referenceLoad.norm();
+                    if ( referenceNorm <= 0. || !std :: isfinite(referenceNorm) ) {
+                        std :: cerr << "Error: arc-length finite-difference reference has zero norm" << endl;
+                        terminated = true;
+                        return;
+                    }
+                }
+
                 Vector loadDirection = Vector :: Zero(freeDoFnum);
-                const bool loadDirectionSolveSuccess = linalgsolver->solve(loadDirection, arcLengthReferenceLoad);
+                const bool loadDirectionSolveSuccess = linalgsolver->solve(loadDirection, referenceLoad);
                 collectLinearDeflationVector(loadDirection, loadDirectionSolveSuccess);
 
                 Vector fullFixedLoadCorrection = Vector :: Zero(totalDoFnum);

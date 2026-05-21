@@ -30,7 +30,7 @@ the primary replication criteria.
 | CP2 | complete-negative | Adaptive cutback/stagnation run | Strict baseline plus adaptive-step metrics |
 | CP3 | complete-negative | Existing indirect displacement control before arc-length | IDC benchmark and TS-N65 baseline target |
 | CP4 | complete | Arc-length prototype on a small benchmark | Legacy load-control regression and TS-N65 strict baseline gate |
-| CP5 | pending | TS-N65 arc-length application | Strict baseline and load-displacement curve |
+| CP5 | complete-negative | TS-N65 arc-length application | Strict baseline and load-displacement curve |
 | CP6 | pending | Model-level stabilization if needed | Sensitivity data, physics-change note |
 
 ## CP0: Experiment Harness
@@ -255,6 +255,36 @@ Pass criteria:
 - No fallback acceptance.
 - Report load factor, displacement gauges, radius changes, total rows, wall
   time, and comparison to `585`.
+
+Current checkpoint result:
+
+- Reports:
+  - `results/tsn65-arc-length-cp5-20260521/report.md`;
+  - `results/tsn65-arc-length-cp5-radcal-20260521/report.md`;
+  - `results/tsn65-cp5-baseline-gate-20260521/report.md`.
+- Script: `scripts/run_tsn65_arc_length_cp5.py`.
+- Added optional arc-length reference controls:
+  - `arc_length_reference proportional_load|finite_difference`;
+  - `arc_length_reference_delta`.
+- Defaults preserve CP4 behavior: `arc_length_reference proportional_load`,
+  `arc_length_reference_delta 1`.
+- Direct proportional-load arc-length on TS-N65 is unsupported because the
+  TS-N65 deck is prescribed-displacement driven and has no nonzero reduced
+  nodal reference load `f_ext(load=1)-f_ext(load=0)`.
+- The finite-difference reference mode can derive a direction from the residual
+  change caused by prescribed-BC/load parameter perturbation, but the tested
+  radii were not competitive:
+  - radius `1.25e-3`: failed in the first arc step after `3` nonlinear rows;
+    final lambda drifted back to `6.433438e-6`;
+  - radius `1.35e-2`: calibrated the first predictor to `lambda=0.00125`, but
+    the corrector oscillated and needed `39` rows before the first strict
+    baseline quarter step was stably reached; strict baseline step 1 takes `6`
+    rows.
+- Verdict: CP5 arc-length is not a speed improvement for the strict TS-N65
+  eight-quarter baseline. It should remain experimental until the continuation
+  formulation is improved, likely by adding a monotone displacement-control
+  constraint or a better scaled corrector instead of the current spherical norm
+  on the full displacement field.
 
 ## CP6: Model-Level Stabilization
 

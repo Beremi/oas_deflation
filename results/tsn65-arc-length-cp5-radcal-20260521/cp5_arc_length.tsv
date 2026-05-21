@@ -1,0 +1,2 @@
+variant	exit_status	verdict	steps	rows	duration	warnings	nans	fallback	cutbacks	arc_rows	final_lambda	final_radius	min_radius	min_dlambda	last_step	last_iter	last_residual	last_displacement	last_energy
+CP5-arc-fd-r1p35e-2	manual_stop	manual_stop_not_promotable	3	39		0	0	0	0	39	0.001196307	0.003375	0.003375	1.308179e-07	3	2	0.1093089	0.09741841	0.168851
