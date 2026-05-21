@@ -45,6 +45,10 @@ public:
     virtual double giveEnergyDissipationIncrement() const;
     virtual void computeEnergyDensities();
     Vector giveCrackOpeningVector() const;
+    double giveDamage() const { return damage; }
+    double giveTempDamage() const { return temp_damage; }
+    double giveDamageIncrement() const { return temp_damage - damage; }
+    double giveTempCrackOpening() const { return temp_crackOpening; }
     virtual double giveNormalCrackOpening()const { return temp_crackOpening; };
 };
 
@@ -57,6 +61,16 @@ protected:
     double Lcrs, Lcrt;
     double damage_residuum = 0.0;
     double stress_residuum_fraction = 0.0;
+    static double stabilizedTangentBeta;
+    static double stabilizedTangentSofteningLimit;
+    static bool stabilizedTangentActiveOnly;
+    static bool stabilizedTangentLogStats;
+    static unsigned long long stabilizedTangentActiveCount;
+    static unsigned long long stabilizedTangentClippedCount;
+    static double stabilizedTangentScaleSum;
+    static double stabilizedTangentScaleMin;
+    static double stabilizedTangentScaleMax;
+    static double stabilizedTangentRatioMax;
 public:
     CSLMaterial(unsigned dimension) : VectMechMaterial(dimension) { name = "CSL material"; lam0 = -1.; }; //confinement removed
     virtual ~CSLMaterial() {};
@@ -79,6 +93,14 @@ public:
     virtual double giveAlphaForDamage() const { return VectMechMaterial :: giveAlpha(); }
     virtual bool requestTetrahedralBackgroundMesh()const { return ( lam0 > 0 ); } //for volumetric strain
     virtual void init(MaterialContainer *matcont);
+    static void configureStabilizedTangent(double beta, double softeningLimit, bool activeOnly, bool logStats);
+    static double giveStabilizedTangentBeta();
+    static double giveStabilizedTangentSofteningLimit();
+    static bool giveStabilizedTangentActiveOnly();
+    static bool giveStabilizedTangentLogStats();
+    static void resetStabilizedTangentStats();
+    static void recordStabilizedTangentStats(double scale, bool clipped, double ratio);
+    static std :: string giveStabilizedTangentStatsLine();
 };
 
 //////////////////////////////////////////////////////////

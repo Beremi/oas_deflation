@@ -1,9 +1,12 @@
 #include "solver_implicit.h"
 #include "adaptivity.h"
+#include "material_csl.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <limits>
 #include <sstream>
 #define numPhysicalFields 4
@@ -17,7 +20,8 @@ bool isStiffnessMatrixType(const std :: string &type) {
            type.compare("secant") == 0 ||
            type.compare("tangent") == 0 ||
            type.compare("consistent") == 0 ||
-           type.compare("archived_csl_damage_tangent") == 0;
+           type.compare("archived_csl_damage_tangent") == 0 ||
+           type.compare("csl_stabilized_tangent") == 0;
 }
 
 bool isTangentCheckMatrixType(const std :: string &type) {
@@ -25,7 +29,7 @@ bool isTangentCheckMatrixType(const std :: string &type) {
 }
 
 const char *stiffnessMatrixTypeMessage() {
-    return "'elastic', 'secant', 'tangent', 'consistent', or 'archived_csl_damage_tangent'";
+    return "'elastic', 'secant', 'tangent', 'consistent', 'archived_csl_damage_tangent', or 'csl_stabilized_tangent'";
 }
 
 } // namespace
@@ -525,7 +529,20 @@ bool SteadyStateLinearSolver :: updateSystemMatrices(unsigned iteration, unsigne
             matrixType = stiffMatTypeFirstIT;
         }
         lastStiffMatType = matrixType;
+        if ( matrixType.compare("csl_stabilized_tangent") == 0 && CSLMaterial :: giveStabilizedTangentLogStats() ) {
+            CSLMaterial :: resetStabilizedTangentStats();
+        }
         elems->updateStiffnessMatrix(K, matrixType);
+        if ( matrixType.compare("csl_stabilized_tangent") == 0 && CSLMaterial :: giveStabilizedTangentLogStats() && !silent ) {
+            cout << "CSL_STABILIZED_TANGENT_STATS"
+                 << " step " << step
+                 << " it " << iteration
+                 << " cumul_it " << cumul_iteration
+                 << " beta " << CSLMaterial :: giveStabilizedTangentBeta()
+                 << " softening_limit " << CSLMaterial :: giveStabilizedTangentSofteningLimit()
+                 << " " << CSLMaterial :: giveStabilizedTangentStatsLine()
+                 << endl;
+        }
         if ( stiffMatElasticBlendBeta > 0. && matrixType.compare("elastic") != 0 ) {
             CoordinateIndexedSparseMatrix elasticK(K);
             elems->updateStiffnessMatrix(elasticK, "elastic");
@@ -972,6 +989,51 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 iss >> nonlinearTrustExpand;
             } else if ( param.compare("nonlinear_trust_max_trials") == 0 ) {
                 iss >> nonlinearTrustMaxTrials;
+            } else if ( param.compare("nonlinear_lm_regularization") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearLmRegularization = ( value != 0 );
+            } else if ( param.compare("nonlinear_lm_mu_initial") == 0 ) {
+                iss >> nonlinearLmMuInitial;
+            } else if ( param.compare("nonlinear_lm_mu_min") == 0 ) {
+                iss >> nonlinearLmMuMin;
+            } else if ( param.compare("nonlinear_lm_mu_max") == 0 ) {
+                iss >> nonlinearLmMuMax;
+            } else if ( param.compare("nonlinear_lm_mu_growth") == 0 ) {
+                iss >> nonlinearLmMuGrowth;
+            } else if ( param.compare("nonlinear_lm_mu_shrink") == 0 ) {
+                iss >> nonlinearLmMuShrink;
+            } else if ( param.compare("nonlinear_lm_max_trials") == 0 ) {
+                iss >> nonlinearLmMaxTrials;
+            } else if ( param.compare("nonlinear_lm_diag") == 0 ) {
+                iss >> param;
+                if ( param.compare("abs_diag") == 0 || param.compare("elastic_diag") == 0 ) {
+                    if ( param.compare("elastic_diag") == 0 ) {
+                        std :: cerr << "nonlinear_lm_diag elastic_diag is not implemented yet; using abs_diag" << '\n';
+                    }
+                    nonlinearLmDiagType = NonlinearLmDiagType :: AbsDiag;
+                } else if ( param.compare("row_sum_diag") == 0 || param.compare("row-sum") == 0 ) {
+                    nonlinearLmDiagType = NonlinearLmDiagType :: RowSumDiag;
+                } else {
+                    std :: cerr << "unknown nonlinear_lm_diag '" << param << "', using abs_diag" << '\n';
+                    nonlinearLmDiagType = NonlinearLmDiagType :: AbsDiag;
+                }
+            } else if ( param.compare("nonlinear_lm_rebuild_each_mu_trial") == 0 ) {
+                int ignored = 0;
+                iss >> ignored;
+                if ( ignored != 0 ) {
+                    std :: cerr << "nonlinear_lm_rebuild_each_mu_trial is parsed for compatibility but v1 regularizes the current Keff" << '\n';
+                }
+            } else if ( param.compare("nonlinear_lm_accept") == 0 ) {
+                iss >> param;
+                if ( param.compare("merit") == 0 ) {
+                    nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
+                } else if ( param.compare("errors") == 0 ) {
+                    nonlinearLmAcceptType = NonlinearLmAcceptType :: Errors;
+                } else {
+                    std :: cerr << "unknown nonlinear_lm_accept '" << param << "', using merit" << '\n';
+                    nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
+                }
             } else if ( param.compare("nonlinear_rollback_ignore_initial_iterations") == 0 ) {
                 iss >> nonlinearRollbackIgnoreInitialIterations;
             } else if ( param.compare("nonlinear_rollback_growth_ratio") == 0 ) {
@@ -1036,6 +1098,23 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 int value = 0;
                 iss >> value;
                 nonlinearInitialGuessFrozenEval = ( value != 0 );
+            } else if ( param.compare("nonlinear_state_dump") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearStateDump = ( value != 0 );
+            } else if ( param.compare("nonlinear_state_dump_steps") == 0 ) {
+                unsigned dumpStep = 0;
+                while ( iss >> dumpStep ) {
+                    nonlinearStateDumpSteps.insert(dumpStep);
+                }
+            } else if ( param.compare("nonlinear_state_dump_top_damage") == 0 ) {
+                iss >> nonlinearStateDumpTopDamage;
+            } else if ( param.compare("nonlinear_state_dump_include_coordinates") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearStateDumpIncludeCoordinates = ( value != 0 );
+            } else if ( param.compare("nonlinear_state_dump_directory") == 0 ) {
+                iss >> nonlinearStateDumpDirectory;
             } else if ( param.compare("nonlinear_tangent_check") == 0 ) {
                 int value = 0;
                 iss >> value;
@@ -1095,6 +1174,34 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 }
             } else if ( param.compare("stiff_matrix_elastic_blend_beta") == 0 ) {
                 iss >> stiffMatElasticBlendBeta;
+            } else if ( param.compare("csl_tangent_beta") == 0 ) {
+                double value = 0.;
+                iss >> value;
+                CSLMaterial :: configureStabilizedTangent(value,
+                                                          CSLMaterial :: giveStabilizedTangentSofteningLimit(),
+                                                          CSLMaterial :: giveStabilizedTangentActiveOnly(),
+                                                          CSLMaterial :: giveStabilizedTangentLogStats() );
+            } else if ( param.compare("csl_tangent_softening_limit") == 0 ) {
+                double value = 0.;
+                iss >> value;
+                CSLMaterial :: configureStabilizedTangent(CSLMaterial :: giveStabilizedTangentBeta(),
+                                                          value,
+                                                          CSLMaterial :: giveStabilizedTangentActiveOnly(),
+                                                          CSLMaterial :: giveStabilizedTangentLogStats() );
+            } else if ( param.compare("csl_tangent_active_only") == 0 ) {
+                int value = 1;
+                iss >> value;
+                CSLMaterial :: configureStabilizedTangent(CSLMaterial :: giveStabilizedTangentBeta(),
+                                                          CSLMaterial :: giveStabilizedTangentSofteningLimit(),
+                                                          value != 0,
+                                                          CSLMaterial :: giveStabilizedTangentLogStats() );
+            } else if ( param.compare("csl_tangent_log_stats") == 0 ) {
+                int value = 0;
+                iss >> value;
+                CSLMaterial :: configureStabilizedTangent(CSLMaterial :: giveStabilizedTangentBeta(),
+                                                          CSLMaterial :: giveStabilizedTangentSofteningLimit(),
+                                                          CSLMaterial :: giveStabilizedTangentActiveOnly(),
+                                                          value != 0 );
             } else if ( param.compare("first_iteration_stiff_matrix_type") == 0 ) {
                 iss >> stiffMatTypeFirstIT;
                 if ( !isStiffnessMatrixType(stiffMatTypeFirstIT) ) {
@@ -1210,6 +1317,35 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     if ( nonlinearTrustMaxTrials < 1 ) {
         std :: cerr << "nonlinear_trust_max_trials must be at least 1, setting to 1" << '\n';
         nonlinearTrustMaxTrials = 1;
+    }
+    if ( nonlinearLmMuInitial <= 0. || !std :: isfinite(nonlinearLmMuInitial) ) {
+        std :: cerr << "nonlinear_lm_mu_initial must be positive, setting to 1e-4" << '\n';
+        nonlinearLmMuInitial = 1e-4;
+    }
+    if ( nonlinearLmMuMin <= 0. || !std :: isfinite(nonlinearLmMuMin) ) {
+        std :: cerr << "nonlinear_lm_mu_min must be positive, setting to 1e-10" << '\n';
+        nonlinearLmMuMin = 1e-10;
+    }
+    if ( nonlinearLmMuMax < nonlinearLmMuMin || !std :: isfinite(nonlinearLmMuMax) ) {
+        std :: cerr << "nonlinear_lm_mu_max smaller than nonlinear_lm_mu_min, setting max to min" << '\n';
+        nonlinearLmMuMax = nonlinearLmMuMin;
+    }
+    nonlinearLmMuInitial = std :: min(nonlinearLmMuMax, std :: max(nonlinearLmMuMin, nonlinearLmMuInitial) );
+    currentNonlinearLmMu = nonlinearLmMuInitial;
+    if ( nonlinearLmMuGrowth <= 1. || !std :: isfinite(nonlinearLmMuGrowth) ) {
+        std :: cerr << "nonlinear_lm_mu_growth must be larger than 1, setting to 10" << '\n';
+        nonlinearLmMuGrowth = 10.;
+    }
+    if ( nonlinearLmMuShrink <= 0. || nonlinearLmMuShrink >= 1. || !std :: isfinite(nonlinearLmMuShrink) ) {
+        std :: cerr << "nonlinear_lm_mu_shrink must be in (0, 1), setting to 0.25" << '\n';
+        nonlinearLmMuShrink = 0.25;
+    }
+    if ( nonlinearLmMaxTrials < 1 ) {
+        std :: cerr << "nonlinear_lm_max_trials must be at least 1, setting to 1" << '\n';
+        nonlinearLmMaxTrials = 1;
+    }
+    if ( nonlinearStateDumpDirectory.empty() ) {
+        nonlinearStateDumpDirectory = "state";
     }
     if ( nonlinearInitialGuessAlpha < 0. || !std :: isfinite(nonlinearInitialGuessAlpha) ) {
         std :: cerr << "nonlinear_initial_guess_alpha must be nonnegative, setting to 0.5" << '\n';
@@ -1408,6 +1544,7 @@ bool SteadyStateNonLinearSolver :: nonlinearGlobalizationActive() const {
     return nonlinearDampingType != NonlinearDampingType :: Off
            || nonlinearLineSearchType != NonlinearLineSearchType :: Off
            || nonlinearTrustRegionType != NonlinearTrustRegionType :: Off
+           || nonlinearLmRegularization
            || nonlinearAdaptiveMatrixUpdate
            || nonlinearStagnationCutback;
 }
@@ -1705,6 +1842,9 @@ void SteadyStateNonLinearSolver :: resetNonlinearGlobalizationAttempt() {
     lastNonlinearMatrixRebuild = false;
     currentNonlinearTrustRadius = nonlinearTrustRadiusInitial;
     lastNonlinearTrustRadius = currentNonlinearTrustRadius;
+    currentNonlinearLmMu = nonlinearLmMuInitial;
+    lastNonlinearLmMu = 0.;
+    lastNonlinearLmTrials = 0;
     nonlinearCutbackReason.clear();
     nonlinearRollbackGrowthDecreaseCounter = 0;
     nonlinearTangentCheckDone = false;
@@ -2323,6 +2463,333 @@ SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver ::
 }
 
 //////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: addLmRegularization(CoordinateIndexedSparseMatrix &matrix, double mu) const {
+    Vector diagonal = Vector :: Zero(matrix.rows() );
+    if ( nonlinearLmDiagType == NonlinearLmDiagType :: RowSumDiag ) {
+        for ( int outer = 0; outer < matrix.outerSize(); outer++ ) {
+            for ( CoordinateIndexedSparseMatrix :: InnerIterator entry(matrix, outer); entry; ++entry ) {
+                diagonal [ entry.row() ] += std :: abs(entry.value() );
+            }
+        }
+    } else {
+        diagonal = matrix.diagonal().cwiseAbs();
+    }
+
+    for ( int i = 0; i < matrix.rows(); i++ ) {
+        const double d = std :: max(diagonal [ i ], 1e-30);
+        matrix.coeffRef(i, i) += mu * d;
+    }
+    matrix.makeCompressed();
+}
+
+//////////////////////////////////////////////////////////
+SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver :: performLmRegularizedNewton(const NonlinearStateSnapshot &baseState, double meritBefore) {
+    NonlinearTrialResult result;
+    result.meritBefore = meritBefore;
+
+    double mu = std :: min(nonlinearLmMuMax, std :: max(nonlinearLmMuMin, currentNonlinearLmMu) );
+    for ( unsigned trial = 0; trial < nonlinearLmMaxTrials; trial++ ) {
+        CoordinateIndexedSparseMatrix regularizedKeff(Keff);
+        addLmRegularization(regularizedKeff, mu);
+        const bool factorized = linalgsolver->factorize(regularizedKeff);
+        Vector trialIncrement = Vector :: Zero(freeDoFnum);
+        const bool solved = factorized && linalgsolver->solve(trialIncrement, f);
+        bool finiteTrial = false;
+        double trialMerit = std :: numeric_limits< double > :: infinity();
+        double acceptedAlpha = 1.;
+        unsigned acceptedTrials = trial + 1;
+
+        bool accepted = false;
+        if ( solved && ( nonlinearLineSearchType == NonlinearLineSearchType :: Backtracking || nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) ) {
+            NonlinearTrialResult lineSearchResult;
+            if ( nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) {
+                lineSearchResult = performBisectionLineSearch(baseState, trialIncrement, meritBefore);
+            } else {
+                lineSearchResult = performBacktrackingLineSearch(baseState, trialIncrement, meritBefore);
+            }
+            finiteTrial = lineSearchResult.accepted;
+            trialMerit = lineSearchResult.meritAfter;
+            accepted = lineSearchResult.accepted;
+            acceptedAlpha = lineSearchResult.alpha;
+            acceptedTrials = lineSearchResult.trials;
+        } else {
+            finiteTrial = solved && applyScaledIncrementAndEvaluate(baseState, trialIncrement, 1., false);
+            trialMerit = currentNonlinearGlobalizationMerit();
+        }
+
+        if ( finiteTrial && !accepted ) {
+            if ( nonlinearLmAcceptType == NonlinearLmAcceptType :: Errors ) {
+                const bool residualOk = maxResErr <= 0. || resErr <= baseState.resErr;
+                const bool displacementOk = it == 0 || maxDisErr <= 0. || disErr <= baseState.disErr;
+                const bool energyOk = maxEneErr <= 0. || eneErr <= baseState.eneErr;
+                accepted = nonlinearConvergenceCriteriaSatisfied() || ( residualOk && displacementOk && energyOk );
+            } else {
+                accepted = nonlinearConvergenceCriteriaSatisfied() || nonlinearMeritAccepted(trialMerit, meritBefore, 1.);
+            }
+        }
+
+        if ( !silent ) {
+            std :: cout << "NONLINEAR_LM_TRIAL"
+                        << " step " << step
+                        << " it " << it
+                        << " trial " << trial + 1
+                        << " mu " << mu
+                        << " factorized " << factorized
+                        << " solved " << solved
+                        << " finite " << finiteTrial
+                        << " accepted " << accepted
+                        << " merit_before " << meritBefore
+                        << " merit_trial " << trialMerit
+                        << " res " << resErr
+                        << " disp " << disErr
+                        << " energy " << eneErr
+                        << std :: endl;
+        }
+
+        result.trials = trial + 1;
+        result.alpha = acceptedAlpha;
+        result.meritAfter = trialMerit;
+        lastNonlinearLmMu = mu;
+        lastNonlinearLmTrials = acceptedTrials;
+        nonlinearForceMatrixRebuild = true;
+
+        if ( accepted ) {
+            result.accepted = true;
+            currentNonlinearLmMu = std :: max(nonlinearLmMuMin, mu * nonlinearLmMuShrink);
+            return result;
+        }
+
+        restoreNonlinearState(baseState, true);
+        mu = std :: min(nonlinearLmMuMax, mu * nonlinearLmMuGrowth);
+    }
+
+    restoreNonlinearState(baseState, true);
+    currentNonlinearLmMu = mu;
+    nonlinearForceMatrixRebuild = true;
+    return result;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: shouldDumpNonlinearState(unsigned acceptedStep) const {
+    if ( !nonlinearStateDump ) {
+        return false;
+    }
+    return nonlinearStateDumpSteps.empty() || nonlinearStateDumpSteps.count(acceptedStep) > 0;
+}
+
+//////////////////////////////////////////////////////////
+void SteadyStateNonLinearSolver :: dumpNonlinearState(const std :: string &label) const {
+    if ( !shouldDumpNonlinearState(step) ) {
+        return;
+    }
+
+    struct CslDumpRecord {
+        unsigned elementId = 0;
+        unsigned ip = 0;
+        unsigned materialId = 0;
+        std :: string elementName;
+        std :: string materialName;
+        double x = 0.;
+        double y = 0.;
+        double z = 0.;
+        double damage = 0.;
+        double tempDamage = 0.;
+        double damageIncrement = 0.;
+        double crackOpening = 0.;
+        double normalCrackOpening = 0.;
+        double energyIncrement = 0.;
+        std :: uint64_t stateHash = 0;
+    };
+
+    std :: vector< CslDumpRecord > records;
+    std :: vector< double > damages;
+    std :: vector< double > damageIncrements;
+    unsigned long long activeDamageCount = 0;
+    unsigned long long damagedCount = 0;
+    unsigned long long tempGreaterThanDamageCount = 0;
+
+    for ( auto e = elems->begin(); e != elems->end(); ++e ) {
+        Element *element = *e;
+        const std :: vector< MaterialStatus * > statuses = element->giveMaterialStats();
+        for ( unsigned ip = 0; ip < statuses.size(); ip++ ) {
+            MaterialStatus *status = statuses [ ip ];
+            MaterialStatus *mechanicalStatus = status ? status->giveMechanicalMaterialStatus() : nullptr;
+            if ( !mechanicalStatus ) {
+                mechanicalStatus = status;
+            }
+            CSLMaterialStatus *cslStatus = dynamic_cast< CSLMaterialStatus * >( mechanicalStatus );
+            if ( !cslStatus ) {
+                continue;
+            }
+
+            CslDumpRecord record;
+            record.elementId = element->giveID();
+            record.ip = ip;
+            record.elementName = element->giveName();
+            if ( cslStatus->giveMaterial() ) {
+                record.materialId = cslStatus->giveMaterial()->giveId();
+                record.materialName = cslStatus->giveMaterial()->giveName();
+            }
+            if ( nonlinearStateDumpIncludeCoordinates && ip < element->giveNumIP() ) {
+                const Point p = element->giveIPLoc(ip);
+                record.x = p.x();
+                record.y = p.y();
+                record.z = p.z();
+            }
+            record.damage = cslStatus->giveDamage();
+            record.tempDamage = cslStatus->giveTempDamage();
+            record.damageIncrement = cslStatus->giveDamageIncrement();
+            record.crackOpening = cslStatus->giveTempCrackOpening();
+            record.normalCrackOpening = cslStatus->giveNormalCrackOpening();
+            record.energyIncrement = cslStatus->giveEnergyDissipationIncrement();
+            record.stateHash = cslStatus->stateHash();
+
+            if ( record.damageIncrement > 0. ) {
+                activeDamageCount++;
+            }
+            if ( record.tempDamage > 0. ) {
+                damagedCount++;
+            }
+            if ( record.tempDamage > record.damage ) {
+                tempGreaterThanDamageCount++;
+            }
+            damages.push_back(record.tempDamage);
+            damageIncrements.push_back(record.damageIncrement);
+            records.push_back(record);
+        }
+    }
+
+    auto percentile = [](std :: vector< double > values, double fraction) {
+        if ( values.empty() ) {
+            return 0.;
+        }
+        std :: sort(values.begin(), values.end() );
+        const double clippedFraction = std :: min(1., std :: max(0., fraction) );
+        const size_t index = static_cast< size_t >( std :: round(clippedFraction * static_cast< double >( values.size() - 1 ) ) );
+        return values [ index ];
+    };
+    auto maxValue = [](const std :: vector< double > &values) {
+        return values.empty() ? 0. : *std :: max_element(values.begin(), values.end() );
+    };
+    auto meanValue = [](const std :: vector< double > &values) {
+        if ( values.empty() ) {
+            return 0.;
+        }
+        double sum = 0.;
+        for ( double value : values ) {
+            sum += value;
+        }
+        return sum / static_cast< double >( values.size() );
+    };
+
+    std :: filesystem :: create_directories(nonlinearStateDumpDirectory);
+    std :: ostringstream stem;
+    stem << nonlinearStateDumpDirectory << "/step_" << std :: setw(3) << std :: setfill('0') << step << "_" << label;
+    const std :: string basePath = stem.str();
+
+    std :: ofstream summary(basePath + "_summary.json");
+    summary << std :: setprecision(17);
+    summary << "{\n";
+    summary << "  \"step\": " << step << ",\n";
+    summary << "  \"time\": " << time << ",\n";
+    summary << "  \"dt\": " << dt << ",\n";
+    summary << "  \"nonlinear_iteration_count\": " << it << ",\n";
+    summary << "  \"residual_error\": " << resErr << ",\n";
+    summary << "  \"displacement_error\": " << disErr << ",\n";
+    summary << "  \"energy_error\": " << eneErr << ",\n";
+    summary << "  \"global_displacement_norm\": " << trial_r.norm() << ",\n";
+    summary << "  \"step_increment_norm\": " << ( trial_r - r ).norm() << ",\n";
+    summary << "  \"material_status_hash_global\": \"" << elems->materialStatusStateHash() << "\",\n";
+    summary << "  \"number_of_CSL_statuses\": " << records.size() << ",\n";
+    summary << "  \"number_of_CSL_statuses_with_damage_growth\": " << activeDamageCount << ",\n";
+    summary << "  \"number_of_CSL_statuses_with_damage_gt_0\": " << damagedCount << ",\n";
+    summary << "  \"number_of_CSL_statuses_with_temp_damage_gt_damage\": " << tempGreaterThanDamageCount << ",\n";
+    summary << "  \"damage_min\": " << ( damages.empty() ? 0. : *std :: min_element(damages.begin(), damages.end() ) ) << ",\n";
+    summary << "  \"damage_max\": " << maxValue(damages) << ",\n";
+    summary << "  \"damage_mean\": " << meanValue(damages) << ",\n";
+    summary << "  \"damage_p50\": " << percentile(damages, 0.50) << ",\n";
+    summary << "  \"damage_p90\": " << percentile(damages, 0.90) << ",\n";
+    summary << "  \"damage_p95\": " << percentile(damages, 0.95) << ",\n";
+    summary << "  \"damage_p99\": " << percentile(damages, 0.99) << ",\n";
+    summary << "  \"damage_p999\": " << percentile(damages, 0.999) << ",\n";
+    summary << "  \"damage_increment_max\": " << maxValue(damageIncrements) << ",\n";
+    summary << "  \"damage_increment_mean\": " << meanValue(damageIncrements) << ",\n";
+    summary << "  \"damage_increment_p50\": " << percentile(damageIncrements, 0.50) << ",\n";
+    summary << "  \"damage_increment_p90\": " << percentile(damageIncrements, 0.90) << ",\n";
+    summary << "  \"damage_increment_p95\": " << percentile(damageIncrements, 0.95) << ",\n";
+    summary << "  \"damage_increment_p99\": " << percentile(damageIncrements, 0.99) << ",\n";
+    summary << "  \"damage_increment_p999\": " << percentile(damageIncrements, 0.999) << "\n";
+    summary << "}\n";
+    summary.close();
+
+    std :: sort(records.begin(), records.end(), [](const CslDumpRecord &a, const CslDumpRecord &b) {
+        if ( a.tempDamage == b.tempDamage ) {
+            return a.damageIncrement > b.damageIncrement;
+        }
+        return a.tempDamage > b.tempDamage;
+    } );
+
+    const unsigned topCount = std :: min(nonlinearStateDumpTopDamage, static_cast< unsigned >( records.size() ) );
+    std :: ofstream top(basePath + "_top_damage.csv");
+    top << "rank,element_id,ip,element_name,material_id,material_name,x,y,z,damage,temp_damage,damage_increment,crack_opening,normal_crack_opening,energy_increment,state_hash\n";
+    top << std :: setprecision(17);
+    for ( unsigned i = 0; i < topCount; i++ ) {
+        const CslDumpRecord &record = records [ i ];
+        top << i + 1 << ','
+            << record.elementId << ','
+            << record.ip << ','
+            << record.elementName << ','
+            << record.materialId << ','
+            << record.materialName << ','
+            << record.x << ','
+            << record.y << ','
+            << record.z << ','
+            << record.damage << ','
+            << record.tempDamage << ','
+            << record.damageIncrement << ','
+            << record.crackOpening << ','
+            << record.normalCrackOpening << ','
+            << record.energyIncrement << ','
+            << record.stateHash << '\n';
+    }
+    top.close();
+
+    std :: ofstream hashes(basePath + "_status_hashes.csv");
+    hashes << "rank,element_id,ip,state_hash\n";
+    for ( unsigned i = 0; i < topCount; i++ ) {
+        const CslDumpRecord &record = records [ i ];
+        hashes << i + 1 << ',' << record.elementId << ',' << record.ip << ',' << record.stateHash << '\n';
+    }
+    hashes.close();
+
+    std :: ofstream hist(basePath + "_damage_hist.csv");
+    hist << "bin_min,bin_max,count\n";
+    const unsigned bins = 50;
+    std :: vector< unsigned long long > counts(bins, 0);
+    for ( double damage : damages ) {
+        const double clipped = std :: min(1., std :: max(0., damage) );
+        unsigned bin = std :: min(bins - 1, static_cast< unsigned >( std :: floor(clipped * bins) ) );
+        counts [ bin ]++;
+    }
+    for ( unsigned i = 0; i < bins; i++ ) {
+        hist << static_cast< double >( i ) / bins << ','
+             << static_cast< double >( i + 1 ) / bins << ','
+             << counts [ i ] << '\n';
+    }
+    hist.close();
+
+    if ( !silent ) {
+        std :: cout << "NONLINEAR_STATE_DUMP"
+                    << " step " << step
+                    << " label " << label
+                    << " csl_statuses " << records.size()
+                    << " active_damage " << activeDamageCount
+                    << " file " << basePath << "_summary.json"
+                    << std :: endl;
+    }
+}
+
+//////////////////////////////////////////////////////////
 double SteadyStateNonLinearSolver :: currentNonlinearDampingAlpha() const {
     if ( nonlinearDampingType == NonlinearDampingType :: Off ) {
         return 1.;
@@ -2819,15 +3286,26 @@ void SteadyStateNonLinearSolver :: solve() {
                     std :: cout << std :: endl;
                 }
             } else {         //direct controll
-                const bool directSolveSuccess = linalgsolver->solve(ddr, f);
-                Vector ddrNewton = ddr;
-                collectLinearDeflationVector(ddrNewton, directSolveSuccess);
-                if ( maybeRunNonlinearTangentCheck(ddrNewton) && nonlinearTangentCheckStopAfter ) {
-                    terminated = true;
-                    return;
-                }
+                if ( useNonlinearGlobalization && nonlinearLmRegularization ) {
+                    const NonlinearTrialResult lmResult = performLmRegularizedNewton(incrementBaseState, meritBefore);
+                    lastNonlinearAlpha = lmResult.alpha;
+                    lastNonlinearLineSearchTrials = lmResult.trials;
+                    lastNonlinearMeritAfter = lmResult.meritAfter;
+                    if ( !lmResult.accepted ) {
+                        nonlinearCutbackReason = "lm_regularization_failed";
+                        restart_now = true;
+                        break;
+                    }
+                } else {
+                    const bool directSolveSuccess = linalgsolver->solve(ddr, f);
+                    Vector ddrNewton = ddr;
+                    collectLinearDeflationVector(ddrNewton, directSolveSuccess);
+                    if ( maybeRunNonlinearTangentCheck(ddrNewton) && nonlinearTangentCheckStopAfter ) {
+                        terminated = true;
+                        return;
+                    }
 
-                if ( useNonlinearGlobalization ) {
+                    if ( useNonlinearGlobalization ) {
                     if ( nonlinearLineSearchType == NonlinearLineSearchType :: Backtracking || nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) {
                         NonlinearTrialResult lineSearchResult;
                         if ( nonlinearLineSearchType == NonlinearLineSearchType :: Bisection ) {
@@ -2946,6 +3424,9 @@ void SteadyStateNonLinearSolver :: solve() {
                             }
                         }
                     }
+                    }
+                }
+                if ( useNonlinearGlobalization ) {
                     updateAdaptiveNonlinearDamping(meritBefore, lastNonlinearMeritAfter);
                     lastNonlinearConvergenceMerit = currentNonlinearConvergenceMerit();
                 }
@@ -3293,6 +3774,7 @@ void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
+        dumpNonlinearState("accepted");
         Vector fullStepIncrement = trial_r - r;
         Vector reducedStepIncrement = Vector :: Zero(freeDoFnum);
         nodes->giveReducedDoFArray(fullStepIncrement, reducedStepIncrement);

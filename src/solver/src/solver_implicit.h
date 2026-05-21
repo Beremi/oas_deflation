@@ -3,6 +3,7 @@
 
 #include "solver.h"
 #include <memory>
+#include <set>
 
 //////////////////////////////////////////////////////////
 class SteadyStateLinearSolver : public Solver
@@ -57,6 +58,8 @@ protected:
     enum class NonlinearMeritType { Residual, Energy, Mixed };
     enum class NonlinearLineSearchEvaluationMode { Frozen, Actual, FrozenThenActual };
     enum class NonlinearTrustRegionType { Off, StepNorm };
+    enum class NonlinearLmDiagType { AbsDiag, RowSumDiag };
+    enum class NonlinearLmAcceptType { Merit, Errors };
     enum class NonlinearTangentCheckScope { Global, ElementTop };
     enum class NonlinearControlType { Load, Indirect, ArcLength };
     enum class ArcLengthReferenceMode { ProportionalLoad, FiniteDifference };
@@ -176,6 +179,23 @@ protected:
     Vector previousAcceptedReducedStepIncrement;
     double lastAcceptedDt = 0.;
     double previousAcceptedDt = 0.;
+    bool nonlinearLmRegularization = false;
+    double nonlinearLmMuInitial = 1e-4;
+    double nonlinearLmMuMin = 1e-10;
+    double nonlinearLmMuMax = 1e8;
+    double nonlinearLmMuGrowth = 10.;
+    double nonlinearLmMuShrink = 0.25;
+    unsigned nonlinearLmMaxTrials = 4;
+    NonlinearLmDiagType nonlinearLmDiagType = NonlinearLmDiagType :: AbsDiag;
+    NonlinearLmAcceptType nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
+    double currentNonlinearLmMu = 1e-4;
+    double lastNonlinearLmMu = 0.;
+    unsigned lastNonlinearLmTrials = 0;
+    bool nonlinearStateDump = false;
+    std :: set< unsigned > nonlinearStateDumpSteps;
+    unsigned nonlinearStateDumpTopDamage = 1000;
+    bool nonlinearStateDumpIncludeCoordinates = true;
+    std :: string nonlinearStateDumpDirectory = "state";
     NonlinearControlType nonlinearControlType = NonlinearControlType :: Load;
     double arcLengthRadiusInitial = 0.1;
     double arcLengthRadiusMin = 1e-8;
@@ -244,6 +264,10 @@ protected:
     NonlinearTrialResult performBacktrackingLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performBisectionLineSearch(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
     NonlinearTrialResult performStepNormTrustRegion(const NonlinearStateSnapshot &baseState, const Vector &increment, double meritBefore);
+    void addLmRegularization(CoordinateIndexedSparseMatrix &matrix, double mu) const;
+    NonlinearTrialResult performLmRegularizedNewton(const NonlinearStateSnapshot &baseState, double meritBefore);
+    bool shouldDumpNonlinearState(unsigned acceptedStep) const;
+    void dumpNonlinearState(const std :: string &label) const;
     Vector computeArcLengthReducedReferenceLoad();
     Vector computeArcLengthReducedFiniteDifferenceReference(const NonlinearStateSnapshot &baseState);
     bool applyArcLengthIncrementAndEvaluate(const NonlinearStateSnapshot &baseState, const Vector &increment, double lambdaIncrement, double alpha, bool frozen, bool resetMaterialStatuses = true);

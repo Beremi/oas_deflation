@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the CP1 TS-N65 globalization sweep.
+"""Run TS-N65 nonlinear solver experiment sweeps.
 
 The runner creates one ignored run directory per variant, writes the full
 baseline solver deck plus variant controls, runs OAS, summarizes solver.out with
@@ -200,6 +200,140 @@ nonlinear_adaptive_matrix_update 1
 nonlinear_rebuild_on_small_alpha 0.5
 nonlinear_rebuild_on_merit_growth 1
 """,
+    "D0-baseline-state-dump": """
+nonlinear_state_dump 1
+nonlinear_state_dump_steps 6 7
+nonlinear_state_dump_top_damage 1000
+nonlinear_state_dump_include_coordinates 1
+""",
+    "D1-backtracking-state-dump": """
+nonlinear_state_dump 1
+nonlinear_state_dump_steps 6 7
+nonlinear_state_dump_top_damage 1000
+nonlinear_state_dump_include_coordinates 1
+nonlinear_material_snapshot_rollback 1
+nonlinear_line_search backtracking
+nonlinear_line_search_evaluation actual
+nonlinear_line_search_merit mixed
+nonlinear_line_search_min_alpha 0.03125
+nonlinear_line_search_max_trials 6
+nonlinear_line_search_cutback_on_fail 0
+""",
+    "D2-archived-csl-backtracking-state-dump": """
+stiff_matrix_type archived_csl_damage_tangent
+stiffness_matrix_iter_update -1
+nonlinear_state_dump 1
+nonlinear_state_dump_steps 6 7
+nonlinear_state_dump_top_damage 1000
+nonlinear_state_dump_include_coordinates 1
+nonlinear_material_snapshot_rollback 1
+nonlinear_line_search backtracking
+nonlinear_line_search_evaluation actual
+nonlinear_line_search_merit mixed
+nonlinear_line_search_min_alpha 0.03125
+nonlinear_line_search_max_trials 6
+nonlinear_line_search_cutback_on_fail 0
+""",
+    "S1-cslbeta005-gamma005-stepstart": """
+stiff_matrix_type csl_stabilized_tangent
+stiffness_matrix_iter_update -1
+csl_tangent_beta 0.05
+csl_tangent_softening_limit 0.05
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+""",
+    "S2-cslbeta010-gamma005-stepstart": """
+stiff_matrix_type csl_stabilized_tangent
+stiffness_matrix_iter_update -1
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.05
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+""",
+    "S3-cslbeta020-gamma005-stepstart": """
+stiff_matrix_type csl_stabilized_tangent
+stiffness_matrix_iter_update -1
+csl_tangent_beta 0.20
+csl_tangent_softening_limit 0.05
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+""",
+    "S4-cslbeta010-gamma010-stepstart": """
+stiff_matrix_type csl_stabilized_tangent
+stiffness_matrix_iter_update -1
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+""",
+    "S5-cslbeta020-gamma010-stepstart": """
+stiff_matrix_type csl_stabilized_tangent
+stiffness_matrix_iter_update -1
+csl_tangent_beta 0.20
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+""",
+    "LM1-legacy-mu1e-4": """
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept merit
+nonlinear_lm_max_trials 4
+""",
+    "LM2-legacy-mu1e-3": """
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-3
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept merit
+nonlinear_lm_max_trials 4
+""",
+    "LM3-cslbeta005-gamma005-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.05
+csl_tangent_softening_limit 0.05
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept merit
+nonlinear_lm_max_trials 4
+""",
+    "LM4-cslbeta010-gamma005-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.05
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept merit
+nonlinear_lm_max_trials 4
+""",
+    "LM5-cslbeta010-gamma010-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept merit
+nonlinear_lm_max_trials 4
+""",
 }
 
 
@@ -297,7 +431,7 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
 
     report = root / "report.md"
     lines = [
-        "# CP1 TS-N65 Globalization Sweep",
+        "# TS-N65 Nonlinear Solver Sweep",
         "",
         f"Generated: {now_iso()}",
         "",

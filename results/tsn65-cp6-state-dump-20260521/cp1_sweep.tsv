@@ -1,0 +1,2 @@
+variant	exit_status	verdict	steps	total_iters	tail_6_8_iters	duration	warnings	nans	cutbacks	fallback_accepts	min_alpha	max_ls_trials	initial_guess_accepted	initial_guess_rejected	initial_guess_min_ratio
+D0-baseline-state-dump	0	neutral	8	585	533	00:22:56.082	0	0	0	0		0	0	0

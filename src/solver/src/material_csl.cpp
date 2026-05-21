@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <limits>
+#include <sstream>
 
 
 using namespace std;
@@ -26,6 +28,17 @@ double clampOmegaForCSL(double omega) {
 
 //////////////////////////////////////////////////////////
 // CSL MATERIAL STATUS
+
+double CSLMaterial :: stabilizedTangentBeta = 0.;
+double CSLMaterial :: stabilizedTangentSofteningLimit = 0.;
+bool CSLMaterial :: stabilizedTangentActiveOnly = true;
+bool CSLMaterial :: stabilizedTangentLogStats = false;
+unsigned long long CSLMaterial :: stabilizedTangentActiveCount = 0;
+unsigned long long CSLMaterial :: stabilizedTangentClippedCount = 0;
+double CSLMaterial :: stabilizedTangentScaleSum = 0.;
+double CSLMaterial :: stabilizedTangentScaleMin = std :: numeric_limits< double > :: infinity();
+double CSLMaterial :: stabilizedTangentScaleMax = 0.;
+double CSLMaterial :: stabilizedTangentRatioMax = 0.;
 
 CSLMaterialStatus :: CSLMaterialStatus(CSLMaterial *m, Element *e, unsigned ipnum) : VectMechMaterialStatus(m, e, ipnum) {
     name = "CSL mat. status";
@@ -494,6 +507,76 @@ std :: uint64_t CSLMaterialStatus :: stateHash() const {
 }
 
 //////////////////////////////////////////////////////////
+void CSLMaterial :: configureStabilizedTangent(double beta, double softeningLimit, bool activeOnly, bool logStats) {
+    stabilizedTangentBeta = std :: max(0., beta);
+    stabilizedTangentSofteningLimit = std :: max(0., softeningLimit);
+    stabilizedTangentActiveOnly = activeOnly;
+    stabilizedTangentLogStats = logStats;
+}
+
+//////////////////////////////////////////////////////////
+double CSLMaterial :: giveStabilizedTangentBeta() {
+    return stabilizedTangentBeta;
+}
+
+//////////////////////////////////////////////////////////
+double CSLMaterial :: giveStabilizedTangentSofteningLimit() {
+    return stabilizedTangentSofteningLimit;
+}
+
+//////////////////////////////////////////////////////////
+bool CSLMaterial :: giveStabilizedTangentActiveOnly() {
+    return stabilizedTangentActiveOnly;
+}
+
+//////////////////////////////////////////////////////////
+bool CSLMaterial :: giveStabilizedTangentLogStats() {
+    return stabilizedTangentLogStats;
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterial :: resetStabilizedTangentStats() {
+#pragma omp critical(csl_stabilized_tangent_stats)
+    {
+        stabilizedTangentActiveCount = 0;
+        stabilizedTangentClippedCount = 0;
+        stabilizedTangentScaleSum = 0.;
+        stabilizedTangentScaleMin = std :: numeric_limits< double > :: infinity();
+        stabilizedTangentScaleMax = 0.;
+        stabilizedTangentRatioMax = 0.;
+    }
+}
+
+//////////////////////////////////////////////////////////
+void CSLMaterial :: recordStabilizedTangentStats(double scale, bool clipped, double ratio) {
+#pragma omp critical(csl_stabilized_tangent_stats)
+    {
+        stabilizedTangentActiveCount++;
+        if ( clipped ) {
+            stabilizedTangentClippedCount++;
+        }
+        stabilizedTangentScaleSum += scale;
+        stabilizedTangentScaleMin = std :: min(stabilizedTangentScaleMin, scale);
+        stabilizedTangentScaleMax = std :: max(stabilizedTangentScaleMax, scale);
+        stabilizedTangentRatioMax = std :: max(stabilizedTangentRatioMax, ratio);
+    }
+}
+
+//////////////////////////////////////////////////////////
+std :: string CSLMaterial :: giveStabilizedTangentStatsLine() {
+    std :: ostringstream oss;
+    const double meanScale = stabilizedTangentActiveCount > 0 ? stabilizedTangentScaleSum / static_cast< double >( stabilizedTangentActiveCount ) : 0.;
+    const double minScale = stabilizedTangentActiveCount > 0 ? stabilizedTangentScaleMin : 0.;
+    oss << "active_damage_status_count " << stabilizedTangentActiveCount
+        << " clipped_status_count " << stabilizedTangentClippedCount
+        << " mean_scale " << meanScale
+        << " min_scale " << minScale
+        << " max_scale " << stabilizedTangentScaleMax
+        << " max_softening_over_legacy " << stabilizedTangentRatioMax;
+    return oss.str();
+}
+
+//////////////////////////////////////////////////////////
 Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
     Matrix stiff = VectMechMaterialStatus :: giveStiffnessTensor(type);
     if ( type.compare("elastic") == 0 ) {
@@ -543,6 +626,32 @@ Matrix CSLMaterialStatus :: giveStiffnessTensor(string type) const {
             const Vector elasticStress = stiff * temp_strain;
             const Vector damageGradient = computeDamageGradient(temp_strain);
             tangent -= elasticStress * damageGradient.transpose();
+        }
+        return tangent;
+    } else if ( type.compare("csl_stabilized_tangent") == 0 ) {
+        Matrix tangent = stiff * ( 1 - temp_damage );
+        const bool activeDamageGrowth = temp_damage > damage;
+        if ( activeDamageGrowth || !CSLMaterial :: giveStabilizedTangentActiveOnly() ) {
+            const double beta = CSLMaterial :: giveStabilizedTangentBeta();
+            if ( beta > 0. ) {
+                const Vector elasticStress = stiff * temp_strain;
+                const Vector damageGradient = computeDamageGradient(temp_strain);
+                const Matrix softening = elasticStress * damageGradient.transpose();
+                const double legacyNorm = tangent.norm();
+                const double softeningNorm = softening.norm();
+                double scale = 1.;
+                bool clipped = false;
+                const double softeningLimit = CSLMaterial :: giveStabilizedTangentSofteningLimit();
+                if ( softeningLimit > 0. && softeningNorm > CSL_TINY ) {
+                    scale = std :: min(1., softeningLimit * legacyNorm / softeningNorm);
+                    clipped = scale < 1. - 1e-14;
+                }
+                tangent -= beta * scale * softening;
+                if ( CSLMaterial :: giveStabilizedTangentLogStats() ) {
+                    const double ratio = legacyNorm > CSL_TINY ? softeningNorm / legacyNorm : 0.;
+                    CSLMaterial :: recordStabilizedTangentStats(beta * scale, clipped, ratio);
+                }
+            }
         }
         return tangent;
     } else if ( type.compare("consistent") == 0 ) {

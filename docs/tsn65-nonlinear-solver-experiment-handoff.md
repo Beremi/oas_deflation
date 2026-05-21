@@ -986,6 +986,98 @@ or tangent indefiniteness?
 These are not yet proven. They are proposed because they directly address the
 failure modes above.
 
+## CP6 Failure-Mode Isolation Implementation
+
+Checkpoint implementation status:
+
+- Added disabled-by-default material-state dumps for accepted nonlinear steps:
+  `nonlinear_state_dump`, `nonlinear_state_dump_steps`,
+  `nonlinear_state_dump_top_damage`, `nonlinear_state_dump_include_coordinates`,
+  and `nonlinear_state_dump_directory`.
+- Added `scripts/compare_tsn65_states.py` to compare two dumped step summaries
+  and top-damage overlap.
+- Added `stiff_matrix_type csl_stabilized_tangent` with bounded CSL
+  active-damage correction controls: `csl_tangent_beta`,
+  `csl_tangent_softening_limit`, `csl_tangent_active_only`, and
+  `csl_tangent_log_stats`.
+- Added true LM-style regularized Newton controls:
+  `nonlinear_lm_regularization`, `nonlinear_lm_mu_initial`,
+  `nonlinear_lm_mu_min`, `nonlinear_lm_mu_max`, `nonlinear_lm_mu_growth`,
+  `nonlinear_lm_mu_shrink`, `nonlinear_lm_max_trials`,
+  `nonlinear_lm_diag`, and `nonlinear_lm_accept`.
+- Added CP6 variants to `scripts/run_tsn65_globalization_sweep.py` for
+  state-equivalence gates, stabilized CSL tangent screens, and LM screens.
+
+Implementation notes:
+
+- The stabilized CSL tangent uses the legacy degraded stiffness as the base and
+  subtracts a limited fraction of the active-damage rank-one correction:
+
+```text
+K = K0 - beta * scale * S
+scale = min(1, gamma * ||K0|| / max(||S||, tiny))
+```
+
+- `beta = 0` recovers legacy degraded stiffness. `beta = 1` with no softening
+  limit approaches the archived analytical active-damage tangent.
+- LM v1 regularizes the currently assembled effective matrix:
+
+```text
+(Keff + mu * D) du = R
+```
+
+  with `D = abs(diag(Keff))` by default. `row_sum_diag` is also available.
+  `elastic_diag` is parsed for compatibility and currently falls back to
+  `abs_diag`.
+- LM can be combined with the existing backtracking/bisection line search: the
+  regularized direction is solved first, then the existing trial-evaluation and
+  rollback machinery chooses an accepted alpha.
+
+Initial smoke check:
+
+- Build passed with `/tmp/oas_tsn65_full_baseline_build`.
+- A small CSL benchmark accepted the new solver controls and wrote
+  `state/step_001_accepted_summary.json`, `damage_hist.csv`,
+  `top_damage.csv`, and `status_hashes.csv`.
+- `scripts/compare_tsn65_states.py` successfully compared the smoke dump to
+  itself with matching global material-state hash and top-damage overlap.
+
+First TS-N65 CP6 gate:
+
+- `D0-baseline-state-dump` completed the strict baseline unchanged:
+  `6,6,10,13,17,183,187,163`, total `585` rows, no fallback acceptance,
+  no warnings, and no NaNs.
+- Step 6 accepted dump:
+  `6171036` CSL statuses, `125947` active damage-growth statuses,
+  `148183` damaged statuses, `damage_p99 = 0.48690121350286242`,
+  `damage_increment_p99 = 0.1270366795664456`, global state hash
+  `6622989350471731203`.
+- Step 7 accepted dump:
+  `6171036` CSL statuses, `135027` active damage-growth statuses,
+  `184849` damaged statuses, `damage_p99 = 0.58104234307705516`,
+  `damage_increment_p99 = 0.10831286900670489`, global state hash
+  `14127883338335681505`.
+- Compact report:
+  `results/tsn65-cp6-state-dump-20260521/report.md`.
+
+The TS-N65 CP6 queue is now:
+
+```text
+D0-baseline-state-dump
+D1-backtracking-state-dump
+D2-archived-csl-backtracking-state-dump
+S1-cslbeta005-gamma005-stepstart
+S2-cslbeta010-gamma005-stepstart
+S3-cslbeta020-gamma005-stepstart
+S4-cslbeta010-gamma010-stepstart
+S5-cslbeta020-gamma010-stepstart
+LM1-legacy-mu1e-4
+LM2-legacy-mu1e-3
+LM3-cslbeta005-gamma005-mu1e-4
+LM4-cslbeta010-gamma005-mu1e-4
+LM5-cslbeta010-gamma010-mu1e-4
+```
+
 ### 1. Exact exported-gauge control
 
 Implement a control variable that matches the reported `LD.out` `v01` gauge,
