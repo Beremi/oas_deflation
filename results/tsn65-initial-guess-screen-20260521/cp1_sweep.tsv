@@ -1,0 +1,5 @@
+variant	exit_status	verdict	steps	total_iters	tail_6_8_iters	duration	warnings	nans	cutbacks	fallback_accepts	min_alpha	max_ls_trials
+G1-baseline	0	neutral	8	585	533	00:23:03.491	0	0	0	0		0
+G1-firstit-elastic	-15	failed	6	188	130		0	0	0	0		0
+G1-firstit-secant	-15	failed	7	367	315		0	0	0	0		0
+G1-firstit-archived-csl	-15	failed	6	132	80		0	0	0	0		0

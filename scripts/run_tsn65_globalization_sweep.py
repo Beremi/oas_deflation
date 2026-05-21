@@ -126,6 +126,80 @@ nonlinear_adaptive_matrix_update 1
 nonlinear_rebuild_on_small_alpha 0.5
 nonlinear_rebuild_on_merit_growth 1
 """,
+    "G1-firstit-elastic": """
+first_iteration_stiff_matrix_type elastic
+""",
+    "G1-firstit-secant": """
+first_iteration_stiff_matrix_type secant
+""",
+    "G1-firstit-archived-csl": """
+first_iteration_stiff_matrix_type archived_csl_damage_tangent
+""",
+    "P1-laststep-a025": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 0.25
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+""",
+    "P1-laststep-a050": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 0.5
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+""",
+    "P1-laststep-a075": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 0.75
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+""",
+    "P1-laststep-a100": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 1.0
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+""",
+    "P2-laststep-a050-plus-backtracking": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 0.5
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+nonlinear_material_snapshot_rollback 1
+nonlinear_line_search backtracking
+nonlinear_line_search_evaluation frozen_then_actual
+nonlinear_line_search_merit mixed
+nonlinear_line_search_min_alpha 0.03125
+nonlinear_line_search_max_trials 6
+nonlinear_line_search_cutback_on_fail 0
+""",
+    "P2-laststep-a050-plus-adaptive-K": """
+nonlinear_initial_guess last_step
+nonlinear_initial_guess_alpha 0.5
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+nonlinear_initial_guess_max_norm_ratio 1.0
+nonlinear_material_snapshot_rollback 1
+nonlinear_line_search backtracking
+nonlinear_line_search_evaluation frozen_then_actual
+nonlinear_line_search_merit mixed
+nonlinear_line_search_min_alpha 0.03125
+nonlinear_line_search_max_trials 6
+nonlinear_line_search_cutback_on_fail 0
+nonlinear_adaptive_matrix_update 1
+nonlinear_rebuild_on_small_alpha 0.5
+nonlinear_rebuild_on_merit_growth 1
+""",
 }
 
 
@@ -189,13 +263,14 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
     tsv = root / "cp1_sweep.tsv"
     with tsv.open("w", encoding="utf-8") as handle:
         handle.write(
-            "variant\texit_status\tverdict\tsteps\ttotal_iters\ttail_6_8_iters\tduration\twarnings\tnans\tcutbacks\tfallback_accepts\tmin_alpha\tmax_ls_trials\n"
+            "variant\texit_status\tverdict\tsteps\ttotal_iters\ttail_6_8_iters\tduration\twarnings\tnans\tcutbacks\tfallback_accepts\tmin_alpha\tmax_ls_trials\tinitial_guess_accepted\tinitial_guess_rejected\tinitial_guess_min_ratio\n"
         )
         for row in rows:
             summary = row.get("summary") or {}
             steps = summary.get("steps") or []
             min_alpha_values = [step["min_alpha"] for step in steps if step.get("min_alpha") is not None]
             max_trials = max([step.get("max_ls_trials", 0) for step in steps] or [0])
+            initial_guess = summary.get("initial_guess") or {}
             handle.write(
                 "\t".join(
                     [
@@ -212,6 +287,9 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
                         str(summary.get("fallback_acceptance_count", 0)),
                         "" if not min_alpha_values else f"{min(min_alpha_values):.12g}",
                         str(max_trials),
+                        str(initial_guess.get("accepted", 0)),
+                        str(initial_guess.get("rejected", 0)),
+                        "" if initial_guess.get("min_predictor_merit_ratio") is None else f"{initial_guess['min_predictor_merit_ratio']:.12g}",
                     ]
                 )
                 + "\n"
@@ -234,8 +312,8 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
             "",
             "## Result Table",
             "",
-            "| variant | exit | verdict | steps | rows | tail 6-8 | duration | warnings | NaNs | cutbacks | fallback | min alpha | max ls trials |",
-            "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| variant | exit | verdict | steps | rows | tail 6-8 | duration | warnings | NaNs | cutbacks | fallback | min alpha | max ls trials | IG accept | IG reject | IG min ratio |",
+            "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in rows:
@@ -243,8 +321,9 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
         steps = summary.get("steps") or []
         min_alpha_values = [step["min_alpha"] for step in steps if step.get("min_alpha") is not None]
         max_trials = max([step.get("max_ls_trials", 0) for step in steps] or [0])
+        initial_guess = summary.get("initial_guess") or {}
         lines.append(
-            "| {variant} | {exit_status} | {verdict} | {steps} | {rows} | {tail} | {duration} | {warnings} | {nans} | {cutbacks} | {fallback} | {alpha} | {trials} |".format(
+            "| {variant} | {exit_status} | {verdict} | {steps} | {rows} | {tail} | {duration} | {warnings} | {nans} | {cutbacks} | {fallback} | {alpha} | {trials} | {ig_accept} | {ig_reject} | {ig_ratio} |".format(
                 variant=row["variant"],
                 exit_status="" if row.get("exit_status") is None else row["exit_status"],
                 verdict=row.get("verdict", "not_run"),
@@ -258,6 +337,9 @@ def write_aggregate(root: Path, rows: list[dict[str, Any]], metadata: dict[str, 
                 fallback=summary.get("fallback_acceptance_count", 0),
                 alpha="" if not min_alpha_values else f"{min(min_alpha_values):.6g}",
                 trials=max_trials,
+                ig_accept=initial_guess.get("accepted", 0),
+                ig_reject=initial_guess.get("rejected", 0),
+                ig_ratio="" if initial_guess.get("min_predictor_merit_ratio") is None else f"{initial_guess['min_predictor_merit_ratio']:.6g}",
             )
         )
     lines.extend(

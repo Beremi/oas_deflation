@@ -189,6 +189,7 @@ The line-search implementation must confirm exactly what “reset” means for e
 | Priority | Option                                               |              Promise | Implementation cost | Use first when                                                             |
 | -------: | ---------------------------------------------------- | -------------------: | ------------------: | -------------------------------------------------------------------------- |
 |        0 | Instrumentation + safer existing input baseline      |            Very high |            Very low | Always                                                                     |
+|      0.5 | Guarded nonlinear initial guess predictor            |               Medium |                 Low | Need to test whether step-start free-DOF guess is the bottleneck            |
 |        1 | Early stagnation detection and automatic cutback     |            Very high |                 Low | Iterations plateau or oscillate                                            |
 |        2 | Fixed/adaptive Newton damping                        |                 High |                 Low | Need immediate stabilizer and line-search baseline                         |
 |        3 | Backtracking line search with frozen trial residuals |              Highest |              Medium | Newton direction usually good but full step overshoots                     |
@@ -312,6 +313,60 @@ void SteadyStateNonLinearSolver::printNonlinearIterationLog(
 - No step is accepted through a loose fallback tolerance.
 - A failed step cuts back rather than spending 1000 iterations.
 - You can compare nonlinear strategies using the same metrics.
+
+---
+
+# Option 0.5 — Guarded nonlinear initial guess predictor
+
+## Promise
+
+This is a cheap diagnostic and sometimes useful accelerator: start a direct
+load-control step from an extrapolated free-DOF displacement field instead of
+from the last committed solution alone.
+
+The first implemented predictor is:
+
+```text
+u_n^0 = u_{n-1} + alpha * (dt_n / dt_{n-1}) * delta_u_{n-1}
+```
+
+where `delta_u_{n-1}` is the last accepted reduced free-DOF step increment.
+The predictor is guarded by a residual-merit check and state rollback, so a
+bad predictor can be rejected before the first Newton solve.
+
+## Controls
+
+```text
+nonlinear_initial_guess off|last_step|two_step
+nonlinear_initial_guess_alpha 0.5
+nonlinear_initial_guess_start_step 2
+nonlinear_initial_guess_max_norm_ratio 1.0
+nonlinear_initial_guess_guard 1
+nonlinear_initial_guess_guard_merit mixed
+nonlinear_initial_guess_accept_ratio 1.0
+nonlinear_initial_guess_frozen_eval 1
+```
+
+Defaults preserve legacy behavior with `nonlinear_initial_guess off`.
+
+## Implementation notes
+
+The predictor is only applied for direct load control, after prescribed
+Dirichlet boundary conditions are updated and before the first step-start force
+evaluation. It is not used with indirect control or arc-length control.
+
+The accepted step increment is captured before `runAfterEachStep()` commits
+`r = trial_r`. Trial predictor evaluation uses the nonlinear state
+snapshot/restore path; when material snapshot rollback is disabled, rejected
+predictors conservatively reset material statuses to the last committed state.
+
+## TS-N65 result
+
+The CP5c TS-N65 screen tested `alpha = 0.25, 0.50, 0.75, 1.0`. Predictors were
+accepted and reduced the first step-6 residual/energy row, but the benefit
+disappeared by approximately step-6 rows 30-40. None of the tested simple
+last-step predictors reduced the strict TS-N65 late-step tail, so this branch
+is diagnostic rather than promoted for the benchmark.
 
 ---
 

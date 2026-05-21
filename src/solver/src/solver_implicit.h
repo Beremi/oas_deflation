@@ -60,6 +60,7 @@ protected:
     enum class NonlinearTangentCheckScope { Global, ElementTop };
     enum class NonlinearControlType { Load, Indirect, ArcLength };
     enum class ArcLengthReferenceMode { ProportionalLoad, FiniteDifference };
+    enum class NonlinearInitialGuessType { Off, LastStep, TwoStep };
 
     struct NonlinearStateSnapshot {
         Vector trial_r;
@@ -163,6 +164,18 @@ protected:
     unsigned nonlinearRollbackGrowthDecreaseCounter = 0;
     bool nonlinearMaterialSnapshotRollback = false;
     bool nonlinearMaterialSnapshotVerify = false;
+    NonlinearInitialGuessType nonlinearInitialGuessType = NonlinearInitialGuessType :: Off;
+    NonlinearMeritType nonlinearInitialGuessMeritType = NonlinearMeritType :: Mixed;
+    double nonlinearInitialGuessAlpha = 0.5;
+    double nonlinearInitialGuessMaxNormRatio = 1.0;
+    double nonlinearInitialGuessAcceptRatio = 1.0;
+    unsigned nonlinearInitialGuessStartStep = 2;
+    bool nonlinearInitialGuessGuard = true;
+    bool nonlinearInitialGuessFrozenEval = true;
+    Vector lastAcceptedReducedStepIncrement;
+    Vector previousAcceptedReducedStepIncrement;
+    double lastAcceptedDt = 0.;
+    double previousAcceptedDt = 0.;
     NonlinearControlType nonlinearControlType = NonlinearControlType :: Load;
     double arcLengthRadiusInitial = 0.1;
     double arcLengthRadiusMin = 1e-8;
@@ -220,6 +233,8 @@ protected:
     double currentNonlinearGlobalizationMerit() const;
     double currentNonlinearConvergenceMerit() const;
     bool nonlinearMeritAccepted(double trialMerit, double baseMerit, double alpha) const;
+    double currentNonlinearInitialGuessMerit() const;
+    bool maybeApplyInitialGuessPredictor();
     NonlinearStateSnapshot saveNonlinearState() const;
     void restoreNonlinearState(const NonlinearStateSnapshot &snapshot, bool resetMaterialStatuses);
     void resetNonlinearGlobalizationAttempt();

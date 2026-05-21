@@ -105,6 +105,8 @@ Primary compact reports and data:
 | CP5 TS-N65 arc-length | `results/tsn65-arc-length-cp5-20260521/report.md` |
 | CP5 radius calibration | `results/tsn65-arc-length-cp5-radcal-20260521/report.md` |
 | CP5b gauge arc-length | `results/tsn65-gauge-arc-cp5b-20260521-094117/report.md` |
+| CP5c first-iteration screen | `results/tsn65-initial-guess-screen-20260521/report.md` |
+| CP5c guarded predictor screen | `results/tsn65-initial-guess-predictor-20260521/report.md` |
 | Latest baseline gate | `results/tsn65-cp5b-baseline-gate-20260521/report.md` |
 
 ## Experiment Ledger
@@ -735,6 +737,89 @@ Failure/useful finding:
   than the strict baseline loading history, so it is a continuation experiment,
   not a baseline replacement.
 
+### 14. CP5c: Initial guess and first-iteration predictor screen
+
+Why it was tested:
+
+- The direct load-control solver starts each step from the last committed
+  solution plus new prescribed BCs, with no free-DOF nonlinear predictor.
+- The late TS-N65 cost could have been partly caused by starting each new load
+  step too far from the equilibrium branch.
+
+What was implemented/tested:
+
+- Existing no-code first-correction direction screen:
+
+```text
+first_iteration_stiff_matrix_type elastic
+first_iteration_stiff_matrix_type secant
+first_iteration_stiff_matrix_type archived_csl_damage_tangent
+```
+
+- New disabled-by-default guarded load-step predictors:
+
+```text
+nonlinear_initial_guess off|last_step|two_step
+nonlinear_initial_guess_alpha
+nonlinear_initial_guess_start_step
+nonlinear_initial_guess_max_norm_ratio
+nonlinear_initial_guess_guard
+nonlinear_initial_guess_guard_merit residual|energy|mixed
+nonlinear_initial_guess_accept_ratio
+nonlinear_initial_guess_frozen_eval
+```
+
+- `last_step` predicts the new step-start field from the last accepted reduced
+  free-DOF increment:
+
+```text
+u_n^0 = u_{n-1} + alpha * (dt_n / dt_{n-1}) * delta_u_{n-1}
+```
+
+- The predictor runs only in direct load control, after prescribed Dirichlet
+  BCs are updated and before the first step-start force evaluation.
+- The guard evaluates residual merit at the no-predictor and predicted states
+  and restores state when rejected.
+
+No-code first-iteration results:
+
+| variant | result |
+| --- | --- |
+| baseline | completed `8/8`, `585` rows |
+| firstit elastic | worsened early rows and was stopped in step 6 |
+| firstit secant | matched through step 6, then worsened in step 7 |
+| firstit archived CSL | matched through step 5, then worsened in step 6 |
+
+Guarded predictor results:
+
+| variant | status | predictor accepted | useful finding |
+| --- | ---: | ---: | --- |
+| baseline | completed `8/8`, `585` rows | 0 | no-regression gate passed |
+| alpha `0.25` | stopped in step 6 | 5/5 | tracked baseline, slightly worse by row 69 |
+| alpha `0.50` | stopped in step 6 | 5/5 | lower first row, slightly worse by rows 30-40 |
+| alpha `0.75` | stopped in step 6 | 5/5 | much lower first-row energy, slightly worse by rows 30-40 |
+| alpha `1.00` | stopped in step 6 | 5/5 | strong early predictor effect, worse by row 69 |
+
+Step-6 comparison highlights:
+
+| variant | row 0 residual | row 0 energy | later comparison |
+| --- | ---: | ---: | --- |
+| baseline | `2.548287e-02` | `1.001264e-01` | row 69 residual/energy `3.831386e-03` / `7.130556e-03` |
+| alpha `0.50` | `2.407001e-02` | `6.225239e-02` | row 39 slightly worse than baseline |
+| alpha `0.75` | `2.372770e-02` | `2.848583e-02` | row 39 slightly worse than baseline |
+| alpha `1.00` | `2.547188e-02` | `5.114121e-02` | row 69 slightly worse than baseline |
+
+Failure/useful finding:
+
+- Step-start predictors are accepted and can reduce the first residual/energy
+  row, so the implementation is functional.
+- The predictor benefit disappears quickly in the nonlinear iteration. By
+  rows 30-40, or by row 69 for the longer screens, the variants match or
+  slightly worsen the strict baseline tail.
+- Therefore the expensive TS-N65 tail is not primarily caused by the lack of a
+  free-DOF step-start displacement predictor. The bottleneck remains later
+  path/tangent/history behavior inside the nonlinear step.
+
 ## Cross-Cutting Failure Interpretation
 
 ### A. The late-step tail is the real speed target
@@ -846,6 +931,7 @@ Solver controls/infrastructure:
 - nonlinear line search, damping, stagnation/cutback hooks;
 - nonlinear material snapshot/rollback;
 - material status clone/restore/hash support;
+- guarded nonlinear initial-guess predictor infrastructure;
 - tangent attribution diagnostics;
 - `archived_csl_damage_tangent`;
 - numerical `consistent` diagnostic branches;
@@ -915,6 +1001,15 @@ Pass condition:
 
 - same final physical gauge and comparable load/displacement curve;
 - fewer late-step rows than the strict baseline.
+
+### 1b. Do not prioritize simple last-step predictors
+
+The CP5c predictor screen already tested guarded last-step extrapolation with
+alpha values `0.25`, `0.50`, `0.75`, and `1.0`. These predictors changed the
+first row but did not reduce the late-step tail. Further predictor work should
+only be considered if it uses a substantially different, physics-informed
+state variable or exact control-gauge continuation, not a simple repeat of the
+last free-DOF increment.
 
 ### 2. Tangent stabilization instead of raw analytical tangent
 
@@ -1044,6 +1139,8 @@ The experiments found useful technical facts, but not a speedup:
   is not a production fix by itself.
 - Line search gives a real partial improvement in step 6 but transfers the
   difficulty to step 7.
+- Last-step nonlinear initial guesses are accepted and improve the first row,
+  but do not speed up the late strict TS-N65 tail.
 - Adaptive cutback, IDC, and current arc-length formulations are useful
   diagnostics, not speed replacements.
 - The next expert-guided work should focus on either a stabilized tangent/trust

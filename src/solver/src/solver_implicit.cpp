@@ -689,6 +689,10 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
         arcLengthStepStartLambda = this->init_time;
         arcLengthCurrentRadius = arcLengthRadiusInitial;
         arcLengthPreviousDeltaLambda = 1.;
+        lastAcceptedReducedStepIncrement.resize(0);
+        previousAcceptedReducedStepIncrement.resize(0);
+        lastAcceptedDt = 0.;
+        previousAcceptedDt = 0.;
     }
 
     computeForcesAtIntegrationTime(true); //to initialize all fields in the model
@@ -992,6 +996,46 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                 int value = 0;
                 iss >> value;
                 nonlinearMaterialSnapshotVerify = ( value != 0 );
+            } else if ( param.compare("nonlinear_initial_guess") == 0 ) {
+                iss >> param;
+                if ( param.compare("off") == 0 ) {
+                    nonlinearInitialGuessType = NonlinearInitialGuessType :: Off;
+                } else if ( param.compare("last_step") == 0 || param.compare("last-step") == 0 || param.compare("laststep") == 0 ) {
+                    nonlinearInitialGuessType = NonlinearInitialGuessType :: LastStep;
+                } else if ( param.compare("two_step") == 0 || param.compare("two-step") == 0 || param.compare("twostep") == 0 ) {
+                    nonlinearInitialGuessType = NonlinearInitialGuessType :: TwoStep;
+                } else {
+                    std :: cerr << "unknown nonlinear_initial_guess '" << param << "', using off" << '\n';
+                    nonlinearInitialGuessType = NonlinearInitialGuessType :: Off;
+                }
+            } else if ( param.compare("nonlinear_initial_guess_alpha") == 0 ) {
+                iss >> nonlinearInitialGuessAlpha;
+            } else if ( param.compare("nonlinear_initial_guess_start_step") == 0 ) {
+                iss >> nonlinearInitialGuessStartStep;
+            } else if ( param.compare("nonlinear_initial_guess_max_norm_ratio") == 0 ) {
+                iss >> nonlinearInitialGuessMaxNormRatio;
+            } else if ( param.compare("nonlinear_initial_guess_guard") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearInitialGuessGuard = ( value != 0 );
+            } else if ( param.compare("nonlinear_initial_guess_guard_merit") == 0 ) {
+                iss >> param;
+                if ( param.compare("residual") == 0 ) {
+                    nonlinearInitialGuessMeritType = NonlinearMeritType :: Residual;
+                } else if ( param.compare("energy") == 0 ) {
+                    nonlinearInitialGuessMeritType = NonlinearMeritType :: Energy;
+                } else if ( param.compare("mixed") == 0 ) {
+                    nonlinearInitialGuessMeritType = NonlinearMeritType :: Mixed;
+                } else {
+                    std :: cerr << "unknown nonlinear_initial_guess_guard_merit '" << param << "', using mixed" << '\n';
+                    nonlinearInitialGuessMeritType = NonlinearMeritType :: Mixed;
+                }
+            } else if ( param.compare("nonlinear_initial_guess_accept_ratio") == 0 ) {
+                iss >> nonlinearInitialGuessAcceptRatio;
+            } else if ( param.compare("nonlinear_initial_guess_frozen_eval") == 0 ) {
+                int value = 0;
+                iss >> value;
+                nonlinearInitialGuessFrozenEval = ( value != 0 );
             } else if ( param.compare("nonlinear_tangent_check") == 0 ) {
                 int value = 0;
                 iss >> value;
@@ -1166,6 +1210,18 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     if ( nonlinearTrustMaxTrials < 1 ) {
         std :: cerr << "nonlinear_trust_max_trials must be at least 1, setting to 1" << '\n';
         nonlinearTrustMaxTrials = 1;
+    }
+    if ( nonlinearInitialGuessAlpha < 0. || !std :: isfinite(nonlinearInitialGuessAlpha) ) {
+        std :: cerr << "nonlinear_initial_guess_alpha must be nonnegative, setting to 0.5" << '\n';
+        nonlinearInitialGuessAlpha = 0.5;
+    }
+    if ( nonlinearInitialGuessMaxNormRatio < 0. || !std :: isfinite(nonlinearInitialGuessMaxNormRatio) ) {
+        std :: cerr << "nonlinear_initial_guess_max_norm_ratio must be nonnegative, setting to 1" << '\n';
+        nonlinearInitialGuessMaxNormRatio = 1.;
+    }
+    if ( nonlinearInitialGuessAcceptRatio <= 0. || !std :: isfinite(nonlinearInitialGuessAcceptRatio) ) {
+        std :: cerr << "nonlinear_initial_guess_accept_ratio must be positive, setting to 1" << '\n';
+        nonlinearInitialGuessAcceptRatio = 1.;
     }
     if ( nonlinearControlType == NonlinearControlType :: Indirect && !idc ) {
         std :: cerr << "nonlinear_control indirect requested without indirect_control block; using load" << '\n';
@@ -1450,6 +1506,117 @@ bool SteadyStateNonLinearSolver :: nonlinearMeritAccepted(double trialMerit, dou
         return trialMerit < baseMerit;
     }
     return trialMerit <= baseMerit;
+}
+
+//////////////////////////////////////////////////////////
+double SteadyStateNonLinearSolver :: currentNonlinearInitialGuessMerit() const {
+    const double residualMerit = resErr / std :: max(maxResErr, 1e-300);
+    const double energyMerit = eneErr / std :: max(maxEneErr, 1e-300);
+    double merit = residualMerit;
+
+    // At the beginning of a load step, the energy error includes the trial
+    // increment in full_ddr. The no-predictor base state has zero increment,
+    // so mixed/energy merit would reject useful predictors just because they
+    // moved. Use residual merit for the step-start guard.
+    if ( nonlinearInitialGuessMeritType == NonlinearMeritType :: Energy && it != 0 ) {
+        merit = energyMerit;
+    } else if ( nonlinearInitialGuessMeritType == NonlinearMeritType :: Mixed && it != 0 ) {
+        merit = std :: max(residualMerit, energyMerit);
+    }
+
+    if ( !std :: isfinite(merit) ) {
+        return std :: numeric_limits< double > :: infinity();
+    }
+    return merit;
+}
+
+//////////////////////////////////////////////////////////
+bool SteadyStateNonLinearSolver :: maybeApplyInitialGuessPredictor() {
+    if ( nonlinearInitialGuessType == NonlinearInitialGuessType :: Off ) {
+        return false;
+    }
+    if ( idc || nonlinearControlType != NonlinearControlType :: Load ) {
+        return false;
+    }
+    if ( step < static_cast< int >( nonlinearInitialGuessStartStep ) ) {
+        return false;
+    }
+    if ( lastAcceptedReducedStepIncrement.size() != static_cast< int >( freeDoFnum ) ) {
+        return false;
+    }
+    if ( lastAcceptedDt <= 0. || !std :: isfinite(lastAcceptedDt) ) {
+        return false;
+    }
+
+    Vector predictor = ( dt / lastAcceptedDt ) * lastAcceptedReducedStepIncrement;
+    if ( nonlinearInitialGuessType == NonlinearInitialGuessType :: TwoStep
+         && previousAcceptedReducedStepIncrement.size() == static_cast< int >( freeDoFnum )
+         && previousAcceptedDt > 0.
+         && std :: isfinite(previousAcceptedDt) ) {
+        Vector acceleration = lastAcceptedReducedStepIncrement - ( lastAcceptedDt / previousAcceptedDt ) * previousAcceptedReducedStepIncrement;
+        predictor += acceleration;
+    }
+    predictor *= nonlinearInitialGuessAlpha;
+
+    const double lastNorm = lastAcceptedReducedStepIncrement.norm();
+    double predictorNorm = predictor.norm();
+    if ( nonlinearInitialGuessMaxNormRatio > 0. && lastNorm > 0. && predictorNorm > nonlinearInitialGuessMaxNormRatio * lastNorm ) {
+        predictor *= nonlinearInitialGuessMaxNormRatio * lastNorm / predictorNorm;
+        predictorNorm = predictor.norm();
+    }
+    if ( !predictor.allFinite() || predictorNorm <= 1e-300 ) {
+        return false;
+    }
+
+    if ( !nonlinearInitialGuessGuard ) {
+        ddr = predictor;
+        updateFieldVariables();
+        ddr.setZero();
+        full_ddr.setZero();
+        computeForcesAtIntegrationTime(nonlinearInitialGuessFrozenEval);
+        if ( not silent ) {
+            std :: cout << "NONLINEAR_INITIAL_GUESS"
+                        << " step " << step
+                        << " accepted 1"
+                        << " alpha " << nonlinearInitialGuessAlpha
+                        << " predictor_norm " << predictorNorm
+                        << " base_merit nan"
+                        << " predictor_merit nan"
+                        << std :: endl;
+        }
+        return true;
+    }
+
+    computeForcesAtIntegrationTime(true);
+    evaluateErrors();
+    const double baseMerit = currentNonlinearInitialGuessMerit();
+    const NonlinearStateSnapshot baseState = saveNonlinearState();
+
+    applyScaledIncrementAndEvaluate(baseState, predictor, 1., nonlinearInitialGuessFrozenEval, true);
+    const double predictorMerit = currentNonlinearInitialGuessMerit();
+    const bool accept = std :: isfinite(baseMerit)
+                        && std :: isfinite(predictorMerit)
+                        && predictorMerit <= nonlinearInitialGuessAcceptRatio * baseMerit;
+
+    if ( not silent ) {
+        std :: cout << "NONLINEAR_INITIAL_GUESS"
+                    << " step " << step
+                    << " accepted " << ( accept ? 1 : 0 )
+                    << " alpha " << nonlinearInitialGuessAlpha
+                    << " predictor_norm " << predictorNorm
+                    << " base_merit " << baseMerit
+                    << " predictor_merit " << predictorMerit
+                    << std :: endl;
+    }
+
+    if ( !accept ) {
+        restoreNonlinearState(baseState, true);
+        return false;
+    }
+
+    ddr.setZero();
+    full_ddr.setZero();
+    return true;
 }
 
 //////////////////////////////////////////////////////////
@@ -2406,6 +2573,7 @@ void SteadyStateNonLinearSolver :: solve() {
     restarts = 0;
     while ( !converged ) {
         resetNonlinearGlobalizationAttempt();
+        it = 0;
         //setup loading
 
         if ( useArcLengthControl ) {
@@ -2422,14 +2590,16 @@ void SteadyStateNonLinearSolver :: solve() {
         } else if ( !idc ) {
             nodes->addRHS_nodalLoad(load, time); //add nodal load
             nodes->updateDirrichletBC(trial_r, time); //give prescribed DoFs
-            updateFieldVariables();      //with ddr=0
-            computeForcesAtIntegrationTime(true);
+            const bool predictorApplied = maybeApplyInitialGuessPredictor();
+            if ( !predictorApplied ) {
+                updateFieldVariables();      //with ddr=0
+                computeForcesAtIntegrationTime(true);
+            }
         } else {
             help_idc_r =  Vector :: Zero(totalDoFnum);
             help_idc_f =  Vector :: Zero(totalDoFnum);
         }
 
-        it = 0;
         const unsigned nonlinearIterationLimit = useArcLengthControl ? arcLengthMaxIterations : maxIt;
         while ( !converged && it < nonlinearIterationLimit ) {
             lastNonlinearMatrixRebuild = false;
@@ -3123,6 +3293,15 @@ void SteadyStateNonLinearSolver :: checkAllVectorsForNaNs() {
 //////////////////////////////////////////////////////////
 void SteadyStateNonLinearSolver :: runAfterEachStep() {
     if ( !terminated ) {
+        Vector fullStepIncrement = trial_r - r;
+        Vector reducedStepIncrement = Vector :: Zero(freeDoFnum);
+        nodes->giveReducedDoFArray(fullStepIncrement, reducedStepIncrement);
+
+        previousAcceptedReducedStepIncrement = lastAcceptedReducedStepIncrement;
+        previousAcceptedDt = lastAcceptedDt;
+        lastAcceptedReducedStepIncrement = reducedStepIncrement;
+        lastAcceptedDt = dt;
+
         SteadyStateLinearSolver :: runAfterEachStep();
 
         if ( not silent ) {

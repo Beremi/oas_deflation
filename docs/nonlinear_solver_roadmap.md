@@ -32,6 +32,7 @@ the primary replication criteria.
 | CP4 | complete | Arc-length prototype on a small benchmark | Legacy load-control regression and TS-N65 strict baseline gate |
 | CP5 | complete-negative | TS-N65 arc-length application | Strict baseline and load-displacement curve |
 | CP5b | complete-negative | Gauge-constrained arc-length continuation | Strict baseline gate and TS-N65 gauge/row comparison |
+| CP5c | complete-negative | First-iteration matrix and guarded initial-guess predictors | Strict baseline and step-6 tail screen |
 | CP6 | pending | Model-level stabilization if needed | Sensitivity data, physics-change note |
 
 ## CP0: Experiment Harness
@@ -353,6 +354,66 @@ Current checkpoint result:
   path with stagnation cutback/adaptive matrix rebuild, or a deeper
   path-following formulation that constrains the same interpolated exporter
   gauge rather than nearest-node IDC coordinates.
+
+## CP5c: Initial Guess And First-Iteration Predictor Screen
+
+CP5c tests whether the late TS-N65 tail is caused by a poor load-step starting
+field rather than by tangent/path/localization effects.
+
+Implemented disabled-by-default controls:
+
+```text
+nonlinear_initial_guess off|last_step|two_step
+nonlinear_initial_guess_alpha
+nonlinear_initial_guess_start_step
+nonlinear_initial_guess_max_norm_ratio
+nonlinear_initial_guess_guard
+nonlinear_initial_guess_guard_merit residual|energy|mixed
+nonlinear_initial_guess_accept_ratio
+nonlinear_initial_guess_frozen_eval
+```
+
+`last_step` uses the last accepted reduced free-DOF step increment as a guarded
+step-start displacement predictor:
+
+```text
+u_n^0 = u_{n-1} + alpha * (dt_n / dt_{n-1}) * delta_u_{n-1}
+```
+
+The predictor is applied only in direct load control, after prescribed
+Dirichlet BCs are updated and before the first step-start force evaluation. The
+guard compares residual merit at the no-predictor state and predicted state,
+restoring solver/material state when rejected. All new controls default to
+legacy behavior.
+
+Current checkpoint result:
+
+- No-code first-iteration matrix screen:
+  `results/tsn65-initial-guess-screen-20260521/report.md`.
+- Guarded predictor screen:
+  `results/tsn65-initial-guess-predictor-20260521/report.md`.
+- Updated parser and runner:
+  - `scripts/summarize_oas_run.py` now records
+    `NONLINEAR_INITIAL_GUESS` lines;
+  - `scripts/run_tsn65_globalization_sweep.py` has first-iteration and
+    predictor variants.
+- Strict baseline gate with predictor controls disabled still matched exactly:
+  `6,6,10,13,17,183,187,163`, total `585` rows, no warnings, no NaNs, no
+  fallback acceptance.
+- Existing `first_iteration_stiff_matrix_type` screens were not useful:
+  - `elastic` worsened early rows and was stopped in step 6;
+  - `secant` matched through step 6, then worsened in step 7;
+  - `archived_csl_damage_tangent` matched through step 5, then worsened in
+    step 6.
+- Guarded `last_step` predictors with alpha `0.25`, `0.50`, `0.75`, and `1.0`
+  were accepted on steps 2-6. They reduced the first step-6 residual/energy
+  merit, especially for `alpha=0.75`, but the benefit disappeared by roughly
+  step-6 rows 30-40. All predictor variants were manually stopped as
+  non-promotable once they matched or slightly worsened the baseline tail.
+- Verdict: a load-step initial guess is not the missing speed lever for the
+  strict TS-N65 eight-quarter path. The expensive tail is dominated by later
+  nonlinear path/tangent/history behavior, not by the first step-start free-DOF
+  displacement guess.
 
 ## CP6: Model-Level Stabilization
 

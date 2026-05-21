@@ -36,6 +36,7 @@ SETUP_RE = re.compile(r"DeflatedFGMRES setup complete: (?P<body>.*)$")
 STEP_SIZE_CHANGE_RE = re.compile(
     r"^(?P<action>restarting|shortening|enlarging) step,\s*timestep\s*=\s*(?P<dt>\S+)"
 )
+INITIAL_GUESS_RE = re.compile(r"^NONLINEAR_INITIAL_GUESS\s+(?P<body>.*)$")
 
 
 def as_float(value: str | None) -> float | None:
@@ -84,6 +85,7 @@ def new_step(step: int, time: float | None, dt: float | None) -> dict[str, Any]:
         "matrix_rebuild_rows": 0,
         "cutback_reasons": [],
         "converged_by_tolerance": False,
+        "initial_guess": None,
     }
 
 
@@ -102,6 +104,7 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
     warnings: list[str] = []
     nan_lines: list[str] = []
     line_search = {"trial_lines": 0, "actual_lines": 0, "fail_lines": 0, "min_alpha": None}
+    initial_guess = {"lines": 0, "accepted": 0, "rejected": 0, "min_predictor_merit_ratio": None}
     cutbacks: list[str] = []
     matrix_rebuild_reason_count: dict[str, int] = {}
     total_duration: str | None = None
@@ -185,6 +188,44 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
             elif lower.startswith("ls_fail"):
                 line_search["fail_lines"] += 1
 
+            initial_guess_match = INITIAL_GUESS_RE.match(stripped)
+            if initial_guess_match:
+                fields = parse_key_values(initial_guess_match.group("body"))
+                accepted = fields.get("accepted") == "1"
+                base_merit = as_float(fields.get("base_merit"))
+                predictor_merit = as_float(fields.get("predictor_merit"))
+                predictor_ratio = None
+                if base_merit is not None and predictor_merit is not None and base_merit > 0:
+                    predictor_ratio = predictor_merit / base_merit
+                initial_guess["lines"] += 1
+                if accepted:
+                    initial_guess["accepted"] += 1
+                else:
+                    initial_guess["rejected"] += 1
+                initial_guess["min_predictor_merit_ratio"] = update_min(initial_guess["min_predictor_merit_ratio"], predictor_ratio)
+                step_value = fields.get("step")
+                target_step = None
+                if step_value is not None:
+                    try:
+                        target_step = int(step_value)
+                    except ValueError:
+                        target_step = None
+                step_for_guess = current
+                if target_step is not None:
+                    for candidate_step in reversed(steps):
+                        if candidate_step["step"] == target_step:
+                            step_for_guess = candidate_step
+                            break
+                if step_for_guess is not None:
+                    step_for_guess["initial_guess"] = {
+                        "accepted": accepted,
+                        "alpha": as_float(fields.get("alpha")),
+                        "predictor_norm": as_float(fields.get("predictor_norm")),
+                        "base_merit": base_merit,
+                        "predictor_merit": predictor_merit,
+                        "predictor_merit_ratio": predictor_ratio,
+                    }
+
             if lower.startswith("nonlinear cutback reason:"):
                 reason = stripped.split(":", 1)[1].strip()
                 cutbacks.append(reason)
@@ -259,6 +300,7 @@ def parse_log(path: Path, baseline: str | None = None) -> dict[str, Any]:
         "nan_count": len(nan_lines),
         "nan_lines": nan_lines,
         "line_search": line_search,
+        "initial_guess": initial_guess,
         "cutback_count": len(cutbacks),
         "cutbacks": cutbacks,
         "matrix_rebuild_reason_count": matrix_rebuild_reason_count,
@@ -294,11 +336,14 @@ def format_tsv(summary: dict[str, Any]) -> str:
                 "min_alpha",
                 "max_ls_trials",
                 "matrix_rebuild_rows",
+                "initial_guess_accepted",
+                "initial_guess_ratio",
                 "cutback_reasons",
             ]
         )
     ]
     for step in summary["steps"]:
+        initial_guess_step = step.get("initial_guess") or {}
         lines.append(
             "\t".join(
                 [
@@ -316,6 +361,8 @@ def format_tsv(summary: dict[str, Any]) -> str:
                     "" if step["min_alpha"] is None else f"{step['min_alpha']:.12g}",
                     str(step["max_ls_trials"]),
                     str(step["matrix_rebuild_rows"]),
+                    "" if not initial_guess_step else str(int(initial_guess_step["accepted"])),
+                    "" if not initial_guess_step or initial_guess_step.get("predictor_merit_ratio") is None else f"{initial_guess_step['predictor_merit_ratio']:.12g}",
                     "|".join(step["cutback_reasons"]),
                 ]
             )
@@ -340,6 +387,9 @@ def format_markdown(summary: dict[str, Any]) -> str:
         f"- Cutbacks: `{summary['cutback_count']}`",
         f"- Min reported dt: `{summary['min_reported_dt']}`",
         f"- Fallback accepts: `{summary['fallback_acceptance_count']}`",
+        f"- Initial guess lines: `{summary['initial_guess']['lines']}`",
+        f"- Initial guess accepted: `{summary['initial_guess']['accepted']}`",
+        f"- Initial guess rejected: `{summary['initial_guess']['rejected']}`",
         "",
         "| step | time | dt | rows | target | match | duration | conv | residual | displacement | energy | alpha | ls trials | K rows | cutbacks |",
         "| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
@@ -389,6 +439,9 @@ def format_text(summary: dict[str, Any]) -> str:
         f"cutbacks: {summary['cutback_count']}",
         f"min_reported_dt: {summary['min_reported_dt']}",
         f"fallback_acceptance_count: {summary['fallback_acceptance_count']}",
+        f"initial_guess_lines: {summary['initial_guess']['lines']}",
+        f"initial_guess_accepted: {summary['initial_guess']['accepted']}",
+        f"initial_guess_rejected: {summary['initial_guess']['rejected']}",
     ]
     return "\n".join(lines) + "\n"
 

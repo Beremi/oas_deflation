@@ -1,0 +1,6 @@
+variant	exit_status	verdict	steps	total_iters	tail_6_8_iters	duration	warnings	nans	cutbacks	fallback_accepts	min_alpha	max_ls_trials	initial_guess_accepted	initial_guess_rejected	initial_guess_min_ratio
+G1-baseline	0	neutral	8	585	533	00:22:42.111	0	0	0	0		0	0	0	NA
+P1-laststep-a025	-15	failed	6	132	80		0	0	0	0		0	5	0	0.99446454251
+P1-laststep-a050	-15	failed	6	102	50		0	0	0	0		0	5	0	0.983589147972
+P1-laststep-a075	-15	failed	6	92	40		0	0	0	0		0	5	0	0.952484343779
+P1-laststep-a100	-15	failed	6	125	73		0	0	0	0		0	5	0	0.000114001370825
