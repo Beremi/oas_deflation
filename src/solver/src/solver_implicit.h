@@ -59,7 +59,7 @@ protected:
     enum class NonlinearLineSearchEvaluationMode { Frozen, Actual, FrozenThenActual };
     enum class NonlinearTrustRegionType { Off, StepNorm };
     enum class NonlinearLmDiagType { AbsDiag, RowSumDiag };
-    enum class NonlinearLmAcceptType { Merit, Errors };
+    enum class NonlinearLmAcceptType { Merit, Errors, RelaxedMerit };
     enum class NonlinearTangentCheckScope { Global, ElementTop };
     enum class NonlinearControlType { Load, Indirect, ArcLength };
     enum class ArcLengthReferenceMode { ProportionalLoad, FiniteDifference };
@@ -188,6 +188,7 @@ protected:
     unsigned nonlinearLmMaxTrials = 4;
     NonlinearLmDiagType nonlinearLmDiagType = NonlinearLmDiagType :: AbsDiag;
     NonlinearLmAcceptType nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
+    double nonlinearLmAcceptGrowth = 1.;
     double currentNonlinearLmMu = 1e-4;
     double lastNonlinearLmMu = 0.;
     unsigned lastNonlinearLmTrials = 0;

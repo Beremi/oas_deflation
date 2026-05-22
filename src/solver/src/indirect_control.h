@@ -25,6 +25,7 @@ protected:
     unsigned nummaxunit;
     std :: vector< bool >coords_active;
     std :: vector< bool >nodes_active;
+    std :: vector< bool >interpolate_coords;
     std :: vector< std :: vector< unsigned > >nodes;
     std :: vector< std :: vector< unsigned > >dirs;
     std :: vector< std :: vector< unsigned > >DoFs;
@@ -33,13 +34,18 @@ protected:
     std :: vector< std :: vector< double > >zcoords;
     std :: vector< std :: vector< double > >r_weights;
     std :: vector< std :: vector< double > >f_weights;
+    std :: vector< std :: vector< Element * > >control_elems;
+    std :: vector< std :: vector< Node * > >control_nodes;
+    std :: vector< std :: vector< Point > >control_natcoords;
 
     double givePrescribedValue(double time) const;
+    double giveDisplacementControlValue(const Vector &displ, unsigned unit, unsigned item) const;
 
 public:
     IndirectControl();
     virtual ~IndirectControl() {};
     void init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial = true);
+    void init(NodeContainer *mnodes, FunctionContainer *funcs, ElementContainer *melems, bool initial);
     void readFromStream(unsigned num, std :: ifstream &inputfile);
     virtual double giveMultiplierCorrection(Vector &prev_displ, Vector &prev_force, Vector &diff_displ, Vector &diff_force, double time);
     double giveTargetValue(double time) const;

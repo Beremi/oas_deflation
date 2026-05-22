@@ -334,6 +334,81 @@ nonlinear_lm_diag abs_diag
 nonlinear_lm_accept merit
 nonlinear_lm_max_trials 4
 """,
+    "LM6-legacy-relaxed102-mu1e-4": """
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.02
+nonlinear_lm_max_trials 4
+""",
+    "LM7-cslbeta010-gamma010-relaxed102-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.02
+nonlinear_lm_max_trials 4
+""",
+    "LM8-legacy-relaxed105-mu1e-4": """
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.05
+nonlinear_lm_max_trials 4
+""",
+    "LM9-legacy-relaxed110-mu1e-4": """
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.10
+nonlinear_lm_max_trials 4
+""",
+    "LM10-cslbeta010-gamma010-relaxed105-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.05
+nonlinear_lm_max_trials 4
+""",
+    "LM11-cslbeta010-gamma010-relaxed110-mu1e-4": """
+stiff_matrix_type csl_stabilized_tangent
+csl_tangent_beta 0.10
+csl_tangent_softening_limit 0.10
+csl_tangent_active_only 1
+csl_tangent_log_stats 1
+nonlinear_lm_regularization 1
+nonlinear_lm_mu_initial 1e-4
+nonlinear_lm_mu_growth 10
+nonlinear_lm_mu_shrink 0.25
+nonlinear_lm_diag abs_diag
+nonlinear_lm_accept relaxed_merit
+nonlinear_lm_accept_growth 1.10
+nonlinear_lm_max_trials 4
+""",
 }
 
 

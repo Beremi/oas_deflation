@@ -36,6 +36,16 @@ TARGET_V01_FIRST = 2.613423e-6
 TARGET_V01_FINAL = 1.519697e-5
 TARGET_CONTROL_SCALE_FIRST = 1.205765978081034
 TARGET_CONTROL_SCALE_FINAL = 1.2321920851549628
+BASELINE_V01_SCHEDULE = [
+    (1.25e-3, 2.613423e-6),
+    (2.50e-3, 5.211562e-6),
+    (3.75e-3, 7.647163e-6),
+    (5.00e-3, 9.814966e-6),
+    (6.25e-3, 1.174648e-5),
+    (7.50e-3, 1.309917e-5),
+    (8.75e-3, 1.422071e-5),
+    (1.00e-2, TARGET_V01_FINAL),
+]
 
 IDC_TEMPLATE = """indirect_control 2
 ic_xcoords 2.1 2.1
@@ -44,6 +54,7 @@ ic_zcoords 0 -0.4
 ic_directions 2 2
 ic_displ_weights {weights}
 ic_force_weights 0 0
+{interpolation}\
 ic_function {function_index}
 """
 
@@ -124,6 +135,44 @@ VARIANTS: dict[str, dict[str, Any]] = {
         "line_search": True,
         "purpose": "full calibrated gauge arc-length plus existing actual-residual backtracking",
     },
+    "CP5c-exact-gauge-first-quarter": {
+        "total_time": TARGET_FIRST_TIME,
+        "time_step": TARGET_FIRST_TIME,
+        "target_v01": TARGET_V01_FIRST,
+        "weights": "-1 1",
+        "exact_gauge": True,
+        "line_search": False,
+        "purpose": "first-quarter target using the same coordinate interpolation as DisplacementGauge LD v01",
+    },
+    "CP5c-exact-gauge-first-quarter-line-search": {
+        "total_time": TARGET_FIRST_TIME,
+        "time_step": TARGET_FIRST_TIME,
+        "target_v01": TARGET_V01_FIRST,
+        "weights": "-1 1",
+        "exact_gauge": True,
+        "line_search": True,
+        "purpose": "exact first-quarter gauge with existing actual-residual backtracking enabled",
+    },
+    "CP5c-exact-gauge-pwl-8step": {
+        "total_time": TARGET_TOTAL_TIME,
+        "time_step": TARGET_FIRST_TIME,
+        "target_v01": TARGET_V01_FINAL,
+        "target_schedule": BASELINE_V01_SCHEDULE,
+        "weights": "-1 1",
+        "exact_gauge": True,
+        "line_search": False,
+        "purpose": "exact exported v01 gauge with PWL targets matching strict baseline quarter points",
+    },
+    "CP5c-exact-gauge-pwl-8step-line-search": {
+        "total_time": TARGET_TOTAL_TIME,
+        "time_step": TARGET_FIRST_TIME,
+        "target_v01": TARGET_V01_FINAL,
+        "target_schedule": BASELINE_V01_SCHEDULE,
+        "weights": "-1 1",
+        "exact_gauge": True,
+        "line_search": True,
+        "purpose": "exact exported v01 PWL target plus existing actual-residual backtracking",
+    },
 }
 
 
@@ -164,7 +213,12 @@ def replace_solver_value(solver: str, key: str, value: str) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def append_control_function(run_dir: Path, total_time: float, target_control: float) -> int:
+def append_control_function(
+    run_dir: Path,
+    total_time: float,
+    target_control: float,
+    target_schedule: list[tuple[float, float]] | None = None,
+) -> int:
     path = run_dir / "functions.inp"
     if path.is_symlink():
         source = path.resolve()
@@ -175,10 +229,17 @@ def append_control_function(run_dir: Path, total_time: float, target_control: fl
     if not text.endswith("\n"):
         text += "\n"
     non_comment_count = len([line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")])
-    text += (
-        f"PWLFunction 2 0 {total_time:.12g} 0 {target_control:.12g} "
-        f"# CP5b gauge arc-length internal control target\n"
-    )
+    if target_schedule:
+        schedule = [(0.0, 0.0), *target_schedule]
+        times = " ".join(f"{time:.12g}" for time, _value in schedule)
+        values = " ".join(f"{value:.12g}" for _time, value in schedule)
+        entries = f"{times} {values}"
+        text += f"PWLFunction {len(schedule)} {entries} # CP5c exact exported-gauge PWL target\n"
+    else:
+        text += (
+            f"PWLFunction 2 0 {total_time:.12g} 0 {target_control:.12g} "
+            f"# CP5b gauge arc-length internal control target\n"
+        )
     path.write_text(text, encoding="utf-8")
     return non_comment_count
 
@@ -219,7 +280,8 @@ def solver_for(spec: dict[str, Any], function_index: int) -> str:
                 "nonlinear_line_search_cutback_on_fail 1",
             ]
         )
-    controls.append(IDC_TEMPLATE.format(weights=spec["weights"], function_index=function_index).rstrip())
+    interpolation = "ic_coordinate_interpolation 1\n" if spec.get("exact_gauge") else ""
+    controls.append(IDC_TEMPLATE.format(weights=spec["weights"], interpolation=interpolation, function_index=function_index).rstrip())
     return solver.rstrip() + "\n" + "\n".join(controls).rstrip() + "\n"
 
 
@@ -311,6 +373,45 @@ def read_ld(path: Path) -> dict[str, Any]:
     return {"header": header, "rows": rows, "first": rows[0] if rows else {}, "last": rows[-1] if rows else {}}
 
 
+def schedule_target_at(spec: dict[str, Any], control_time: float | None) -> float:
+    target_schedule = spec.get("target_schedule")
+    if not target_schedule or control_time is None:
+        return float(spec["target_v01"]) * float(spec.get("control_scale", 1.0))
+
+    schedule = [(0.0, 0.0), *target_schedule]
+    if control_time <= schedule[0][0]:
+        return float(schedule[0][1])
+    for (t0, v0), (t1, v1) in zip(schedule, schedule[1:]):
+        if control_time <= t1 + 1e-15:
+            if abs(t1 - t0) <= 1e-30:
+                return float(v1)
+            ratio = (control_time - t0) / (t1 - t0)
+            return float(v0 + ratio * (v1 - v0))
+    return float(schedule[-1][1])
+
+
+def active_target_for_result(result: dict[str, Any], last_arc: dict[str, float], last_ld: dict[str, float]) -> tuple[float, float | None]:
+    spec = result["spec"]
+    steps = result["summary"].get("steps") or []
+    attempted_time = None
+    attempted_step = None
+    if steps:
+        attempted_time = steps[-1].get("time")
+        attempted_step = steps[-1].get("step")
+
+    arc_target = last_arc.get("target")
+    arc_step = last_arc.get("step")
+    if spec.get("target_schedule") and attempted_step is not None and arc_step is not None:
+        if attempted_step > arc_step + 1e-12:
+            return schedule_target_at(spec, attempted_time), attempted_time
+    if arc_target is not None and arc_target == arc_target:
+        return float(arc_target), last_arc.get("control_time")
+
+    if attempted_time is None:
+        attempted_time = last_ld.get("time")
+    return schedule_target_at(spec, attempted_time), attempted_time
+
+
 def run_variant(root: Path, deck: Path, exe: Path, jobs: int, timeout: int, variant: str) -> dict[str, Any]:
     spec = VARIANTS[variant]
     run_dir = root / "runs" / variant
@@ -319,7 +420,12 @@ def run_variant(root: Path, deck: Path, exe: Path, jobs: int, timeout: int, vari
     run_dir.mkdir(parents=True, exist_ok=True)
     prepare_run_dir(deck, run_dir, "# temporary solver, rewritten after CP5b function append\n", copy_deck=False)
     target_control = float(spec["target_v01"]) * float(spec.get("control_scale", 1.0))
-    function_index = append_control_function(run_dir, float(spec["total_time"]), target_control)
+    function_index = append_control_function(
+        run_dir,
+        float(spec["total_time"]),
+        target_control,
+        spec.get("target_schedule"),
+    )
     (run_dir / "solver.inp").write_text(solver_for(spec, function_index), encoding="utf-8")
     env = make_env(jobs)
     command = [str(exe), "-j", str(jobs), "master.inp"]
@@ -391,8 +497,10 @@ def aggregate_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
         last_ld = result["ld"]["last"]
         final_v01 = last_ld.get("v01")
         target_v01 = float(result["spec"]["target_v01"])
-        target_control = float(result["target_control"])
-        rel_err = "" if final_v01 is None else abs(final_v01 - target_v01) / max(abs(target_v01), 1e-30)
+        target_control, target_time = active_target_for_result(result, last_arc, last_ld)
+        final_gauge = last_arc.get("gauge")
+        gauge_value = final_gauge if final_gauge is not None and final_gauge == final_gauge else final_v01
+        rel_err = "" if gauge_value is None else abs(gauge_value - target_control) / max(abs(target_control), 1e-30)
         rows.append(
             {
                 "variant": result["variant"],
@@ -411,8 +519,9 @@ def aggregate_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "final_lambda": last_arc.get("lambda", ""),
                 "final_dlambda": last_arc.get("dlambda", ""),
                 "final_radius": last_arc.get("radius", ""),
-                "final_gauge": last_arc.get("gauge", ""),
+                "final_gauge": final_gauge if final_gauge is not None else "",
                 "target_gauge": target_control,
+                "target_time": target_time if target_time is not None else "",
                 "gauge_rel_err": rel_err,
                 "final_v01": final_v01 if final_v01 is not None else "",
                 "target_v01": target_v01,
@@ -425,7 +534,7 @@ def aggregate_rows(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def collect_existing_results(root: Path) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
-    for run_dir in sorted((root / "runs").glob("CP5b-*")):
+    for run_dir in sorted((root / "runs").iterdir() if (root / "runs").exists() else []):
         if run_dir.name not in VARIANTS or not (run_dir / "solver.out").exists():
             continue
         exit_status = 0
@@ -505,6 +614,7 @@ def write_report(root: Path, repo: Path, deck: Path, exe: Path, variants: list[s
         "final_radius",
         "final_gauge",
         "target_gauge",
+        "target_time",
         "gauge_rel_err",
         "final_v01",
         "target_v01",
@@ -530,12 +640,12 @@ def write_report(root: Path, repo: Path, deck: Path, exe: Path, variants: list[s
         "",
         "## Result Table",
         "",
-        "| variant | exit | verdict | steps | rows | duration | warnings | NaNs | fallback | cutbacks | final time | lambda | radius | gauge | target | gauge rel err |",
-        "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| variant | exit | verdict | steps | rows | duration | warnings | NaNs | fallback | cutbacks | final time | lambda | radius | gauge | target | target time | gauge rel err |",
+        "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         lines.append(
-            "| {variant} | {exit_status} | {verdict} | {steps} | {rows} | {duration} | {warnings} | {nans} | {fallback} | {cutbacks} | {final_time} | {final_lambda} | {final_radius} | {final_gauge} | {target_gauge} | {gauge_rel_err} |".format(
+            "| {variant} | {exit_status} | {verdict} | {steps} | {rows} | {duration} | {warnings} | {nans} | {fallback} | {cutbacks} | {final_time} | {final_lambda} | {final_radius} | {final_gauge} | {target_gauge} | {target_time} | {gauge_rel_err} |".format(
                 **row
             )
         )

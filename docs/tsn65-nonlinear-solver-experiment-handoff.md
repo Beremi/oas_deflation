@@ -1,12 +1,12 @@
 # TS-N65 Nonlinear Solver Experiment Handoff
 
-Generated: 2026-05-21
+Generated: 2026-05-22
 
 Repository: `/home/beremi/repos/oas_deflation`
 
 Branch at handoff: `nonlinear_solver_testing`
 
-Checkpoint commit at handoff: `317c23138dc7eab098816e1c16ac9619e00089b2`
+Previous checkpoint commit before CP6 queue: `317c23138dc7eab098816e1c16ac9619e00089b2`
 
 ## Purpose
 
@@ -1060,10 +1060,9 @@ First TS-N65 CP6 gate:
 - Compact report:
   `results/tsn65-cp6-state-dump-20260521/report.md`.
 
-The TS-N65 CP6 queue is now:
+Completed TS-N65 CP6 queue:
 
 ```text
-D0-baseline-state-dump
 D1-backtracking-state-dump
 D2-archived-csl-backtracking-state-dump
 S1-cslbeta005-gamma005-stepstart
@@ -1077,6 +1076,64 @@ LM3-cslbeta005-gamma005-mu1e-4
 LM4-cslbeta010-gamma005-mu1e-4
 LM5-cslbeta010-gamma010-mu1e-4
 ```
+
+Queue report:
+`results/tsn65-cp6-queue-20260522-0652/report.md`.
+
+Aggregate result table:
+
+| variant | exit | steps | rows | tail 6-8 | duration | verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| D1-backtracking-state-dump | 0 | 8 | 576 | 524 | 01:16:42.602 | not promoted |
+| D2-archived-csl-backtracking-state-dump | -15 | 7 | 211 | 159 |  | failed/manual stop |
+| S1-cslbeta005-gamma005-stepstart | 1 | 6 | 352 | 300 | 00:07:27.422 | failed |
+| S2-cslbeta010-gamma005-stepstart | 1 | 6 | 352 | 300 | 00:07:27.738 | failed |
+| S3-cslbeta020-gamma005-stepstart | 1 | 6 | 352 | 300 | 00:07:27.614 | failed |
+| S4-cslbeta010-gamma010-stepstart | 1 | 6 | 352 | 300 | 00:07:27.689 | failed |
+| S5-cslbeta020-gamma010-stepstart | 1 | 6 | 352 | 300 | 00:07:28.775 | failed |
+| LM1-legacy-mu1e-4 | 1 | 6 | 72 | 25 | 00:19:57.716 | failed |
+| LM2-legacy-mu1e-3 | 1 | 6 | 78 | 26 | 00:21:42.972 | failed |
+| LM3-cslbeta005-gamma005-mu1e-4 | 1 | 6 | 72 | 25 | 00:20:14.966 | failed |
+| LM4-cslbeta010-gamma005-mu1e-4 | 1 | 6 | 72 | 25 | 00:20:15.910 | failed |
+| LM5-cslbeta010-gamma010-mu1e-4 | 1 | 6 | 72 | 25 | 00:20:17.283 | failed |
+| LM6-legacy-relaxed102-mu1e-4 | 1 | 6 | 74 | 27 | 00:20:29.124 | failed |
+| LM8-legacy-relaxed105-mu1e-4 | 1 | 6 | 74 | 27 | 00:20:28.532 | failed |
+| LM9-legacy-relaxed110-mu1e-4 | 1 | 6 | 80 | 33 | 00:21:58.819 | failed |
+
+CP6 queue conclusions:
+
+- The apparent row-count improvement of `D1` is not a strict speedup. It
+  completes `8/8` with `576` rows, but state comparison proves step 6 is a
+  different material path: the global status hash differs, active CSL
+  damage-growth statuses increase by about `17%`, p99 damage increment rises by
+  about `23%`, and top-1000 damage overlap is only `264/1000`. Step 7 then
+  worsens from `187` rows to `270`.
+- `D2` is the same failure pattern with a more aggressive tangent branch:
+  step 6 drops to `47` rows but the material state shifts similarly and step 7
+  stalls; it was stopped manually.
+- The step-start stabilized CSL tangent variants `S1`-`S5` all fail at step 6
+  after `300` rows. Logs show the active-damage correction is inactive at the
+  step-start rebuild (`active_damage_status_count = 0`), so this exact tangent
+  screen does not apply the intended correction where it matters.
+- The LM variants `LM1`-`LM5` all fail at step 6. They reach a near-residual
+  solution quickly, but the energy error plateaus around `1.8e-3` and the next
+  LM trial is rejected for all tested `mu` retries. The implementation is also
+  expensive because each trial refactorizes and loses the baseline DFGMRES
+  deflation basis (`basis_size=0` in setup logs).
+- Relaxed-merit LM gates did not solve the plateau. A `2%` and `5%` allowed
+  merit increase both still failed at step 6 iteration `27`; the `10%` gate
+  pushed the failure to iteration `33`, but only by accepting controlled error
+  growth from merit about `1.89` to `2.65`. The rejected row then exceeded the
+  relaxed gate again. This is useful negative evidence: widening the acceptance
+  criterion delays failure but does not create convergence.
+
+CP6 verdict:
+
+- Do not promote any queued variant.
+- Do not continue broad beta/gamma/mu sweeps until the energy-merit plateau and
+  repeated refactorization/deflation loss are addressed.
+- The row-count speedups seen in line search are path-shifting, not strict-path
+  acceleration.
 
 ### 1. Exact exported-gauge control
 
@@ -1093,6 +1150,66 @@ Pass condition:
 
 - same final physical gauge and comparable load/displacement curve;
 - fewer late-step rows than the strict baseline.
+
+Implementation update:
+
+- Added optional IDC coordinate interpolation with
+  `ic_coordinate_interpolation 1`. When enabled, coordinate-based IDC points
+  use the same owning-element/natural-coordinate interpolation pattern as the
+  `DisplacementGauge` exporter, falling back to the historical nearest-node
+  value only when an owning element is not found.
+- Added exact exported-gauge variants to `scripts/run_tsn65_gauge_arc_cp5b.py`:
+  `CP5c-exact-gauge-first-quarter`,
+  `CP5c-exact-gauge-first-quarter-line-search`,
+  `CP5c-exact-gauge-pwl-8step`, and
+  `CP5c-exact-gauge-pwl-8step-line-search`.
+- First-quarter smoke:
+  `results/tsn65-exact-gauge-cp5c-20260522-123843/report.md`.
+  The run hit the exported `LD.out` `v01` target exactly without the old
+  calibration factor:
+
+```text
+target v01 = 2.613423e-6
+exported v01 = 2.613423e-6
+rows = 29
+duration = 00:04:32.739
+```
+
+Interpretation:
+
+- The exact interpolation control is now mechanically correct for the first
+  quarter-step.
+- It is still slower than the strict first baseline step (`6` rows), so it is
+  not a speed candidate by itself.
+- The eight-point PWL exact-gauge run without line search failed as a speed or
+  path-control solution. It matched the first five exported `v01` checkpoints
+  exactly, but step 6 developed the same energy-merit plateau and then drifted
+  away. It was stopped after `75` step-6 rows:
+
+```text
+result root = results/tsn65-exact-gauge-cp5c-pwl-20260522-124701
+rows before stop = 229
+accepted checkpoint rows = 29,28,30,31,36
+step 6 partial rows = 75
+step 6 best near-miss = energy merit about 1.12 near row 44
+last row = residual 1.678442e-03, displacement 3.711674e-04, energy 3.180927e-03
+```
+
+- This is valuable negative evidence: matching the exported displacement gauge
+  does not remove the step-6 nonlinear pathology by itself. The line-search
+  exact-gauge PWL variant also failed: it completed the first quarter in `29`
+  rows, then step 2 immediately hit repeated
+  `arc_length_line_search_failed` cutbacks before any accepted row. It was
+  stopped after seven identical radius cutbacks.
+
+```text
+line-search root = results/tsn65-exact-gauge-cp5c-pwl-ls-20260522-131530
+rows before stop = 29
+accepted checkpoints = 1
+cutbacks = 7
+last radius = 7.8125e-6
+failure reason = arc_length_line_search_failed at step 2
+```
 
 ### 1b. Do not prioritize simple last-step predictors
 
@@ -1230,12 +1347,25 @@ The experiments found useful technical facts, but not a speedup:
 - The CSL active-damage tangent defect is real, but the locally correct tangent
   is not a production fix by itself.
 - Line search gives a real partial improvement in step 6 but transfers the
-  difficulty to step 7.
+  difficulty to step 7; CP6 state dumps show this is a material-path shift, not
+  a strict-path speedup.
 - Last-step nonlinear initial guesses are accepted and improve the first row,
   but do not speed up the late strict TS-N65 tail.
+- Step-start stabilized CSL tangent variants do not help because the active
+  damage correction is inactive at the step-start matrix rebuild; all tested
+  variants fail at step 6.
+- LM/regularized Newton variants reach a near-residual solution quickly but
+  fail the energy criterion around step 6 with `eneErr ~ 1.8e-3`, and current
+  LM refactorization loses the DFGMRES deflation basis on every trial.
+- Exact exported-gauge control now matches `LD.out` `v01` without calibration,
+  but it is not a speedup. The first-quarter exact-gauge run took `29` rows.
+  The eight-point PWL exact-gauge run matched checkpoints through step 5, then
+  step 6 hit the same energy plateau and drifted away; adding line search made
+  the method fail immediately at step 2 through repeated
+  `arc_length_line_search_failed` cutbacks.
 - Adaptive cutback, IDC, and current arc-length formulations are useful
   diagnostics, not speed replacements.
-- The next expert-guided work should focus on either a stabilized tangent/trust
-  region strategy for the strict path, or a physically exact displacement
-  control/continuation variable. If both fail, CP6 model-level regularization is
-  the likely next branch.
+- The next expert-guided work should focus on the shared step-6 energy-merit
+  plateau and the material/model response behind it. Solver-only branches have
+  mostly become diagnostics; model-level regularization or material-integration
+  diagnostics are now the likely next branch.

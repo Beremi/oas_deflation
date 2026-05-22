@@ -28,6 +28,8 @@ void IndirectControl :: readFromStream(unsigned num, ifstream &inputfile) {
     coords_active [ nummaxunit - 1 ] = false;
     nodes_active.resize(nummaxunit);
     nodes_active [ nummaxunit - 1 ] = false;
+    interpolate_coords.resize(nummaxunit);
+    interpolate_coords [ nummaxunit - 1 ] = false;
 
     nodes [ nummaxunit - 1 ].resize(num, 0);
     dirs [ nummaxunit - 1 ].resize(num, 0);
@@ -83,6 +85,13 @@ void IndirectControl :: readFromStream(unsigned num, ifstream &inputfile) {
             for ( unsigned j = 0; j < num; j++ ) {
                 iss >> f_weights [ nummaxunit - 1 ] [ j ];
             }
+        } else if ( param.compare("ic_coordinate_interpolation") == 0 ||
+                    param.compare("idc_coordinate_interpolation") == 0 ||
+                    param.compare("ic_interpolate_coordinates") == 0 ||
+                    param.compare("idc_interpolate_coordinates") == 0 ) {
+            bool enabled = false;
+            iss >> enabled;
+            interpolate_coords [ nummaxunit - 1 ] = enabled;
         } else if ( param.compare("ic_function") == 0 || param.compare("idc_function") == 0 ) {
             iss >> funcnum;
         } else {
@@ -97,6 +106,11 @@ void IndirectControl :: readFromStream(unsigned num, ifstream &inputfile) {
 
 //////////////////////////////////////////////////////////
 void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bool initial) {
+    init(mnodes, funcs, nullptr, initial);
+}
+
+//////////////////////////////////////////////////////////
+void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, ElementContainer *melems, bool initial) {
     unsigned clength;
     Node *n;
     double dist;
@@ -119,6 +133,16 @@ void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bo
                 requiref = true;
             }
         }
+        if ( control_elems.size() < nummaxunit ) {
+            control_elems.resize(nummaxunit);
+            control_nodes.resize(nummaxunit);
+            control_natcoords.resize(nummaxunit);
+        }
+        if ( control_elems [ c ].size() < clength || !initial ) {
+            control_elems [ c ].resize(clength, nullptr);
+            control_nodes [ c ].resize(clength, nullptr);
+            control_natcoords [ c ].resize(clength);
+        }
         if ( DoFs [ c ].size() < clength || !initial ) {
             // JK: in adaptivity, number of control DoFs remain, but DoFs from updated geometry are used
             if ( initial ) {
@@ -127,11 +151,28 @@ void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bo
             if ( nodes_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
                     DoFs [ c ] [ i ] = mnodes->giveNode(nodes [ c ] [ i ])->giveStartingDoF() + dirs [ c ] [ i ];
+                    if ( control_nodes.size() > c && control_nodes [ c ].size() > i ) {
+                        control_nodes [ c ] [ i ] = mnodes->giveNode(nodes [ c ] [ i ]);
+                        control_elems [ c ] [ i ] = nullptr;
+                    }
                 }
             } else if ( coords_active [ c ] ) {
                 for ( unsigned i = 0; i < clength; i++ ) {
-                    n = mnodes->findClosestMechanicalNode(Point(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]), & dist);
+                    Point p(xcoords [ c ] [ i ], ycoords [ c ] [ i ], zcoords [ c ] [ i ]);
+                    n = mnodes->findClosestMechanicalNode(p, & dist);
                     DoFs [ c ] [ i ] = n->giveStartingDoF() + dirs [ c ] [ i ];
+                    if ( control_nodes.size() > c && control_nodes [ c ].size() > i ) {
+                        control_nodes [ c ] [ i ] = n;
+                        control_elems [ c ] [ i ] = nullptr;
+                        if ( interpolate_coords [ c ] && melems ) {
+                            Element *ee = nullptr;
+                            Point nat;
+                            if ( melems->findElementOwningPoint(& ee, & nat, & p) ) {
+                                control_elems [ c ] [ i ] = ee;
+                                control_natcoords [ c ] [ i ] = nat;
+                            }
+                        }
+                    }
                 }
             } else {
                 cerr << "Error: Indirect displacement Control was not correctly set" << endl;
@@ -139,6 +180,23 @@ void IndirectControl :: init(NodeContainer *mnodes, FunctionContainer *funcs, bo
             }
         }
     }
+}
+
+//////////////////////////////////////////////////////////
+double IndirectControl :: giveDisplacementControlValue(const Vector &displ, unsigned unit, unsigned item) const {
+    if ( unit < interpolate_coords.size() && interpolate_coords [ unit ] &&
+         unit < coords_active.size() && coords_active [ unit ] &&
+         unit < control_elems.size() && item < control_elems [ unit ].size() &&
+         control_elems [ unit ] [ item ] ) {
+        Element *ee = control_elems [ unit ] [ item ];
+        Vector elemDofs = ee->giveElemDoFsFromFullDoFs(displ);
+        Vector mv = ee->giveMasterVariables(& control_natcoords [ unit ] [ item ], elemDofs);
+        if ( dirs [ unit ] [ item ] < static_cast< unsigned >( mv.size() ) ) {
+            return mv [ dirs [ unit ] [ item ] ];
+        }
+        return 0.;
+    }
+    return displ [ DoFs [ unit ] [ item ] ];
 }
 
 //////////////////////////////////////////////////////////
@@ -151,8 +209,8 @@ double IndirectControl :: giveMultiplierCorrection(Vector &prev_displ, Vector &p
         dd = 0;
         df = 0;
         for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
-            dd += prev_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
-            df += diff_displ [ DoFs [ c ] [ i ] ] * r_weights [ c ] [ i ];
+            dd += giveDisplacementControlValue(prev_displ, c, i) * r_weights [ c ] [ i ];
+            df += giveDisplacementControlValue(diff_displ, c, i) * r_weights [ c ] [ i ];
         }
         if ( requireForces() ) {
             for ( unsigned i = 0; i < r_weights [ c ].size(); i++ ) {
@@ -188,7 +246,7 @@ double IndirectControl :: giveControlValue(const Vector &displ, const Vector &fo
     }
     double value = 0.;
     for ( unsigned i = 0; i < r_weights [ unit ].size(); i++ ) {
-        value += displ [ DoFs [ unit ] [ i ] ] * r_weights [ unit ] [ i ];
+        value += giveDisplacementControlValue(displ, unit, i) * r_weights [ unit ] [ i ];
     }
     if ( requireForces() ) {
         for ( unsigned i = 0; i < f_weights [ unit ].size(); i++ ) {

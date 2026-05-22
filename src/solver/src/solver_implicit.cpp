@@ -687,7 +687,7 @@ void SteadyStateNonLinearSolver :: init(string init_r_file, string init_v_file, 
     SteadyStateLinearSolver :: init(init_r_file, init_v_file, initial);
     this->fully_converged = false;
     if ( idc ) {
-        idc->init(nodes, funcs, initial);   //indirect displacement control
+        idc->init(nodes, funcs, elems, initial);   //indirect displacement control
         ddf = Vector :: Zero(freeDoFnum);
         full_ddf = Vector :: Zero(totalDoFnum);
         f_last_iter = Vector :: Zero(freeDoFnum);
@@ -1030,10 +1030,14 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
                     nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
                 } else if ( param.compare("errors") == 0 ) {
                     nonlinearLmAcceptType = NonlinearLmAcceptType :: Errors;
+                } else if ( param.compare("relaxed_merit") == 0 || param.compare("nonmonotone") == 0 || param.compare("relaxed") == 0 ) {
+                    nonlinearLmAcceptType = NonlinearLmAcceptType :: RelaxedMerit;
                 } else {
                     std :: cerr << "unknown nonlinear_lm_accept '" << param << "', using merit" << '\n';
                     nonlinearLmAcceptType = NonlinearLmAcceptType :: Merit;
                 }
+            } else if ( param.compare("nonlinear_lm_accept_growth") == 0 ) {
+                iss >> nonlinearLmAcceptGrowth;
             } else if ( param.compare("nonlinear_rollback_ignore_initial_iterations") == 0 ) {
                 iss >> nonlinearRollbackIgnoreInitialIterations;
             } else if ( param.compare("nonlinear_rollback_growth_ratio") == 0 ) {
@@ -1343,6 +1347,10 @@ Solver *SteadyStateNonLinearSolver :: readFromFile(const string filename) {
     if ( nonlinearLmMaxTrials < 1 ) {
         std :: cerr << "nonlinear_lm_max_trials must be at least 1, setting to 1" << '\n';
         nonlinearLmMaxTrials = 1;
+    }
+    if ( nonlinearLmAcceptGrowth < 1. || !std :: isfinite(nonlinearLmAcceptGrowth) ) {
+        std :: cerr << "nonlinear_lm_accept_growth must be at least 1, setting to 1" << '\n';
+        nonlinearLmAcceptGrowth = 1.;
     }
     if ( nonlinearStateDumpDirectory.empty() ) {
         nonlinearStateDumpDirectory = "state";
@@ -2523,6 +2531,11 @@ SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver ::
                 const bool displacementOk = it == 0 || maxDisErr <= 0. || disErr <= baseState.disErr;
                 const bool energyOk = maxEneErr <= 0. || eneErr <= baseState.eneErr;
                 accepted = nonlinearConvergenceCriteriaSatisfied() || ( residualOk && displacementOk && energyOk );
+            } else if ( nonlinearLmAcceptType == NonlinearLmAcceptType :: RelaxedMerit ) {
+                const bool relaxedMeritOk = std :: isfinite(trialMerit)
+                                            && std :: isfinite(meritBefore)
+                                            && trialMerit <= nonlinearLmAcceptGrowth * std :: max(meritBefore, 1e-300);
+                accepted = nonlinearConvergenceCriteriaSatisfied() || relaxedMeritOk;
             } else {
                 accepted = nonlinearConvergenceCriteriaSatisfied() || nonlinearMeritAccepted(trialMerit, meritBefore, 1.);
             }
@@ -2540,6 +2553,7 @@ SteadyStateNonLinearSolver :: NonlinearTrialResult SteadyStateNonLinearSolver ::
                         << " accepted " << accepted
                         << " merit_before " << meritBefore
                         << " merit_trial " << trialMerit
+                        << " accept_growth " << nonlinearLmAcceptGrowth
                         << " res " << resErr
                         << " disp " << disErr
                         << " energy " << eneErr
